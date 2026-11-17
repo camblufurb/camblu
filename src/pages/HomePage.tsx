@@ -103,7 +103,7 @@ export function HomePage() {
               Centro Acadêmico de Medicina de Blumenau
             </h1>
 
-            <p className="m3-body-large" style={{ color: '#dceddf' }}>
+            <p style={{ color: '#dceddf' }}>
               Entidade sem fins lucrativos e apartidária dedicada a ser a voz dos estudantes de Medicina da FURB —
               conectando representação democrática, ciência, eventos, transparência financeira e acolhimento.
             </p>
@@ -168,7 +168,7 @@ export function HomePage() {
               Representação Estudantil
             </span>
             <h2>As instituições estudantis da Medicina FURB</h2>
-            <p className="m3-body-medium">
+            <p className="text-muted">
               Conheça como CAMBLU, IFMSA Brazil FURB, DCE e Atlética AAARIH trabalham juntos na formação acadêmica,
               esportiva, científica e política.
             </p>
@@ -198,16 +198,16 @@ export function HomePage() {
                   </ExpressiveShapeFrame>
                   <div>
                     <span className="m3-badge">{inst.founded}</span>
-                    <h3 className="m3-title-large" style={{ marginBlockStart: '0.25rem' }}>
+                    <h3 style={{ marginBlockStart: '0.25rem' }}>
                       {inst.acronym}
                     </h3>
                   </div>
                 </div>
 
-                <p className="m3-body-medium" style={{ fontWeight: 600, color: 'var(--md-sys-color-on-surface)' }}>
+                <p style={{ fontWeight: 600, color: 'var(--md-sys-color-on-surface)' }}>
                   {inst.name}
                 </p>
-                <p className="m3-body-medium">{inst.summary}</p>
+                <p className="text-muted">{inst.summary}</p>
                 <ul style={{ margin: 0, paddingInlineStart: '1.1rem', display: 'grid', gap: '0.25rem', fontSize: '0.86rem' }}>
                   {inst.pillars.map((p) => (
                     <li key={p}>{p}</li>
@@ -257,10 +257,10 @@ export function HomePage() {
                 <Icon name={item.icon} size={24} />
               </div>
               <div>
-                <h3 className="m3-title-medium" style={{ marginBlockEnd: '0.2rem' }}>
+                <h3 style={{ marginBlockEnd: '0.2rem' }}>
                   {item.title}
                 </h3>
-                <p className="m3-body-medium">{item.desc}</p>
+                <p className="text-muted">{item.desc}</p>
               </div>
             </Link>
           ))}
@@ -272,7 +272,7 @@ export function HomePage() {
         <div className="grid-two">
           <div className="m3-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBlockEnd: '1rem' }}>
-              <h2 className="m3-title-large">Próximos Eventos</h2>
+              <h2>Próximos Eventos</h2>
               <Link to="/eventos" className="m3-btn m3-btn--text">
                 Ver todos
               </Link>
@@ -307,7 +307,7 @@ export function HomePage() {
 
           <div className="m3-card m3-card--gold">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBlockEnd: '1rem' }}>
-              <h2 className="m3-title-large">Editais Abertos & Documentos</h2>
+              <h2>Editais Abertos & Documentos</h2>
               <Link to="/editais" className="m3-btn m3-btn--text">
                 Ver editais
               </Link>

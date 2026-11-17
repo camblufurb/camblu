@@ -229,14 +229,14 @@ export function Layout({ children, userSlot }: LayoutProps) {
                   </span>
                 </div>
               </div>
-              <p style={{ fontSize: '0.88rem', color: '#c4d8cc' }}>
+              <p style={{ color: '#c4d8cc' }}>
                 Fundado em 1990. Entidade sem fins lucrativos e apartidária dedicada aos acadêmicos de Medicina da
                 FURB.
               </p>
             </div>
 
             <div>
-              <h3 style={{ fontSize: '0.92rem', color: '#edd16e', marginBlockEnd: '0.6rem' }}>
+              <h3 style={{ color: '#edd16e', marginBlockEnd: '0.6rem' }}>
                 Navegação Rápida
               </h3>
               <ul style={{ display: 'grid', gap: '0.35rem', padding: 0, listStyle: 'none', fontSize: '0.88rem' }}>
@@ -249,7 +249,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
             </div>
 
             <div>
-              <h3 style={{ fontSize: '0.92rem', color: '#edd16e', marginBlockEnd: '0.6rem' }}>
+              <h3 style={{ color: '#edd16e', marginBlockEnd: '0.6rem' }}>
                 Institucional & Apoio
               </h3>
               <ul style={{ display: 'grid', gap: '0.35rem', padding: 0, listStyle: 'none', fontSize: '0.88rem' }}>

@@ -79,6 +79,12 @@
     --font-sans: 'Roboto Flex', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 
+    /* Canonical Typography Scale (sempre o mesmo tamanho para cada tipo: h1, h2, h3, p) */
+    --font-size-h1: clamp(1.95rem, 1.5rem + 1.5vw, 2.75rem);
+    --font-size-h2: clamp(1.375rem, 1.22rem + 0.55vw, 1.625rem);
+    --font-size-h3: clamp(1.125rem, 1.06rem + 0.25vw, 1.25rem);
+    --font-size-p: 1rem;
+
     /* Shape Tokens (M3 Expressive) */
     --md-sys-shape-corner-xs: 0.5rem;
     --md-sys-shape-corner-sm: 0.75rem;

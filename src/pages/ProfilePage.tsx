@@ -50,10 +50,10 @@ export function ProfilePage() {
       <section className="page-section container m3-reveal">
         <div className="m3-card" style={{ maxInlineSize: '36rem', marginInline: 'auto', textAlign: 'center' }}>
           <Icon name="account_circle" size={48} className="m3-badge--blue" />
-          <h1 className="m3-headline-medium" style={{ marginBlock: '0.75rem 0.5rem' }}>
+          <h1 style={{ marginBlock: '0.75rem 0.5rem' }}>
             Acesse sua conta CAMBLU
           </h1>
-          <p className="m3-body-medium" style={{ marginInline: 'auto', marginBlockEnd: '1.25rem' }}>
+          <p className="text-muted" style={{ marginInline: 'auto', marginBlockEnd: '1.25rem' }}>
             A autenticação no portal é feita exclusivamente com sua conta Google para manter seus ingressos,
             certificados, assinatura do Clube e pedidos sincronizados.
           </p>
@@ -113,7 +113,7 @@ export function ProfilePage() {
             Conta Google conectada
           </span>
           <h1>Meu Perfil & Cadastro Acadêmico</h1>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Seus dados garantem emissão correta de certificados, transferência de ingressos via CPF e entrega na Lojinha.
           </p>
         </div>
@@ -132,7 +132,7 @@ export function ProfilePage() {
 
       <div className="grid-two">
         <form onSubmit={handleSubmit} className="m3-card" style={{ display: 'grid', gap: '1rem' }} noValidate>
-          <h2 className="m3-title-large">Dados Pessoais & Vínculo</h2>
+          <h2>Dados Pessoais & Vínculo</h2>
 
           <div className="m3-field">
             <label htmlFor="profile-name">Nome completo</label>
@@ -310,7 +310,7 @@ export function ProfilePage() {
               <Icon name="workspace_premium" size={16} />
               Clube CAMBLU
             </span>
-            <h2 className="m3-title-large" style={{ marginBlockEnd: '0.4rem' }}>
+            <h2 style={{ marginBlockEnd: '0.4rem' }}>
               {profile.membershipActive
                 ? `Plano ${profile.membershipTier.toUpperCase()} Ativo`
                 : 'Ainda sem assinatura ativa'}
@@ -329,7 +329,7 @@ export function ProfilePage() {
           </div>
 
           <div className="m3-card m3-card--tonal">
-            <h3 className="m3-title-medium" style={{ marginBlockEnd: '0.5rem' }}>
+            <h3 style={{ marginBlockEnd: '0.5rem' }}>
               Para que usamos cada dado?
             </h3>
             <ul style={{ margin: 0, paddingInlineStart: '1.2rem', display: 'grid', gap: '0.35rem' }} className="m3-body-medium">

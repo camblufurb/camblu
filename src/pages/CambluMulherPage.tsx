@@ -11,7 +11,7 @@ export function CambluMulherPage() {
           Acolhimento, Escuta e Sigilo
         </span>
         <h1>CAMBLU Mulher</h1>
-        <p className="m3-body-large" style={{ color: '#dceddf' }}>
+        <p style={{ color: '#dceddf' }}>
           {CAMBLU_MULHER_INFO.intro}
         </p>
         <p style={{ color: '#f1de97', fontWeight: 600 }}>{CAMBLU_MULHER_INFO.confidentiality}</p>
@@ -40,17 +40,17 @@ export function CambluMulherPage() {
       <div className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div>
           <h2>Tipos de Violência (Lei Maria da Penha — Lei nº 11.340)</h2>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Informação para reconhecer situações que violam direitos humanos e exigem denúncia e proteção.
           </p>
         </div>
         <div className="grid-cards">
           {CAMBLU_MULHER_INFO.violenceTypes.map((v) => (
             <article key={v.title} className="m3-card m3-card--tonal" style={{ padding: '1.1rem' }}>
-              <h3 className="m3-title-large" style={{ marginBlockEnd: '0.35rem' }}>
+              <h3 style={{ marginBlockEnd: '0.35rem' }}>
                 Violência {v.title}
               </h3>
-              <p className="m3-body-medium">{v.summary}</p>
+              <p className="text-muted">{v.summary}</p>
             </article>
           ))}
         </div>

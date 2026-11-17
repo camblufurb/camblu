@@ -55,10 +55,10 @@ export function MemberCardPage() {
     return (
       <section className="page-section container m3-reveal">
         <div className="m3-card" style={{ maxInlineSize: '36rem', marginInline: 'auto', textAlign: 'center' }}>
-          <h1 className="m3-headline-medium" style={{ marginBlockEnd: '0.5rem' }}>
+          <h1 style={{ marginBlockEnd: '0.5rem' }}>
             Cartão de Membro Clube CAMBLU
           </h1>
-          <p className="m3-body-medium" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
+          <p className="text-muted" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
             Entre com sua conta Google para exibir seu cartão interativo na cor do seu plano.
           </p>
           <button
@@ -92,7 +92,7 @@ export function MemberCardPage() {
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '1.75rem', placeItems: 'center' }}>
       <div style={{ textAlign: 'center', maxInlineSize: '40rem' }}>
         <h1>Cartão Digital do Membro</h1>
-        <p className="m3-body-medium">
+        <p className="text-muted">
           Mova seu celular ou passe o ponteiro sobre o cartão para ativar o reflexo holográfico (shimmer) do seu nível.
         </p>
       </div>

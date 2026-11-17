@@ -151,7 +151,7 @@ export function AdminInstitutionalTab() {
       {/* Gestões + Cropper 1:1 (10.1) */}
       <article className="m3-card" style={{ display: 'grid', gap: '1.15rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
-          <h2 className="m3-title-large">Histórico de Gestões & Cortador 1:1</h2>
+          <h2>Histórico de Gestões & Cortador 1:1</h2>
           <select
             className="m3-select"
             style={{ inlineSize: 'auto' }}
@@ -260,7 +260,7 @@ export function AdminInstitutionalTab() {
       {/* Editais (7) & Anais SECIMED (12.1) */}
       <div className="grid-two">
         <form onSubmit={handleSaveEdital} className="m3-card" style={{ display: 'grid', gap: '0.85rem' }}>
-          <h2 className="m3-title-large">Publicar Edital (PDF + Google Forms)</h2>
+          <h2>Publicar Edital (PDF + Google Forms)</h2>
           <div className="m3-field">
             <label htmlFor="ed-title">Título do edital</label>
             <input id="ed-title" className="m3-input" required value={edTitle} onChange={(e) => setEdTitle(e.target.value)} />
@@ -316,7 +316,7 @@ export function AdminInstitutionalTab() {
         </form>
 
         <form onSubmit={handleSaveAnais} className="m3-card" style={{ display: 'grid', gap: '0.85rem', alignContent: 'start' }}>
-          <h2 className="m3-title-large">Submeter Anais SECIMED (/secimed/anais-secimed)</h2>
+          <h2>Submeter Anais SECIMED (/secimed/anais-secimed)</h2>
           <div className="m3-field">
             <label htmlFor="an-title">Título da edição</label>
             <input id="an-title" className="m3-input" required value={anaisTitle} onChange={(e) => setAnaisTitle(e.target.value)} />
@@ -342,7 +342,7 @@ export function AdminInstitutionalTab() {
       {/* Ligas & Log de Demandas */}
       <div className="grid-two">
         <form onSubmit={handleAddLiga} className="m3-card" style={{ display: 'grid', gap: '0.85rem' }}>
-          <h2 className="m3-title-large">Adicionar Liga Acadêmica ({ligas.length})</h2>
+          <h2>Adicionar Liga Acadêmica ({ligas.length})</h2>
           <div className="grid-two">
             <div className="m3-field">
               <label htmlFor="lg-acr">Sigla</label>
@@ -369,15 +369,15 @@ export function AdminInstitutionalTab() {
         </form>
 
         <article className="m3-card" style={{ display: 'grid', gap: '0.75rem', alignContent: 'start' }}>
-          <h2 className="m3-title-large">Últimas Demandas Registradas ({demands.length})</h2>
+          <h2>Últimas Demandas Registradas ({demands.length})</h2>
           {demands.length === 0 ? (
-            <p className="m3-body-medium">Nenhuma demanda registrada nesta sessão ainda.</p>
+            <p className="text-muted">Nenhuma demanda registrada nesta sessão ainda.</p>
           ) : (
             <div style={{ display: 'grid', gap: '0.6rem' }}>
               {demands.map((d) => (
                 <div key={d.id} className="m3-card m3-card--tonal" style={{ padding: '0.85rem' }}>
                   <span className="m3-badge m3-badge--blue" style={{ marginBlockEnd: '0.25rem' }}>{d.topic}</span>
-                  <p style={{ fontSize: '0.9rem' }}>{d.message}</p>
+                  <p>{d.message}</p>
                   <span className="m3-body-medium" style={{ fontSize: '0.78rem' }}>
                     {d.anonymous ? 'Anônimo' : d.senderName || d.senderEmail} · {d.createdAt.slice(0, 10)}
                   </span>

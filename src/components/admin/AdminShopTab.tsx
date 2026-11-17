@@ -112,8 +112,8 @@ export function AdminShopTab() {
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
           <div>
-            <h2 className="m3-title-large">Checklist de Entregas da Lojinha (WhatsApp)</h2>
-            <p className="m3-body-medium">
+            <h2>Checklist de Entregas da Lojinha (WhatsApp)</h2>
+            <p className="text-muted">
               Controle entregas pendentes e abra conversa direta no WhatsApp do comprador.
             </p>
           </div>
@@ -197,7 +197,7 @@ export function AdminShopTab() {
 
       {/* Lançar Venda Externa / Doação (3.3) */}
       <form onSubmit={handleRegisterExternalOrDonation} className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
-        <h2 className="m3-title-large">Lançar Doação ou Venda Externa no Estoque</h2>
+        <h2>Lançar Doação ou Venda Externa no Estoque</h2>
         <div className="grid-cards">
           <div className="m3-field">
             <label htmlFor="ext-prod">Produto</label>
@@ -277,7 +277,7 @@ export function AdminShopTab() {
 
       {/* Adicionar Novo Produto */}
       <form onSubmit={handleSaveProduct} className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
-        <h2 className="m3-title-large">Cadastrar Novo Produto na Lojinha</h2>
+        <h2>Cadastrar Novo Produto na Lojinha</h2>
         <div className="grid-two">
           <div className="m3-field">
             <label htmlFor="p-name">Nome do produto</label>

@@ -69,7 +69,7 @@ export function AccountMenuButton() {
           onClose={() => setDemoDialogOpen(false)}
           title="Entrar com Google (Modo Pré-Deploy)"
         >
-          <p className="m3-body-medium" style={{ marginBlockEnd: '1rem' }}>
+          <p className="text-muted" style={{ marginBlockEnd: '1rem' }}>
             As variáveis públicas do Web App Firebase ainda não foram vinculadas neste ambiente local. Você
             pode testar toda a plataforma agora escolhendo um perfil simulado (ou conectar o projeto{' '}
             <code>camblu</code> assim que o Web App estiver ativo):

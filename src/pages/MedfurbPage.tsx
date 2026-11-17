@@ -25,7 +25,7 @@ export function MedfurbPage() {
           Curso de Medicina FURB · Desde {MEDFURB_DATA.foundedDate}
         </span>
         <h1 style={{ marginBlockEnd: '0.55rem' }}>Sobre a MEDFURB</h1>
-        <p className="m3-body-large" style={{ color: '#dceddf' }}>
+        <p style={{ color: '#dceddf' }}>
           São {MEDFURB_DATA.anniversaryYears} anos formando médicos clínicos gerais humanizados em Blumenau, com{' '}
           {MEDFURB_DATA.graduatedClasses} turmas formadas, Hospital Universitário próprio e o selo internacional
           SAEME.
@@ -68,7 +68,7 @@ export function MedfurbPage() {
               <li key={h}>{h}</li>
             ))}
           </ul>
-          <p className="m3-body-medium" style={{ color: '#2b2100' }}>
+          <p style={{ color: '#2b2100' }}>
             O processo envolveu autoavaliação institucional e avaliação presencial in loco por comissão formada por
             três médicos e representação estudantil (USP), seguindo parâmetros da Federação Mundial para Educação
             Médica.
@@ -79,7 +79,7 @@ export function MedfurbPage() {
       {tab === 'diretoria' && (
         <div className="grid-two">
           <div className="m3-card">
-            <h2 className="m3-title-large" style={{ marginBlockEnd: '0.9rem' }}>
+            <h2 style={{ marginBlockEnd: '0.9rem' }}>
               Diretoria & Coordenação FURB
             </h2>
             <div style={{ display: 'grid', gap: '0.65rem' }}>
@@ -102,7 +102,7 @@ export function MedfurbPage() {
           </div>
 
           <div className="m3-card">
-            <h2 className="m3-title-large" style={{ marginBlockEnd: '0.9rem' }}>
+            <h2 style={{ marginBlockEnd: '0.9rem' }}>
               Membros do Colegiado de Medicina
             </h2>
             <ul style={{ margin: 0, paddingInlineStart: '1.2rem', display: 'grid', gap: '0.45rem' }}>
@@ -116,7 +116,7 @@ export function MedfurbPage() {
 
       {tab === 'infraestrutura' && (
         <div className="m3-card">
-          <h2 className="m3-title-large" style={{ marginBlockEnd: '0.9rem' }}>
+          <h2 style={{ marginBlockEnd: '0.9rem' }}>
             Laboratórios, Hospitais & Espaços de Ensino
           </h2>
           <div className="grid-cards">
@@ -135,10 +135,10 @@ export function MedfurbPage() {
           {MEDFURB_DATA.studentAid.map((aid) => (
             <article key={aid.name} className="m3-card" style={{ display: 'grid', gap: '0.65rem', alignContent: 'space-between' }}>
               <div>
-                <h2 className="m3-title-large" style={{ marginBlockEnd: '0.45rem' }}>
+                <h2 style={{ marginBlockEnd: '0.45rem' }}>
                   {aid.name}
                 </h2>
-                <p className="m3-body-medium">{aid.summary}</p>
+                <p className="text-muted">{aid.summary}</p>
               </div>
               <a href={aid.url} target="_blank" rel="noreferrer" className="m3-btn m3-btn--outlined">
                 <Icon name="open_in_new" size={18} />
@@ -153,9 +153,9 @@ export function MedfurbPage() {
         <div className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
           <h2>Estágios Optativos (Internato)</h2>
           <p>{MEDFURB_DATA.optionalInternships.description}</p>
-          <p className="m3-body-medium">{MEDFURB_DATA.optionalInternships.tips}</p>
+          <p className="text-muted">{MEDFURB_DATA.optionalInternships.tips}</p>
           <div>
-            <h3 className="m3-title-medium" style={{ marginBlockEnd: '0.5rem' }}>
+            <h3 style={{ marginBlockEnd: '0.5rem' }}>
               Algumas instituições procuradas por acadêmicos MEDFURB:
             </h3>
             <ul style={{ margin: 0, paddingInlineStart: '1.2rem', display: 'grid', gap: '0.35rem' }}>
@@ -172,7 +172,7 @@ export function MedfurbPage() {
           <div className="m3-card" style={{ display: 'grid', gap: '0.75rem' }}>
             <h2>Trabalho de Conclusão de Curso (TCC)</h2>
             <p>{MEDFURB_DATA.tcc.description}</p>
-            <h3 className="m3-title-medium">Requisitos para escolha do orientador:</h3>
+            <h3>Requisitos para escolha do orientador:</h3>
             <ul style={{ margin: 0, paddingInlineStart: '1.2rem', display: 'grid', gap: '0.35rem' }}>
               {MEDFURB_DATA.tcc.requirements.map((r) => (
                 <li key={r}>{r}</li>
@@ -180,9 +180,9 @@ export function MedfurbPage() {
             </ul>
           </div>
           <div className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.6rem', alignContent: 'start' }}>
-            <h3 className="m3-title-large">Coordenação e Disciplinas de Pesquisa</h3>
+            <h3>Coordenação e Disciplinas de Pesquisa</h3>
             {MEDFURB_DATA.tcc.contacts.map((c) => (
-              <p key={c} className="m3-body-medium" style={{ color: 'var(--md-sys-color-on-surface)' }}>
+              <p key={c} style={{ color: 'var(--md-sys-color-on-surface)' }}>
                 {c}
               </p>
             ))}

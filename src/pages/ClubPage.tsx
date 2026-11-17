@@ -211,8 +211,8 @@ export function ClubPage() {
           <span className="m3-badge m3-badge--blue" style={{ justifySelf: 'start' }}>
             Em breve · Integração final
           </span>
-          <h2 className="m3-title-large">Parceria Spaiq & Gorit PRO</h2>
-          <p className="m3-body-medium">
+          <h2>Parceria Spaiq & Gorit PRO</h2>
+          <p className="text-muted">
             Todos os planos ativos do Clube CAMBLU (a partir do Comum) dão acesso aos benefícios integrados do Spaiq e
             Gorit PRO. O módulo de vinculação automática será conectado na etapa final junto com os parceiros usando a
             API aberta abaixo.
@@ -223,8 +223,8 @@ export function ClubPage() {
           <span className="m3-badge" style={{ justifySelf: 'start' }}>
             API Aberta para Desenvolvedores (Item 4.2)
           </span>
-          <h2 className="m3-title-large">Consultar Nível do Membro</h2>
-          <p className="m3-body-medium">
+          <h2>Consultar Nível do Membro</h2>
+          <p className="text-muted">
             Endpoint REST aberto retornando exclusivamente status não sensível (<code>active</code>,{' '}
             <code>tier</code> e <code>validUntil</code>) via CPF ou e-mail:
           </p>

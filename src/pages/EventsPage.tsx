@@ -127,9 +127,9 @@ export function EventsPage() {
                   <span className="m3-badge">{totalAvailable} vagas restantes</span>
                 </div>
 
-                <h2 className="m3-title-large">{ev.title}</h2>
-                <p className="m3-body-medium">{ev.locationShort}</p>
-                <p className="m3-body-medium" style={{ fontSize: '0.86rem' }}>
+                <h2>{ev.title}</h2>
+                <p className="text-muted">{ev.locationShort}</p>
+                <p className="text-muted">
                   {new Date(ev.startAt).toLocaleString('pt-BR', {
                     dateStyle: 'medium',
                     timeStyle: 'short',

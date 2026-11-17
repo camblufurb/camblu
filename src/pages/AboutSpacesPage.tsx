@@ -36,7 +36,7 @@ export function AboutSpacesPage() {
         </div>
 
         <div>
-          <h3 style={{ color: '#ffffff', fontSize: 'clamp(1.35rem, 2.2vw, 1.9rem)', marginBlockEnd: '0.5rem' }}>
+          <h3 style={{ color: '#ffffff', marginBlockEnd: '0.5rem' }}>
             {space.name}
           </h3>
           <p style={{ color: '#e8f1eb', marginBlockEnd: '0.85rem' }}>{space.description}</p>
@@ -77,7 +77,7 @@ export function AboutSpacesPage() {
           Institucional & Patrimônio
         </span>
         <h1 style={{ marginBlockEnd: '0.6rem' }}>Sobre o CAMBLU e Nossos Espaços</h1>
-        <p className="m3-body-large" style={{ color: '#dceddf' }}>
+        <p style={{ color: '#dceddf' }}>
           Fundado em 1990, o Centro Acadêmico de Medicina de Blumenau atua como ponte direta entre alunos,
           coordenação do curso, professores, DCE e conselhos superiores — além de manter três espaços físicos
           exclusivos no Edifício Cristina.
@@ -90,7 +90,7 @@ export function AboutSpacesPage() {
             Patrimônio Estudantil · Edifício Cristina
           </span>
           <h2>Espaços do CAMBLU (Carrossel Interativo)</h2>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Solicite a senha atualizada de acesso diretamente com um integrante da gestão ou pelo Instagram{' '}
             <a href="https://www.instagram.com/camblufurb/" target="_blank" rel="noreferrer">
               @camblufurb
@@ -104,7 +104,7 @@ export function AboutSpacesPage() {
 
       <div className="grid-two">
         <div className="m3-card">
-          <h2 className="m3-title-large" style={{ marginBlockEnd: '0.75rem' }}>
+          <h2 style={{ marginBlockEnd: '0.75rem' }}>
             Objetivos Estatutários
           </h2>
           <ul style={{ margin: 0, paddingInlineStart: '1.2rem', display: 'grid', gap: '0.5rem' }}>
@@ -115,8 +115,8 @@ export function AboutSpacesPage() {
         </div>
 
         <div className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.9rem', alignContent: 'start' }}>
-          <h2 className="m3-title-large">Participe das Reuniões & Conheça a FURB</h2>
-          <p className="m3-body-medium">
+          <h2>Participe das Reuniões & Conheça a FURB</h2>
+          <p className="text-muted">
             Todas as pautas acadêmicas são debatidas de forma democrática em reuniões semanais abertas. Você também
             pode enviar sugestões ou problemas de turma diretamente pela página de demandas.
           </p>

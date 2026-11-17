@@ -66,7 +66,7 @@ export function ManualCalouroPage() {
       {/* Checklist interativo */}
       <div className="m3-card m3-card--gold" style={{ display: 'grid', gap: '0.85rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <h2 className="m3-title-large">Checklist dos Primeiros Passos</h2>
+          <h2>Checklist dos Primeiros Passos</h2>
           <span className="m3-badge m3-badge--blue">
             {checked.length} de {FRESHMAN_CHECKLIST.length} concluídos
           </span>
@@ -152,14 +152,14 @@ export function ManualCalouroPage() {
                   <Icon name={chap.icon} size={22} />
                 </div>
                 <div>
-                  <h2 className="m3-title-large">{chap.title}</h2>
-                  <p className="m3-body-medium">{chap.summary}</p>
+                  <h2>{chap.title}</h2>
+                  <p className="text-muted">{chap.summary}</p>
                 </div>
               </div>
 
               {chap.blocks.map((block) => (
                 <div key={block.heading} style={{ display: 'grid', gap: '0.55rem' }}>
-                  <h3 className="m3-title-medium" style={{ color: 'var(--md-sys-color-primary)' }}>
+                  <h3 style={{ color: 'var(--md-sys-color-primary)' }}>
                     {block.heading}
                   </h3>
                   {block.paragraphs.map((p) => (

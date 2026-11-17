@@ -37,7 +37,7 @@ function MemberCard({
 
       <div style={{ display: 'grid', gap: '0.25rem' }}>
         <span className={`m3-badge ${featured ? 'm3-badge--blue' : ''}`}>{member.cargo}</span>
-        <h3 className={featured ? 'm3-title-large' : 'm3-title-medium'}>{member.name}</h3>
+        <h3>{member.name}</h3>
         {member.instagram && (
           <a
             href={
@@ -107,7 +107,7 @@ export function GestoesPage() {
 
       {/* Presidência e Tesouraria no topo */}
       <div>
-        <h2 className="m3-title-large" style={{ marginBlockEnd: '1rem' }}>
+        <h2 style={{ marginBlockEnd: '1rem' }}>
           Presidência & Tesouraria
         </h2>
         <div
@@ -125,7 +125,7 @@ export function GestoesPage() {
 
       {/* Demais Diretorias & Treineiros abaixo */}
       <div>
-        <h2 className="m3-title-large" style={{ marginBlockEnd: '1rem' }}>
+        <h2 style={{ marginBlockEnd: '1rem' }}>
           Diretorias & Integrantes
         </h2>
         <div className="grid-cards">
@@ -137,7 +137,7 @@ export function GestoesPage() {
 
       {currentTerm.proposals && currentTerm.proposals.length > 0 && (
         <div className="m3-card m3-card--tonal">
-          <h2 className="m3-title-large" style={{ marginBlockEnd: '0.65rem' }}>
+          <h2 style={{ marginBlockEnd: '0.65rem' }}>
             Principais Propostas da {currentTerm.chapaName}
           </h2>
           <ul style={{ margin: 0, paddingInlineStart: '1.2rem', display: 'grid', gap: '0.35rem' }}>

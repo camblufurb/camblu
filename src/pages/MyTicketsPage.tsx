@@ -50,10 +50,10 @@ export function MyTicketsPage() {
     return (
       <section className="page-section container m3-reveal">
         <div className="m3-card" style={{ maxInlineSize: '36rem', marginInline: 'auto', textAlign: 'center' }}>
-          <h1 className="m3-headline-medium" style={{ marginBlockEnd: '0.5rem' }}>
+          <h1 style={{ marginBlockEnd: '0.5rem' }}>
             Entre para ver seus Ingressos
           </h1>
-          <p className="m3-body-medium" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
+          <p className="text-muted" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
             Seus QR Codes de acesso e a transferência de ingressos por CPF ficam vinculados à sua conta Google.
           </p>
           <button
@@ -148,7 +148,7 @@ export function MyTicketsPage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h1>Meus Ingressos & QR Codes</h1>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Apresente cada QR Code na entrada ou sessão correspondente para contabilizar suas horas de certificado.
           </p>
         </div>
@@ -167,10 +167,10 @@ export function MyTicketsPage() {
       {myTickets.length === 0 ? (
         <div className="m3-card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
           <Icon name="confirmation_number" size={44} />
-          <h2 className="m3-title-large" style={{ marginBlock: '0.5rem' }}>
+          <h2 style={{ marginBlock: '0.5rem' }}>
             Nenhum ingresso encontrado
           </h2>
-          <p className="m3-body-medium" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
+          <p className="text-muted" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
             Seus ingressos adquiridos ou transferidos via CPF aparecerão aqui automaticamente.
           </p>
           <Link to="/eventos" className="m3-btn m3-btn--filled">
@@ -190,7 +190,7 @@ export function MyTicketsPage() {
                       <span className="m3-badge m3-badge--blue">{ticket.lotName}</span>
                       <span className="m3-badge">Titular: {ticket.ownerName}</span>
                     </div>
-                    <h2 className="m3-title-large">{ticket.eventTitle}</h2>
+                    <h2>{ticket.eventTitle}</h2>
                     {ticket.discountReason && (
                       <span className="m3-body-medium" style={{ display: 'block', marginBlockStart: '0.2rem' }}>
                         {ticket.discountReason}
@@ -269,7 +269,7 @@ export function MyTicketsPage() {
       >
         {transferTargetTicket && (
           <form onSubmit={handleTransferSubmit} style={{ display: 'grid', gap: '1rem' }} noValidate>
-            <p className="m3-body-medium">
+            <p className="text-muted">
               Você está transferindo <strong>{transferTargetTicket.eventTitle}</strong> ({transferTargetTicket.lotName}).
               O destinatário precisa possuir uma conta cadastrada neste portal com o CPF informado.
             </p>

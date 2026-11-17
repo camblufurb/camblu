@@ -233,8 +233,8 @@ export function ShopPage() {
                   </span>
                 </div>
 
-                <h2 className="m3-title-large">{prod.name}</h2>
-                <p className="m3-body-medium">{prod.description}</p>
+                <h2>{prod.name}</h2>
+                <p className="text-muted">{prod.description}</p>
               </div>
 
               <div
@@ -287,7 +287,7 @@ export function ShopPage() {
       >
         {selectedProduct && (
           <div style={{ display: 'grid', gap: '1rem' }}>
-            <p className="m3-body-medium">{selectedProduct.description}</p>
+            <p className="text-muted">{selectedProduct.description}</p>
 
             <div style={{ display: 'grid', gap: '0.5rem' }}>
               <span className="m3-label-large">Selecione o tamanho</span>
@@ -325,7 +325,7 @@ export function ShopPage() {
       {/* Modal da Sacola / Checkout Stripe */}
       <M3Dialog open={cartOpen} onClose={() => setCartOpen(false)} title="Minha Sacola — Lojinha CAMBLU">
         {cart.length === 0 ? (
-          <p className="m3-body-medium">Sua sacola está vazia.</p>
+          <p className="text-muted">Sua sacola está vazia.</p>
         ) : (
           <div style={{ display: 'grid', gap: '1rem' }}>
             {cart.map((item) => (

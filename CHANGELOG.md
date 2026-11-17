@@ -2,6 +2,10 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.6.3] - 2026-11-17
+### Alterado
+- Padronização tipográfica global em `src/styles/tokens.css`, `src/styles/base.css` e 28 componentes/páginas (`h1`, `h2`, `h3` e `p`), garantindo exatamente o mesmo tamanho de fonte (`--font-size-h1`, `--font-size-h2`, `--font-size-h3`, `--font-size-p`) por tipo semântico em todo o portal, além da adição de `<meta name="text-scale" content="scale" />` no `index.html`.
+
 ## [0.6.2] - 2026-11-17
 ### Adicionado
 - Integração das logos oficiais reais em `assets/img/`: brasões do CAMBLU (`logo_color.png` e `logo_clean.png` como favicon, OpenGraph, cabeçalho, hero e rodapé) e logotipos oficiais dos patrocinadores (**Unicred**, **Fruki Bebidas** e **Balsaneli Contabilidade**) no `SponsorsStrip`.

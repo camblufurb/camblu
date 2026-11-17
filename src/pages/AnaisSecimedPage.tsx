@@ -36,7 +36,7 @@ export function AnaisSecimedPage() {
         </div>
 
         <h1>Anais da Semana Científica de Medicina (SECIMED)</h1>
-        <p className="m3-body-large" style={{ color: '#dceddf' }}>
+        <p style={{ color: '#dceddf' }}>
           Publicação científica oficial do curso de Medicina da FURB reunindo os trabalhos e resumos aprovados e
           apresentados na SECIMED, promovendo ciência aberta e intercâmbio acadêmico gratuito.
         </p>
@@ -58,7 +58,7 @@ export function AnaisSecimedPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
           <div>
             <h2>Edições Publicadas (PDF)</h2>
-            <p className="m3-body-medium">Anais submetidos e indexados pela Comissão Editorial do CAMBLU.</p>
+            <p className="text-muted">Anais submetidos e indexados pela Comissão Editorial do CAMBLU.</p>
           </div>
           <input
             type="search"
@@ -79,10 +79,10 @@ export function AnaisSecimedPage() {
                   <span className="m3-badge m3-badge--blue">{ed.year}</span>
                   <span className="m3-badge">ISSN {ed.issn}</span>
                 </div>
-                <h3 className="m3-title-large" style={{ marginBlockEnd: '0.35rem' }}>
+                <h3 style={{ marginBlockEnd: '0.35rem' }}>
                   {ed.editionTitle}
                 </h3>
-                <p className="m3-body-medium">{ed.summary}</p>
+                <p className="text-muted">{ed.summary}</p>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
                 <a href={ed.pdfUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--filled">
@@ -112,10 +112,10 @@ export function AnaisSecimedPage() {
               </li>
             ))}
           </ul>
-          <h3 className="m3-title-medium" style={{ marginBlockStart: '0.5rem' }}>
+          <h3 style={{ marginBlockStart: '0.5rem' }}>
             Política Editorial & Direitos Autorais
           </h3>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Submissões de ensino, extensão e pesquisa em acesso aberto imediato sob licença{' '}
             <strong>{SECIMED_INFO.license}</strong>, sem cobrança de taxas (APCs), com direitos mantidos pelos autores.
           </p>
@@ -123,7 +123,7 @@ export function AnaisSecimedPage() {
 
         <div className="m3-card" style={{ display: 'grid', gap: '0.75rem' }}>
           <h2>Revisão Duplo-Cega por Pares (10 Critérios)</h2>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Após triagem inicial (Desk Review), cada resumo passa por dois pareceristas independentes avaliando 0 /
             0,5 / 1,0 ponto por critério:
           </p>

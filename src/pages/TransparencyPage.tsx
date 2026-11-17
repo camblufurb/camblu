@@ -116,8 +116,8 @@ export function TransparencyPage() {
       <div className="grid-two">
         <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
           <div>
-            <h2 className="m3-title-large">Entradas x Saídas por Mês / SECIMED</h2>
-            <p className="m3-body-medium">Comparativo mensal do fluxo de caixa operacional.</p>
+            <h2>Entradas x Saídas por Mês / SECIMED</h2>
+            <p className="text-muted">Comparativo mensal do fluxo de caixa operacional.</p>
           </div>
           <div style={{ display: 'grid', gap: '0.65rem' }}>
             {monthlyStats.map((m) => (
@@ -155,8 +155,8 @@ export function TransparencyPage() {
 
         <article className="m3-card" style={{ display: 'grid', gap: '1rem', alignContent: 'start' }}>
           <div>
-            <h2 className="m3-title-large">Gastos por Categoria</h2>
-            <p className="m3-body-medium">Distribuição das despesas entre projetos e custeio.</p>
+            <h2>Gastos por Categoria</h2>
+            <p className="text-muted">Distribuição das despesas entre projetos e custeio.</p>
           </div>
           <div style={{ display: 'grid', gap: '0.75rem' }}>
             {categoryTotals.map((c) => (
@@ -191,8 +191,8 @@ export function TransparencyPage() {
       {/* Heatmap de Meses com mais Entradas e Saídas */}
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div>
-          <h2 className="m3-title-large">Heatmap de Intensidade Financeira por Mês</h2>
-          <p className="m3-body-medium">
+          <h2>Heatmap de Intensidade Financeira por Mês</h2>
+          <p className="text-muted">
             Intensidade visual indicando os meses com maior volume de entradas e saídas.
           </p>
         </div>
@@ -248,7 +248,7 @@ export function TransparencyPage() {
       {/* Movimentações Detalhadas */}
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
-          <h2 className="m3-title-large">Movimentações Registradas</h2>
+          <h2>Movimentações Registradas</h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             <select
               className="m3-select"

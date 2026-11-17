@@ -124,8 +124,8 @@ export function LigasPage() {
                 <span className="m3-badge" style={{ marginBlockEnd: '0.35rem' }}>
                   {liga.area}
                 </span>
-                <h2 className="m3-title-large">{liga.acronym}</h2>
-                <p className="m3-body-medium">{liga.name}</p>
+                <h2>{liga.acronym}</h2>
+                <p className="text-muted">{liga.name}</p>
               </div>
             </div>
 

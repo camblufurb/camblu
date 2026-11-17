@@ -68,7 +68,7 @@ export function SecimedPage() {
         </div>
 
         <h1>Semana Científica de Medicina — SECIMED</h1>
-        <p className="m3-body-large" style={{ color: '#dceddf' }}>
+        <p style={{ color: '#dceddf' }}>
           Organizada anualmente pelo CAMBLU desde 2002, a SECIMED reúne cinco dias de ciência médica, apresentações
           de trabalhos acadêmicos (banners e comunicações orais), palestras, rodas de conversa, coffee breaks e
           workshops conduzidos pelas ligas acadêmicas.

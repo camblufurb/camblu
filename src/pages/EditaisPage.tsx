@@ -64,8 +64,8 @@ export function EditaisPage() {
                     Prazo: {ed.deadline}
                   </span>
                 </div>
-                <h2 className="m3-title-large">{ed.title}</h2>
-                <p className="m3-body-medium">{ed.summary}</p>
+                <h2>{ed.title}</h2>
+                <p className="text-muted">{ed.summary}</p>
               </div>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>

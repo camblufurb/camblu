@@ -260,8 +260,8 @@ export function AdminEventsTab() {
     <div style={{ display: 'grid', gap: '2rem' }}>
       {/* Leitor de QR Code na Portaria */}
       <article className="m3-card m3-card--gold" style={{ display: 'grid', gap: '1rem' }}>
-        <h2 className="m3-title-large">Validação de Ingressos & Presença por QR Code</h2>
-        <p className="m3-body-medium" style={{ color: '#2b2100' }}>
+        <h2>Validação de Ingressos & Presença por QR Code</h2>
+        <p style={{ color: '#2b2100' }}>
           Leia o QR Code do participante com a câmera ou digite o código abaixo para validar entrada e liberar horas
           de certificado automaticamente.
         </p>
@@ -300,7 +300,7 @@ export function AdminEventsTab() {
 
       {/* Criar Novo Evento */}
       <form onSubmit={handleCreateEvent} className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
-        <h2 className="m3-title-large">Criar Novo Evento (Lotes, QR Codes & Carga Horária)</h2>
+        <h2>Criar Novo Evento (Lotes, QR Codes & Carga Horária)</h2>
 
         <div className="grid-two">
           <div className="m3-field">
@@ -487,8 +487,8 @@ export function AdminEventsTab() {
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
           <div>
-            <h2 className="m3-title-large">Editor Visual de Certificados (Template PNG do Canva)</h2>
-            <p className="m3-body-medium">
+            <h2>Editor Visual de Certificados (Template PNG do Canva)</h2>
+            <p className="text-muted">
               Exporte sua arte do Canva em <strong>PNG de alta resolução (A4 paisagem)</strong>, selecione um campo e
               clique na imagem onde o dado deve aparecer.
             </p>
@@ -577,7 +577,7 @@ export function AdminEventsTab() {
 
       {/* Lista rápida de eventos existentes */}
       <article className="m3-card">
-        <h3 className="m3-title-medium" style={{ marginBlockEnd: '0.75rem' }}>
+        <h3 style={{ marginBlockEnd: '0.75rem' }}>
           Eventos Cadastrados ({events.length})
         </h3>
         <div style={{ display: 'grid', gap: '0.5rem' }}>

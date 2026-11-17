@@ -40,7 +40,7 @@ export function M3Dialog({ open, onClose, title, wide = false, children }: M3Dia
     >
       <div className="m3-dialog-inner">
         <header className="m3-dialog-header">
-          <h2 id={titleId} className="m3-title-large">
+          <h2 id={titleId}>
             {title}
           </h2>
           <button

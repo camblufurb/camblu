@@ -149,7 +149,7 @@ export function CertificatesPage() {
               </p>
             </div>
           ) : (
-            <p className="m3-body-medium">Nenhum certificado localizado com o código informado.</p>
+            <p className="text-muted">Nenhum certificado localizado com o código informado.</p>
           )}
         </div>
       </section>
@@ -160,10 +160,10 @@ export function CertificatesPage() {
     return (
       <section className="page-section container m3-reveal">
         <div className="m3-card" style={{ maxInlineSize: '36rem', marginInline: 'auto', textAlign: 'center' }}>
-          <h1 className="m3-headline-medium" style={{ marginBlockEnd: '0.5rem' }}>
+          <h1 style={{ marginBlockEnd: '0.5rem' }}>
             Acesse sua área de Certificados
           </h1>
-          <p className="m3-body-medium" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
+          <p className="text-muted" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
             Entre com sua conta Google para visualizar e baixar seus certificados em PDF ou PNG.
           </p>
           <button
@@ -188,7 +188,7 @@ export function CertificatesPage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
         <div>
           <h1>Meus Certificados Automáticos</h1>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Gerados automaticamente após a leitura de presença dos QR Codes do evento. Exporte em PDF (para AACCs) ou PNG.
           </p>
         </div>
@@ -201,10 +201,10 @@ export function CertificatesPage() {
       {myCerts.length === 0 ? (
         <div className="m3-card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
           <Icon name="workspace_premium" size={44} />
-          <h2 className="m3-title-large" style={{ marginBlock: '0.5rem' }}>
+          <h2 style={{ marginBlock: '0.5rem' }}>
             Nenhum certificado emitido ainda
           </h2>
-          <p className="m3-body-medium" style={{ marginInline: 'auto' }}>
+          <p className="text-muted" style={{ marginInline: 'auto' }}>
             Assim que a equipe CAMBLU validar o QR Code do seu ingresso durante o evento, suas horas aparecerão aqui.
           </p>
         </div>
@@ -220,7 +220,7 @@ export function CertificatesPage() {
                       <Icon name="verified" size={15} />
                       {cert.totalHours}h registradas · {cert.code}
                     </span>
-                    <h2 className="m3-title-large">{cert.eventTitle}</h2>
+                    <h2>{cert.eventTitle}</h2>
                     <span className="m3-body-medium">{cert.eventDateLabel}</span>
                   </div>
 

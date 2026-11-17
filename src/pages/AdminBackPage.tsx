@@ -23,7 +23,7 @@ export function AdminBackPage() {
         <div className="m3-card" style={{ maxInlineSize: '38rem', marginInline: 'auto', textAlign: 'center', display: 'grid', gap: '1rem' }}>
           <Icon name="admin_panel_settings" size={48} className="m3-badge--blue" />
           <h1>Painel Administrativo (/back)</h1>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Acesso restrito exclusivamente à conta Google oficial <strong>{ADMIN_EMAIL}</strong>.
           </p>
           <button
@@ -44,10 +44,10 @@ export function AdminBackPage() {
       <section className="page-section container m3-reveal">
         <div className="m3-card m3-card--tonal" style={{ maxInlineSize: '38rem', marginInline: 'auto', textAlign: 'center' }}>
           <Icon name="gpp_bad" size={44} className="m3-badge--error" />
-          <h1 className="m3-headline-medium" style={{ marginBlock: '0.6rem 0.4rem' }}>
+          <h1 style={{ marginBlock: '0.6rem 0.4rem' }}>
             Acesso Restrito à Diretoria
           </h1>
-          <p className="m3-body-medium">
+          <p className="text-muted">
             Você está conectado como <strong>{profile.email}</strong>. Apenas <strong>{ADMIN_EMAIL}</strong> pode
             editar eventos, ler QR codes, gerenciar estoque e visualizar o saldo financeiro no painel <code>/back</code>.
           </p>

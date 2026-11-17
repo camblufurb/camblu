@@ -35,7 +35,7 @@ export function EventDetailPage() {
       <section className="page-section container">
         <div className="m3-card">
           <h1>Evento não encontrado</h1>
-          <p className="m3-body-medium" style={{ marginBlock: '0.5rem 1rem' }}>
+          <p className="text-muted" style={{ marginBlock: '0.5rem 1rem' }}>
             O evento solicitado pode ter sido encerrado ou movido.
           </p>
           <Link to="/eventos" className="m3-btn m3-btn--filled">
@@ -205,7 +205,7 @@ export function EventDetailPage() {
             </div>
 
             <h1>{event.title}</h1>
-            <p className="m3-body-large">{event.description}</p>
+            <p>{event.description}</p>
 
             <div
               style={{
@@ -236,7 +236,7 @@ export function EventDetailPage() {
 
             {event.mode === 'virtual' && (
               <div className="m3-card m3-card--tonal">
-                <h2 className="m3-title-medium" style={{ marginBlockEnd: '0.35rem' }}>
+                <h2 style={{ marginBlockEnd: '0.35rem' }}>
                   Acesso à Sala Virtual
                 </h2>
                 {revealVirtualLink ? (
@@ -245,7 +245,7 @@ export function EventDetailPage() {
                     <span>Entrar na transmissão agora</span>
                   </a>
                 ) : (
-                  <p className="m3-body-medium">
+                  <p className="text-muted">
                     O link de acesso fica visível aqui para portadores de ingresso próximo ao horário do evento.
                   </p>
                 )}
@@ -255,7 +255,7 @@ export function EventDetailPage() {
         </div>
 
         <aside className="m3-card" style={{ display: 'grid', gap: '1.15rem', alignContent: 'start' }}>
-          <h2 className="m3-title-large">Escolha seu Lote & QR Codes</h2>
+          <h2>Escolha seu Lote & QR Codes</h2>
 
           <div style={{ display: 'grid', gap: '0.65rem' }}>
             {event.lots.map((lot) => {

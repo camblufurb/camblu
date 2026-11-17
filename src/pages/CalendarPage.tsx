@@ -95,7 +95,7 @@ export function CalendarPage() {
         </div>
 
         <div className="m3-card" style={{ display: 'grid', gap: '0.9rem', alignContent: 'start' }}>
-          <h2 className="m3-title-large">Próximos Marcos no Portal</h2>
+          <h2>Próximos Marcos no Portal</h2>
           <div style={{ display: 'grid', gap: '0.65rem' }}>
             {agendaItems.map((item) => (
               <Link

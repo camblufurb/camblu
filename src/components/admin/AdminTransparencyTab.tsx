@@ -155,7 +155,7 @@ export function AdminTransparencyTab() {
 
       {/* Planilha de Lançamento (5.1) */}
       <form onSubmit={handleAddEntry} className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
-        <h2 className="m3-title-large">Planilha Financeira (Lançar Movimentação)</h2>
+        <h2>Planilha Financeira (Lançar Movimentação)</h2>
 
         <div className="grid-cards">
           <div className="m3-field">
@@ -276,8 +276,8 @@ export function AdminTransparencyTab() {
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
           <div>
-            <h2 className="m3-title-large">Exportador das 4 Imagens do Post Mensal (Instagram 1080×1350)</h2>
-            <p className="m3-body-medium">
+            <h2>Exportador das 4 Imagens do Post Mensal (Instagram 1080×1350)</h2>
+            <p className="text-muted">
               Gera automaticamente o carrossel de 4 cards da transparência todo dia 1º de cada mês.
             </p>
           </div>
