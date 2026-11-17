@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useI18n } from '../i18n/i18n';
 import logoColorUrl from '../../assets/logos/logo_color.png';
 import logoCleanUrl from '../../assets/logos/logo_clean.png';
@@ -36,101 +37,87 @@ export function CambluCrest({
   );
 }
 
+/**
+ * Displays institutional partner and sponsor badges reliably across light and dark footers.
+ */
 export function SponsorsStrip({ variant = 'surface', compact = false }: SponsorsStripProps) {
   const { t } = useI18n();
+  const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({});
   const isDark = variant === 'dark';
   const mutedColor = isDark ? '#b9cec2' : 'var(--md-sys-color-on-surface-variant)';
+
+  const markFailed = (key: string) => {
+    setFailedLogos((prev) => ({ ...prev, [key]: true }));
+  };
 
   return (
     <aside
       aria-label={t('sponsors.label')}
       className={`sponsors-strip ${isDark ? 'sponsors-strip--dark' : ''}`}
-      style={{ paddingBlock: compact ? '0.8rem' : '1.05rem' }}
+      style={{ paddingBlock: compact ? '0.85rem' : '1.05rem' }}
     >
       <span
         className="m3-label-small"
-        style={{ color: mutedColor, marginInlineEnd: '0.35rem' }}
+        style={{ color: mutedColor, marginInlineEnd: '0.25rem' }}
       >
         {t('sponsors.label')}
       </span>
 
-      {/* Unicred */}
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '0.45rem 0.9rem',
-          borderRadius: '9999px',
-          background: '#ffffff',
-          border: '1px solid var(--md-sys-color-outline-variant)',
-          boxShadow: 'var(--elevation-1)',
-          minBlockSize: '40px',
-        }}
-      >
-        <img
-          src={unicredUrl}
-          alt="Unicred"
-          width={114}
-          height={21}
-          loading="lazy"
-          decoding="async"
-          style={{ inlineSize: 'auto', blockSize: '20px', objectFit: 'contain' }}
-        />
-      </div>
+      <div className="sponsors-logos-row">
+        {/* Unicred */}
+        <div className="sponsor-pill sponsor-pill--light">
+          {!failedLogos.unicred ? (
+            <img
+              src={unicredUrl}
+              alt="Unicred"
+              width={114}
+              height={21}
+              loading="eager"
+              decoding="sync"
+              onError={() => markFailed('unicred')}
+              style={{ inlineSize: '114px', blockSize: '21px', objectFit: 'contain', flexShrink: 0 }}
+            />
+          ) : (
+            <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#0f3325' }}>Unicred</span>
+          )}
+        </div>
 
-      {/* Fruki Bebidas */}
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '0.45rem 0.9rem',
-          borderRadius: '9999px',
-          background: '#ffffff',
-          border: '1px solid var(--md-sys-color-outline-variant)',
-          boxShadow: 'var(--elevation-1)',
-          minBlockSize: '40px',
-        }}
-      >
-        <img
-          src={frukiUrl}
-          alt="Fruki Bebidas"
-          width={136}
-          height={21}
-          loading="lazy"
-          decoding="async"
-          style={{ inlineSize: 'auto', blockSize: '21px', objectFit: 'contain' }}
-        />
-      </div>
+        {/* Fruki Bebidas */}
+        <div className="sponsor-pill sponsor-pill--light">
+          {!failedLogos.fruki ? (
+            <img
+              src={frukiUrl}
+              alt="Fruki Bebidas"
+              width={136}
+              height={21}
+              loading="eager"
+              decoding="sync"
+              onError={() => markFailed('fruki')}
+              style={{ inlineSize: '136px', blockSize: '21px', objectFit: 'contain', flexShrink: 0 }}
+            />
+          ) : (
+            <span style={{ fontWeight: 800, fontSize: '0.86rem', color: '#146c43' }}>Fruki Bebidas</span>
+          )}
+        </div>
 
-      {/* Balsaneli Contabilidade */}
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.3rem 0.9rem 0.3rem 0.45rem',
-          borderRadius: '9999px',
-          background: '#142a22',
-          color: '#ffffff',
-          border: '1px solid rgb(237 209 110 / 0.35)',
-          boxShadow: 'var(--elevation-1)',
-          minBlockSize: '40px',
-        }}
-      >
-        <img
-          src={balsanelliUrl}
-          alt="Balsaneli Contabilidade"
-          width={28}
-          height={27}
-          loading="lazy"
-          decoding="async"
-          style={{ inlineSize: '28px', blockSize: '27px', objectFit: 'contain' }}
-        />
-        <span style={{ fontWeight: 700, fontSize: '0.86rem', color: '#f1de97', whiteSpace: 'nowrap' }}>
-          Balsaneli Contabilidade
-        </span>
+        {/* Balsaneli Contabilidade */}
+        <div className="sponsor-pill sponsor-pill--dark">
+          {!failedLogos.balsanelli && (
+            <img
+              src={balsanelliUrl}
+              alt="Balsaneli Contabilidade"
+              width={28}
+              height={27}
+              loading="eager"
+              decoding="sync"
+              onError={() => markFailed('balsanelli')}
+              style={{ inlineSize: '28px', blockSize: '27px', objectFit: 'contain', flexShrink: 0 }}
+            />
+          )}
+          <span style={{ fontWeight: 700, fontSize: '0.86rem', color: '#f1de97', whiteSpace: 'nowrap' }}>
+            Balsaneli Contabilidade
+          </span>
+        </div>
       </div>
     </aside>
   );

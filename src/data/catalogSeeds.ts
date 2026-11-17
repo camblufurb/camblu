@@ -21,6 +21,12 @@ export const EVENTS_SEED: CambluEvent[] = [
     category: 'secimed',
     isSecimed: true,
     hasCoffee: true,
+    secimedPalette: {
+      primary: '#5f2841',
+      secondary1: '#dc8987',
+      secondary2: '#a0af6c',
+      background: '#f2efe6',
+    },
     startAt: '2026-10-19T18:30:00-03:00',
     endAt: '2026-10-23T22:00:00-03:00',
     published: true,

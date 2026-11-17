@@ -7,6 +7,7 @@ import type { MembershipCycle, MembershipTier, TShirtSize, UserAffiliation, User
 
 const DEMO_USER_STORAGE = 'camblu.demo.user';
 const DEMO_REGISTRY_STORAGE = 'camblu.demo.userRegistry';
+const DEMO_AVATAR_URL = '/demo-google-avatar.svg';
 
 export interface ProfileInput {
   name: string;
@@ -38,6 +39,7 @@ const INITIAL_DEMO_REGISTRY: UserProfile[] = [
     uid: 'demo-student-1',
     name: 'Marina Souza',
     email: 'marina.demo@furb.br',
+    photoURL: DEMO_AVATAR_URL,
     cpf: '52998224725',
     phone: '47999887766',
     affiliation: 'FURB',
@@ -57,6 +59,7 @@ const INITIAL_DEMO_REGISTRY: UserProfile[] = [
     uid: 'demo-student-2',
     name: 'Lucas Pereira',
     email: 'lucas.demo@furb.br',
+    photoURL: DEMO_AVATAR_URL,
     cpf: '39053344705',
     phone: '47991112233',
     affiliation: 'FURB',
@@ -71,13 +74,78 @@ const INITIAL_DEMO_REGISTRY: UserProfile[] = [
     createdAt: '2026-06-15T10:00:00.000Z',
     updatedAt: '2026-11-01T10:00:00.000Z',
   },
+  {
+    uid: 'demo-student-3',
+    name: 'Camila Zimmermann',
+    email: 'camila.z@furb.br',
+    photoURL: DEMO_AVATAR_URL,
+    cpf: '61428910032',
+    phone: '47992345678',
+    affiliation: 'FURB',
+    turma: '60',
+    isCalouro: false,
+    membershipTier: 'epico',
+    membershipCycle: 'mensal',
+    membershipActive: true,
+    membershipValidUntil: '2026-12-20T00:00:00.000Z',
+    role: 'student',
+    profileCompleted: true,
+    createdAt: '2026-07-10T10:00:00.000Z',
+    updatedAt: '2026-11-02T10:00:00.000Z',
+  },
+  {
+    uid: 'demo-student-4',
+    name: 'Gabriel Tavares',
+    email: 'gabriel.t@furb.br',
+    photoURL: DEMO_AVATAR_URL,
+    cpf: '47829130019',
+    phone: '47993456789',
+    affiliation: 'FURB',
+    turma: '63',
+    isCalouro: true,
+    tshirtSize: 'G',
+    membershipTier: 'comum',
+    membershipCycle: 'semestral',
+    membershipActive: true,
+    membershipValidUntil: '2027-02-28T00:00:00.000Z',
+    role: 'student',
+    profileCompleted: true,
+    createdAt: '2026-08-05T10:00:00.000Z',
+    updatedAt: '2026-10-15T10:00:00.000Z',
+  },
+  {
+    uid: 'demo-student-5',
+    name: 'Beatriz Kretzer',
+    email: 'beatriz.k@furb.br',
+    photoURL: DEMO_AVATAR_URL,
+    cpf: '88234150021',
+    phone: '47994567890',
+    affiliation: 'FURB',
+    turma: '62',
+    isCalouro: false,
+    membershipTier: 'none',
+    membershipActive: false,
+    membershipValidUntil: null,
+    role: 'student',
+    profileCompleted: true,
+    createdAt: '2026-09-12T10:00:00.000Z',
+    updatedAt: '2026-10-20T10:00:00.000Z',
+  },
 ];
+
+function withDemoAvatar(user: UserProfile): UserProfile {
+  return user.photoURL ? user : { ...user, photoURL: DEMO_AVATAR_URL };
+}
 
 function readRegistry(): UserProfile[] {
   try {
     const raw = localStorage.getItem(DEMO_REGISTRY_STORAGE);
     if (!raw) return INITIAL_DEMO_REGISTRY;
-    return JSON.parse(raw) as UserProfile[];
+    const saved = (JSON.parse(raw) as UserProfile[]).map(withDemoAvatar);
+    const missingSeeds = INITIAL_DEMO_REGISTRY.filter(
+      (seed) => !saved.some((u) => u.uid === seed.uid),
+    );
+    return missingSeeds.length > 0 ? [...saved, ...missingSeeds] : saved;
   } catch {
     return INITIAL_DEMO_REGISTRY;
   }
@@ -123,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isFirebaseConfigured || !auth || !db) {
       try {
         const saved = localStorage.getItem(DEMO_USER_STORAGE);
-        if (saved) setProfile(JSON.parse(saved) as UserProfile);
+        if (saved) setProfile(withDemoAvatar(JSON.parse(saved) as UserProfile));
       } catch {
         setProfile(null);
       }
@@ -143,7 +211,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (snap.exists()) {
           const data = snap.data() as UserProfile;
           const isAdm = (fbUser.email || '').toLowerCase() === ADMIN_EMAIL;
-          setProfile({ ...data, role: isAdm ? 'admin' : data.role });
+          const freshPhoto = fbUser.photoURL || data.photoURL || undefined;
+          if (
+            fbUser.photoURL &&
+            fbUser.photoURL !== data.photoURL &&
+            (data.name || '').trim().length >= 2
+          ) {
+            void setDoc(
+              ref,
+              { photoURL: fbUser.photoURL, updatedAt: new Date().toISOString() },
+              { merge: true },
+            ).catch(() => {});
+          }
+          setProfile({
+            ...data,
+            photoURL: freshPhoto,
+            role: isAdm ? 'admin' : data.role,
+          });
         } else {
           const fresh = defaultProfileFromFirebase(fbUser);
           await setDoc(ref, fresh);
@@ -188,6 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       uid: demoRole === 'admin' ? 'camblu-admin-demo' : 'demo-student-new',
       name: demoRole === 'admin' ? 'Gestão CAMBLU (Admin)' : 'Estudante Demo MEDFURB',
       email: targetEmail,
+      photoURL: DEMO_AVATAR_URL,
       cpf: demoRole === 'admin' ? '52998224725' : '',
       phone: demoRole === 'admin' ? '4733210277' : '',
       affiliation: 'FURB',

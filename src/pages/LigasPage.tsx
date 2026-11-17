@@ -3,7 +3,6 @@ import { useAppData } from '../context/AppDataContext';
 import { LIGAS_CREATE_DRIVE_URL } from '../data/ligas';
 import { ExpressiveShapeFrame } from '../components/ExpressiveShapeFrame';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
 
 export function LigasPage() {
   const { ligas } = useAppData();
@@ -81,17 +80,17 @@ export function LigasPage() {
         </div>
       </div>
 
-      <div className="grid-cards">
+      <div className="ligas-grid">
         {filtered.map((liga, idx) => (
           <article
             key={liga.id}
-            className="m3-card m3-card--interactive m3-shape-card"
-            style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between', textAlign: 'center' }}
+            className="m3-card m3-card--interactive m3-shape-card liga-card"
+            style={{ display: 'grid', gap: '0.75rem', alignContent: 'space-between', textAlign: 'center' }}
           >
-            <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', placeItems: 'center', gap: '0.6rem' }}>
               <ExpressiveShapeFrame
                 shape={liga.shape}
-                maxWidth="8rem"
+                maxWidth="clamp(4.8rem, 18vw, 8rem)"
                 hoverRotateDeg={idx % 2 === 0 ? 6 : -6}
                 fit={liga.logoUrl ? 'logo' : 'photo'}
               >
@@ -139,8 +138,6 @@ export function LigasPage() {
           </article>
         ))}
       </div>
-
-      <SponsorsStrip />
     </section>
   );
 }

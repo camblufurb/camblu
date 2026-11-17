@@ -8,12 +8,10 @@ export const DEFAULT_CERTIFICATE_TEMPLATE: CertificateTemplateConfig = {
   templateWidthPx: 1754,
   templateHeightPx: 1240,
   fields: {
-    name: { xPercent: 50, yPercent: 48, fontSizePt: 46, colorHex: '#0f3325', align: 'center' },
-    cpf: { xPercent: 50, yPercent: 55, fontSizePt: 22, colorHex: '#3e4c44', align: 'center' },
-    event: { xPercent: 50, yPercent: 64, fontSizePt: 28, colorHex: '#0f3325', align: 'center' },
-    hours: { xPercent: 50, yPercent: 72, fontSizePt: 24, colorHex: '#174936', align: 'center' },
-    date: { xPercent: 28, yPercent: 86, fontSizePt: 18, colorHex: '#3e4c44', align: 'center' },
-    code: { xPercent: 72, yPercent: 86, fontSizePt: 16, colorHex: '#3e4c44', align: 'center' },
+    name: { xPercent: 50, yPercent: 48, fontSizePt: 46, widthPercent: 72, colorHex: '#0f3325', align: 'center' },
+    cpf: { xPercent: 50, yPercent: 56, fontSizePt: 22, widthPercent: 46, colorHex: '#3e4c44', align: 'center' },
+    hours: { xPercent: 50, yPercent: 66, fontSizePt: 24, widthPercent: 52, colorHex: '#174936', align: 'center' },
+    code: { xPercent: 72, yPercent: 86, fontSizePt: 16, widthPercent: 42, colorHex: '#3e4c44', align: 'center' },
     qr: { xPercent: 85, yPercent: 76, sizePercent: 11 },
   },
 };
@@ -71,11 +69,12 @@ function drawTextField(
   bold = false,
 ) {
   const scaledPx = Math.round((pos.fontSizePt / 1240) * height * 1.15);
+  const maxWidthPx = pos.widthPercent ? (pos.widthPercent / 100) * width : width * 0.82;
   ctx.fillStyle = pos.colorHex;
   ctx.font = `${bold ? '800' : '600'} ${Math.max(12, scaledPx)}px "Roboto Flex", system-ui, sans-serif`;
   ctx.textAlign = pos.align;
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, (pos.xPercent / 100) * width, (pos.yPercent / 100) * height, width * 0.82);
+  ctx.fillText(text, (pos.xPercent / 100) * width, (pos.yPercent / 100) * height, maxWidthPx);
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -120,9 +119,7 @@ export async function renderCertificateToCanvas(
 
   drawTextField(ctx, cert.ownerName, tpl.fields.name, w, h, true);
   drawTextField(ctx, `CPF: ${formatCpf(cert.ownerCpf)}`, tpl.fields.cpf, w, h);
-  drawTextField(ctx, `Evento: ${cert.eventTitle}`, tpl.fields.event, w, h, true);
   drawTextField(ctx, `Carga horária válida: ${cert.totalHours} horas`, tpl.fields.hours, w, h, true);
-  drawTextField(ctx, cert.eventDateLabel, tpl.fields.date, w, h);
   drawTextField(ctx, `Código: ${cert.code}`, tpl.fields.code, w, h);
 
   const verifyUrl = `${window.location.origin}/certificados/validar/${encodeURIComponent(cert.code)}`;

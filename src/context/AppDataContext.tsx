@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { collection, doc, onSnapshot, query, setDoc, where, type Query } from 'firebase/firestore';
+import { useAuth } from './AuthContext';
 import { db, isFirebaseConfigured } from '../lib/firebase';
+import { syncGoogleSheetTransparency } from '../lib/googleSheetsTransparency';
 import { ANAIS_SEED, EDITAIS_SEED, EVENTS_SEED, ORDERS_SEED, PRODUCTS_SEED } from '../data/catalogSeeds';
 import { GESTOES_SEED } from '../data/gestoes';
 import { LIGAS_SEED } from '../data/ligas';
@@ -18,6 +20,7 @@ import type {
   Ticket,
   TransparencyEntry,
   TransparencyMeta,
+  UserProfile,
 } from '../types/domain';
 
 const STORE_KEY = 'camblu.appdata.v1';
@@ -82,6 +85,60 @@ const DEFAULT_TICKETS: Ticket[] = [
       },
     ],
   },
+  {
+    id: 'tkt-demo-coffee-lucas',
+    eventId: 'evt-simposio-coffee',
+    eventSlug: 'simposio-emergencias-clinicas-coffee',
+    eventTitle: 'Simpósio CAMBLU de Emergências Clínicas + Coffee Break',
+    lotId: 'lot-simp-1',
+    lotName: 'Lote Único (Inclui Coffee)',
+    ownerUid: 'demo-student-2',
+    ownerName: 'Lucas Pereira',
+    ownerCpf: '39053344705',
+    ownerEmail: 'lucas.demo@furb.br',
+    paidCents: 0,
+    discountReason: 'Gratuidade Clube Lendário (100%)',
+    status: 'valid',
+    purchasedAt: '2026-11-08T10:30:00.000Z',
+    transferHistory: [],
+    qrInstances: [
+      {
+        qrCode: 'CAMBLU-SIMP-L39053',
+        definitionId: 'qr-simp-unico',
+        label: 'Credenciamento Manhã + Coffee',
+        dateTime: '2026-11-28T08:30:00-03:00',
+        certificateHours: 4,
+        checkedInAt: null,
+      },
+    ],
+  },
+  {
+    id: 'tkt-demo-simposio-marina',
+    eventId: 'evt-simposio-coffee',
+    eventSlug: 'simposio-emergencias-clinicas-coffee',
+    eventTitle: 'Simpósio CAMBLU de Emergências Clínicas + Coffee Break',
+    lotId: 'lot-simp-1',
+    lotName: 'Lote Único (Inclui Coffee)',
+    ownerUid: 'demo-student-1',
+    ownerName: 'Marina Souza',
+    ownerCpf: '52998224725',
+    ownerEmail: 'marina.demo@furb.br',
+    paidCents: 0,
+    discountReason: 'Gratuidade Clube Raro (100%)',
+    status: 'valid',
+    purchasedAt: '2026-11-12T09:15:00.000Z',
+    transferHistory: [],
+    qrInstances: [
+      {
+        qrCode: 'CAMBLU-SIMP-M52998',
+        definitionId: 'qr-simp-unico',
+        label: 'Credenciamento Manhã + Coffee',
+        dateTime: '2026-11-28T08:30:00-03:00',
+        certificateHours: 4,
+        checkedInAt: null,
+      },
+    ],
+  },
 ];
 
 const DEFAULT_CERTIFICATES: CertificateRecord[] = [
@@ -116,6 +173,7 @@ const INITIAL_STATE: AppDataState = {
 };
 
 interface AppDataContextValue extends AppDataState {
+  adminMembers: UserProfile[];
   saveEvent: (event: CambluEvent) => Promise<void>;
   deleteEvent: (eventId: string) => Promise<void>;
   addTicket: (ticket: Ticket) => Promise<void>;
@@ -127,6 +185,7 @@ interface AppDataContextValue extends AppDataState {
   addTransparencyEntry: (entry: TransparencyEntry) => Promise<void>;
   deleteTransparencyEntry: (entryId: string) => Promise<void>;
   updateTransparencyMeta: (meta: TransparencyMeta) => Promise<void>;
+  syncTransparencySheet: (customUrl?: string) => Promise<number>;
   saveEdital: (edital: EditalItem) => Promise<void>;
   deleteEdital: (id: string) => Promise<void>;
   saveAnais: (anais: AnaisEdition) => Promise<void>;
@@ -172,14 +231,93 @@ function loadState(): AppDataState {
         }),
       };
     });
-    return { ...INITIAL_STATE, ...parsed, ligas, products, gestoes };
+    const tickets = parsed.tickets
+      ? [
+          ...parsed.tickets,
+          ...DEFAULT_TICKETS.filter((dt) => !parsed.tickets!.some((t) => t.id === dt.id)),
+        ]
+      : DEFAULT_TICKETS;
+    const events = (parsed.events || EVENTS_SEED).map((ev) => {
+      const seed = EVENTS_SEED.find((s) => s.id === ev.id);
+      return seed && ev.isSecimed && !ev.secimedPalette
+        ? { ...ev, secimedPalette: seed.secimedPalette }
+        : ev;
+    });
+    const transparencyMeta: TransparencyMeta = {
+      ...TRANSPARENCY_META_SEED,
+      ...(parsed.transparencyMeta || {}),
+      spreadsheetUrl: parsed.transparencyMeta?.spreadsheetUrl ?? TRANSPARENCY_META_SEED.spreadsheetUrl,
+    };
+    return { ...INITIAL_STATE, ...parsed, events, tickets, ligas, products, gestoes, transparencyMeta };
   } catch {
     return INITIAL_STATE;
   }
 }
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
+  const { isAdmin, allDemoUsers, profile } = useAuth();
   const [state, setState] = useState<AppDataState>(loadState);
+  const [fbAdminMembers, setFbAdminMembers] = useState<UserProfile[]>([]);
+  const lastAutoSyncUrlRef = useRef<string | null>(null);
+
+  const persistDoc = useCallback(async (colName: string, id: string, data: object) => {
+    if (isFirebaseConfigured && db) {
+      await setDoc(doc(db, colName, id), data, { merge: true });
+    }
+  }, []);
+
+  const syncTransparencySheet = useCallback(
+    async (customUrl?: string): Promise<number> => {
+      const targetUrl = (customUrl ?? state.transparencyMeta.spreadsheetUrl ?? '').trim();
+      if (!targetUrl) return 0;
+
+      const synced = await syncGoogleSheetTransparency(targetUrl);
+      const nextMeta: TransparencyMeta = {
+        ...state.transparencyMeta,
+        spreadsheetUrl: targetUrl,
+        lastSyncedAt: synced.lastSyncedAt,
+        currentBalanceCents:
+          synced.currentBalanceCents > 0 ? synced.currentBalanceCents : state.transparencyMeta.currentBalanceCents,
+        projectedBalanceCents:
+          synced.projectedBalanceCents > 0
+            ? synced.projectedBalanceCents
+            : state.transparencyMeta.projectedBalanceCents,
+        savedCategories: Array.from(
+          new Set([...state.transparencyMeta.savedCategories, ...synced.savedCategories]),
+        ).sort(),
+        updatedAt: synced.lastSyncedAt,
+      };
+
+      setState((p) => ({
+        ...p,
+        transparencyEntries: synced.entries,
+        transparencyMeta: nextMeta,
+      }));
+
+      if (isFirebaseConfigured && db && isAdmin) {
+        await persistDoc('transparencyMeta', 'public', {
+          driveMinutesUrl: nextMeta.driveMinutesUrl,
+          spreadsheetUrl: nextMeta.spreadsheetUrl,
+          lastSyncedAt: nextMeta.lastSyncedAt,
+          savedCategories: nextMeta.savedCategories,
+        });
+        await persistDoc('transparencyMeta', 'config', nextMeta);
+        await Promise.all(synced.entries.map((entry) => persistDoc('transparencyEntries', entry.id, entry)));
+      }
+
+      return synced.entries.length;
+    },
+    [isAdmin, persistDoc, state.transparencyMeta],
+  );
+
+  useEffect(() => {
+    const url = state.transparencyMeta.spreadsheetUrl?.trim();
+    if (!url || lastAutoSyncUrlRef.current === url) return;
+    lastAutoSyncUrlRef.current = url;
+    void syncTransparencySheet(url).catch(() => {
+      // Keeps cached local/Firestore entries gracefully when offline or private
+    });
+  }, [state.transparencyMeta.spreadsheetUrl, syncTransparencySheet]);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !db) {
@@ -228,6 +366,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             transparencyMeta: {
               ...prev.transparencyMeta,
               driveMinutesUrl: d.driveMinutesUrl ?? prev.transparencyMeta.driveMinutesUrl,
+              spreadsheetUrl: d.spreadsheetUrl ?? prev.transparencyMeta.spreadsheetUrl,
+              lastSyncedAt: d.lastSyncedAt ?? prev.transparencyMeta.lastSyncedAt,
               savedCategories: d.savedCategories ?? prev.transparencyMeta.savedCategories,
             },
           }));
@@ -254,6 +394,62 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     return () => unsubs.forEach((u) => u());
   }, []);
 
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db || !isAdmin) return;
+    const unsubs: (() => void)[] = [];
+    const bindAdminCol = <K extends keyof AppDataState>(colName: string, key: K) => {
+      const unsub = onSnapshot(
+        collection(db!, colName),
+        (snap) => {
+          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setState((prev) => ({ ...prev, [key]: list as AppDataState[K] }));
+        },
+        () => {},
+      );
+      unsubs.push(unsub);
+    };
+
+    bindAdminCol('events', 'events');
+    bindAdminCol('products', 'products');
+    bindAdminCol('tickets', 'tickets');
+    bindAdminCol('certificates', 'certificates');
+    bindAdminCol('orders', 'orders');
+    bindAdminCol('demands', 'demands');
+
+    const unsubUsers = onSnapshot(
+      collection(db, 'users'),
+      (snap) => {
+        setFbAdminMembers(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as UserProfile));
+      },
+      () => {},
+    );
+    unsubs.push(unsubUsers);
+
+    return () => unsubs.forEach((u) => u());
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db || !profile?.uid || isAdmin) return;
+    const unsubs: (() => void)[] = [];
+    const bindUserQuery = <K extends keyof AppDataState>(q: Query, key: K) => {
+      const unsub = onSnapshot(
+        q,
+        (snap) => {
+          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setState((prev) => ({ ...prev, [key]: list as AppDataState[K] }));
+        },
+        () => {},
+      );
+      unsubs.push(unsub);
+    };
+
+    bindUserQuery(query(collection(db, 'tickets'), where('ownerUid', '==', profile.uid)), 'tickets');
+    bindUserQuery(query(collection(db, 'certificates'), where('ownerUid', '==', profile.uid)), 'certificates');
+    bindUserQuery(query(collection(db, 'orders'), where('buyerUid', '==', profile.uid)), 'orders');
+
+    return () => unsubs.forEach((u) => u());
+  }, [profile?.uid, isAdmin]);
+
   const upsertArray = <T extends { id: string }>(arr: T[], item: T): T[] => {
     const idx = arr.findIndex((x) => x.id === item.id);
     if (idx === -1) return [item, ...arr];
@@ -262,14 +458,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     return copy;
   };
 
-  const persistDoc = async (colName: string, id: string, data: object) => {
-    if (isFirebaseConfigured && db) {
-      await setDoc(doc(db, colName, id), data, { merge: true });
-    }
-  };
-
   const value: AppDataContextValue = {
     ...state,
+    adminMembers: isFirebaseConfigured ? fbAdminMembers : allDemoUsers,
     saveEvent: async (event) => {
       setState((p) => ({ ...p, events: upsertArray(p.events, event) }));
       await persistDoc('events', event.id, event);
@@ -346,10 +537,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       setState((p) => ({ ...p, transparencyMeta: meta }));
       await persistDoc('transparencyMeta', 'public', {
         driveMinutesUrl: meta.driveMinutesUrl,
+        spreadsheetUrl: meta.spreadsheetUrl,
+        lastSyncedAt: meta.lastSyncedAt,
         savedCategories: meta.savedCategories,
       });
       await persistDoc('transparencyMeta', 'config', meta);
     },
+    syncTransparencySheet,
     saveEdital: async (edital) => {
       setState((p) => ({ ...p, editais: upsertArray(p.editais, edital) }));
       await persistDoc('editais', edital.id, edital);

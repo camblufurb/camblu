@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
-import { CLUB_PLANS, getPlanPriceCents } from '../lib/clubPricing';
-import { formatBrlFromCents } from '../lib/validators';
+import { CambluCrest } from '../components/SponsorLogos';
+import { useToast } from '../components/ToastProvider';
+import { useAuth } from '../context/AuthContext';
+import { CLUB_COMPARISON_ROWS, CLUB_PLANS, getPlanPriceCents } from '../lib/clubPricing';
 import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
+import { formatBrlFromCents } from '../lib/validators';
 import type { MembershipCycle, MembershipTier } from '../types/domain';
 
 export function ClubPage() {
@@ -50,140 +50,306 @@ export function ClubPage() {
   };
 
   return (
-    <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ maxInlineSize: '46rem' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>Clube CAMBLU</h1>
-          <p style={{ color: '#dceddf' }}>
-            Planos mensais no cartão ou carteiras digitais e semestrais via PIX ou Cartão, com benefícios em eventos,
-            lojinha e parceiros da Medicina FURB.
+    <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2.5rem' }}>
+      {/* Hero Showcase (Xbox Game Pass + Fortnite Item Shop vibe) */}
+      <div className="club-hero-stage m3-motion-hero">
+        <div className="m3-hero-copy" style={{ display: 'grid', gap: '1.1rem', maxInlineSize: '42rem', flex: '1 1 22rem' }}>
+          <h1 style={{ color: '#ffffff' }}>Desbloqueie o Clube CAMBLU</h1>
+          <p style={{ color: '#e2efe7' }}>
+            Suba de nível na Medicina FURB: escolha o passe que mais combina com a sua rotina acadêmica e acumule descontos na Lojinha, eventos gratuitos com Coffee, entrada na SECIMED e cartão digital exclusivo.
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingBlockStart: '0.25rem' }}>
+            <a href="#planos-clube" className="m3-btn m3-btn--blue">
+              <span>Ver planos e níveis</span>
+              <Icon name="arrow_downward" size={18} />
+            </a>
+            <Link to="/clube/cartao" className="m3-btn m3-btn--gold">
+              <Icon name="badge" size={19} />
+              <span>Abrir Meu Cartão Digital</span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="club-hero-cards-stack m3-hero-emblem" aria-label="Níveis de raridade do Clube CAMBLU">
+          {CLUB_PLANS.map((plan) => (
+            <div
+              key={plan.tier}
+              className="club-mini-tier"
+              style={{ background: plan.gradientCss }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Icon name={plan.icon} filled size={20} />
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, opacity: 0.9 }}>
+                  {plan.perks.length} itens
+                </span>
+              </div>
+              <strong style={{ fontSize: '0.96rem' }}>{plan.name}</strong>
+              <span style={{ fontSize: '0.78rem', opacity: 0.9 }}>
+                {formatBrlFromCents(getPlanPriceCents(plan.tier, cycle))}/{cycle === 'mensal' ? 'mês' : 'sem'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Cabeçalho de seleção de passe e ciclo */}
+      <div id="planos-clube" style={{ display: 'grid', gap: '1.15rem', textAlign: 'center', justifyItems: 'center' }}>
+        <div style={{ maxInlineSize: '44rem', display: 'grid', gap: '0.4rem' }}>
+          <h2>Escolha seu nível no Clube</h2>
+          <p className="text-muted">
+            Cada nível incorpora integralmente as vantagens anteriores e destrava benefícios extras para os eventos, a Lojinha e a SECIMED.
           </p>
         </div>
-        <Link to="/clube/cartao" className="m3-btn m3-btn--gold">
-          <Icon name="badge" size={19} />
-          <span>Abrir Cartão de Membro</span>
-        </Link>
+
+        <div className="club-cycle-wrap">
+          <div className="club-cycle-toggle" role="group" aria-label="Ciclo de pagamento da assinatura">
+            <button
+              type="button"
+              className="club-cycle-btn"
+              aria-pressed={cycle === 'mensal'}
+              onClick={() => setCycle('mensal')}
+            >
+              <Icon name="autorenew" size={18} />
+              <span>Mensal · Renovação automática</span>
+            </button>
+            <button
+              type="button"
+              className="club-cycle-btn"
+              aria-pressed={cycle === 'semestral'}
+              onClick={() => setCycle('semestral')}
+            >
+              <Icon name="calendar_today" size={18} />
+              <span>Semestral · Passe de 6 meses</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Seletor Mensal x Semestral */}
-      <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
-        <button
-          type="button"
-          className={`m3-btn ${cycle === 'mensal' ? 'm3-btn--filled' : 'm3-btn--outlined'}`}
-          onClick={() => setCycle('mensal')}
-        >
-          <Icon name="autorenew" size={18} />
-          <span>Mensal (Recorrente Cartão / Apple & Google Pay)</span>
-        </button>
-        <button
-          type="button"
-          className={`m3-btn ${cycle === 'semestral' ? 'm3-btn--filled' : 'm3-btn--outlined'}`}
-          onClick={() => setCycle('semestral')}
-        >
-          <Icon name="qr_code" size={18} />
-          <span>Semestral (Compra única Cartão, Wallets ou PIX)</span>
-        </button>
-      </div>
-
-      {/* Cards dos 4 Planos */}
-      <div className="grid-cards">
-        {CLUB_PLANS.map((plan) => {
+      {/* Cards de Raridade em Escada Progressiva (4 -> 6 -> 8 -> 10 benefícios) */}
+      <div className="club-tiers-grid">
+        {CLUB_PLANS.map((plan, idx) => {
           const priceCents = getPlanPriceCents(plan.tier, cycle);
+          const monthlyEquivalent = cycle === 'semestral' ? Math.round(priceCents / 6) : priceCents;
           const isCurrent = profile?.membershipActive && profile.membershipTier === plan.tier;
+
           return (
             <article
               key={plan.tier}
-              className="m3-card m3-card--interactive"
-              style={{
-                position: 'relative',
-                overflow: 'hidden',
-                display: 'grid',
-                gap: '1rem',
-                alignContent: 'space-between',
-                borderColor: plan.themeColor,
-                borderWidth: plan.shimmer ? '2px' : '1.5px',
-                background: plan.shimmer
-                  ? 'linear-gradient(145deg, color-mix(in oklab, var(--camblu-gold-500) 22%, var(--md-sys-color-surface-container-lowest)), var(--md-sys-color-surface-container-lowest))'
-                  : undefined,
-              }}
+              className="club-tier-card m3-motion-stagger"
+              style={
+                {
+                  '--stagger-i': idx,
+                  '--tier-color': plan.themeColor,
+                  '--tier-ink': plan.tier === 'lendario' ? '#9c7206' : plan.themeColor,
+                  '--tier-glow': plan.glowColor,
+                } as CSSProperties
+              }
             >
-              {plan.shimmer && (
-                <div
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    pointerEvents: 'none',
-                    background:
-                      'linear-gradient(105deg, transparent 35%, rgb(255 245 190 / 0.45) 50%, transparent 65%)',
-                    animation: 'm3-shimmer-sweep 3.2s infinite linear',
-                  }}
-                />
-              )}
+              {plan.shimmer && <div className="club-tier-shimmer" aria-hidden="true" />}
 
-              <div style={{ display: 'grid', gap: '0.75rem', position: 'relative' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span
-                    className="m3-badge"
-                    style={{ background: plan.themeColor, color: '#ffffff' }}
-                  >
-                    {plan.name}
-                  </span>
-                  {isCurrent && <span className="m3-badge m3-badge--success">Plano Atual</span>}
+              <header className="club-tier-stage" style={{ background: plan.gradientCss }}>
+                <div className="club-tier-stage__top">
+                  <div>
+                    <span className="club-tier-level">{plan.levelLabel}</span>
+                    <h3 style={{ color: '#ffffff', marginBlockStart: '0.2rem' }}>{plan.name}</h3>
+                  </div>
+                  <div className="club-tier-emblem" aria-hidden="true">
+                    <Icon name={plan.icon} filled size={24} />
+                  </div>
                 </div>
+
+                <p style={{ color: 'rgb(255 255 255 / 0.9)' }}>{plan.tagline}</p>
 
                 <div>
-                  <strong style={{ fontSize: 'clamp(1.6rem, 2.5vw, 2.1rem)', color: 'var(--md-sys-color-on-surface)' }}>
-                    {formatBrlFromCents(priceCents)}
-                  </strong>
-                  <span className="m3-body-medium"> / {cycle === 'mensal' ? 'mês' : 'semestre'}</span>
+                  <div className="club-tier-price-row">
+                    <strong className="club-tier-price">{formatBrlFromCents(priceCents)}</strong>
+                    <span style={{ fontSize: '0.88rem', color: 'rgb(255 255 255 / 0.9)' }}>
+                      / {cycle === 'mensal' ? 'mês' : 'semestre'}
+                    </span>
+                  </div>
+                  {cycle === 'semestral' && (
+                    <span style={{ fontSize: '0.78rem', color: 'rgb(255 255 255 / 0.84)', display: 'block', marginBlockStart: '0.2rem' }}>
+                      Equivalente a {formatBrlFromCents(monthlyEquivalent)}/mês
+                    </span>
+                  )}
+                </div>
+              </header>
+
+              <div className="club-tier-body">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="club-perk-count">{plan.perks.length} benefícios incluídos</span>
+                  {isCurrent && <span className="m3-badge m3-badge--success">Ativo agora</span>}
                 </div>
 
-                <ul style={{ margin: 0, paddingInlineStart: '1.15rem', display: 'grid', gap: '0.45rem', fontSize: '0.92rem' }}>
-                  {plan.benefits.map((b) => (
-                    <li key={b}>{b}</li>
+                <ul className="club-perk-list">
+                  {plan.perks.map((perk) => (
+                    <li
+                      key={perk.text}
+                      className="club-perk-item"
+                      data-highlight={perk.isNewAtTier ? 'true' : 'false'}
+                    >
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          color: perk.isNewAtTier
+                            ? plan.tier === 'lendario'
+                              ? '#9c7206'
+                              : plan.themeColor
+                            : 'var(--md-sys-color-primary)',
+                          display: 'inline-flex',
+                          paddingBlockStart: '0.1rem',
+                        }}
+                      >
+                        <Icon name={perk.isNewAtTier ? perk.icon : 'check_circle'} filled={perk.isNewAtTier} size={18} />
+                      </span>
+                      <span>{perk.text}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
 
-              <button
-                type="button"
-                className="m3-btn"
-                style={{
-                  background: plan.themeColor,
-                  color: '#ffffff',
-                  position: 'relative',
-                }}
-                disabled={submittingTier === plan.tier}
-                onClick={() => handleSubscribe(plan.tier)}
-              >
-                <Icon name={isCurrent ? 'check_circle' : 'workspace_premium'} size={18} />
-                <span>
-                  {submittingTier === plan.tier
-                    ? 'Abrindo checkout...'
-                    : isCurrent
-                      ? 'Renovar / Alterar Ciclo'
-                      : `Assinar ${plan.name}`}
-                </span>
-              </button>
+              <footer className="club-tier-footer">
+                <button
+                  type="button"
+                  className="m3-btn"
+                  style={{
+                    inlineSize: '100%',
+                    background: plan.themeColor,
+                    color: plan.tier === 'lendario' ? '#1f1600' : '#ffffff',
+                  }}
+                  disabled={submittingTier === plan.tier}
+                  onClick={() => handleSubscribe(plan.tier)}
+                >
+                  <Icon name={isCurrent ? 'autorenew' : 'workspace_premium'} size={18} />
+                  <span>
+                    {submittingTier === plan.tier
+                      ? 'Processando...'
+                      : isCurrent
+                        ? `Renovar / Trocar ciclo`
+                        : `Assinar ${plan.name}`}
+                  </span>
+                </button>
+              </footer>
             </article>
           );
         })}
       </div>
 
-      {/* Benefícios de Parceiros */}
-      <div className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.65rem' }}>
-        <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
-          Parcerias Acadêmicas
-        </span>
-        <h2>Benefícios Spaiq & Gorit PRO</h2>
-        <p className="text-muted">
-          Assinantes ativos do Clube CAMBLU (a partir do plano Comum) contam com condições e benefícios de estudo nas
-          plataformas parceiras Spaiq e Gorit PRO vinculadas ao nosso programa estudantil.
-        </p>
-      </div>
+      {/* Tabela Comparativa Completa (Desktop tabela + Mobile cards responsivos) */}
+      <article className="m3-card" style={{ display: 'grid', gap: '1.15rem' }}>
+        <div>
+          <h2>Compare todos os níveis lado a lado</h2>
+          <p className="text-muted">
+            Visualize exatamente quais benefícios são desbloqueados à medida que você sobe de nível no Clube.
+          </p>
+        </div>
 
-      <SponsorsStrip />
+        <div tabIndex={0} role="region" aria-label="Comparação completa dos planos do Clube CAMBLU" className="table-wrapper club-compare-desktop">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Benefício / Vantagem</th>
+                <th style={{ color: '#22a06b' }}>Comum</th>
+                <th style={{ color: '#3b82f7' }}>Raro</th>
+                <th style={{ color: '#7c3aed' }}>Épico</th>
+                <th style={{ color: '#9c7206' }}>Lendário</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CLUB_COMPARISON_ROWS.map((row) => (
+                <tr key={row.feature}>
+                  <th>{row.feature}</th>
+                  {(['comum', 'raro', 'epico', 'lendario'] as const).map((tierKey, colIdx) => {
+                    const cell = row[tierKey];
+                    const planColor = CLUB_PLANS[colIdx].themeColor;
+                    return (
+                      <td key={tierKey}>
+                        {typeof cell === 'string' ? (
+                          <strong style={{ color: planColor }}>{cell}</strong>
+                        ) : cell ? (
+                          <span style={{ color: planColor, display: 'inline-flex', alignItems: 'center' }} aria-label="Incluído">
+                            <Icon name="check_circle" filled size={20} />
+                          </span>
+                        ) : (
+                          <span className="text-muted" aria-label="Não incluído">
+                            —
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="club-compare-mobile" aria-label="Comparação dos planos no celular">
+          {CLUB_COMPARISON_ROWS.map((row) => (
+            <div key={row.feature} className="m3-card m3-card--tonal" style={{ padding: '0.9rem', display: 'grid', gap: '0.6rem' }}>
+              <strong style={{ fontSize: '0.92rem' }}>{row.feature}</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.45rem' }}>
+                {(['comum', 'raro', 'epico', 'lendario'] as const).map((tierKey, colIdx) => {
+                  const cell = row[tierKey];
+                  const planInfo = CLUB_PLANS[colIdx];
+                  return (
+                    <div
+                      key={tierKey}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.35rem',
+                        padding: '0.35rem 0.55rem',
+                        borderRadius: 'var(--md-sys-shape-corner-sm)',
+                        background: 'var(--md-sys-color-surface-container-lowest)',
+                        border: '1px solid var(--md-sys-color-outline-variant)',
+                        fontSize: '0.78rem',
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, color: planInfo.themeColor }}>{planInfo.name}</span>
+                      {typeof cell === 'string' ? (
+                        <strong style={{ color: planInfo.themeColor }}>{cell}</strong>
+                      ) : cell ? (
+                        <Icon name="check_circle" filled size={16} className="m3-badge--blue" />
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </article>
+
+      {/* Bloco Final: Cartão Digital + Parcerias */}
+      <div className="grid-two">
+        <article className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
+          <div style={{ display: 'grid', gap: '0.55rem', flex: '1 1 16rem' }}>
+            <h2>Cartão Digital de Membro</h2>
+            <p style={{ color: '#dceddf' }}>
+              Seu cartão muda de cor e textura de acordo com a raridade da assinatura e conta com validação imediata na portaria dos eventos.
+            </p>
+            <div style={{ paddingBlockStart: '0.25rem' }}>
+              <Link to="/clube/cartao" className="m3-btn m3-btn--gold">
+                <Icon name="badge" size={18} />
+                <span>Visualizar Meu Cartão</span>
+              </Link>
+            </div>
+          </div>
+          <CambluCrest size={82} variant="clean" />
+        </article>
+
+        <article className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.6rem', alignContent: 'center' }}>
+          <h2>Parcerias Spaiq & Gorit PRO</h2>
+          <p className="text-muted">
+            Assinantes ativos do Clube CAMBLU (a partir do nível Comum) têm acesso programado às vantagens de estudo nas plataformas parceiras Spaiq e Gorit PRO vinculadas ao Centro Acadêmico.
+          </p>
+        </article>
+      </div>
     </section>
   );
 }

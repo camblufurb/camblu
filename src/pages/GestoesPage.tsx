@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { ExpressiveShapeFrame } from '../components/ExpressiveShapeFrame';
-import { SponsorsStrip } from '../components/SponsorLogos';
 import type { GestaoCargo, GestaoMember } from '../types/domain';
 
 const TOP_LEADERSHIP_CARGOS: GestaoCargo[] = ['Presidente', 'Vice-Presidente', 'Tesoureiro(a)'];
@@ -87,19 +86,27 @@ export function GestoesPage() {
           {currentTerm.mission && <p style={{ color: '#dceddf' }}>{currentTerm.mission}</p>}
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }} role="group" aria-label="Selecionar ano da gestão">
-          {sortedTerms.map((term) => (
-            <button
-              key={term.id}
-              type="button"
-              className={`m3-btn ${term.id === currentTerm.id ? 'm3-btn--gold' : 'm3-btn--outlined'}`}
-              style={term.id !== currentTerm.id ? { color: '#ffffff', borderColor: 'rgb(255 255 255 / 0.35)' } : undefined}
-              aria-pressed={term.id === currentTerm.id}
-              onClick={() => setSelectedId(term.id)}
-            >
-              {term.year} · {term.chapaName}
-            </button>
-          ))}
+        <div className="m3-field" style={{ minInlineSize: 'min(100%, 18rem)' }}>
+          <label htmlFor="gestao-select" style={{ color: '#f1de97' }}>
+            Selecionar gestão
+          </label>
+          <select
+            id="gestao-select"
+            className="m3-select"
+            value={currentTerm.id}
+            onChange={(e) => setSelectedId(e.target.value)}
+            style={{
+              background: 'var(--md-sys-color-surface-container-lowest)',
+              color: 'var(--md-sys-color-on-surface)',
+              borderColor: 'rgb(237 209 110 / 0.5)',
+            }}
+          >
+            {sortedTerms.map((term) => (
+              <option key={term.id} value={term.id}>
+                {term.year} · {term.chapaName} ({term.members.length} membros)
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -145,8 +152,6 @@ export function GestoesPage() {
           </ul>
         </div>
       )}
-
-      <SponsorsStrip />
     </section>
   );
 }

@@ -1,7 +1,11 @@
 import type { TransparencyEntry, TransparencyMeta } from '../types/domain';
 
+export const DEFAULT_TRANSPARENCY_SHEET_URL =
+  'https://docs.google.com/spreadsheets/d/19qvxJcjL53aXeStZgXk22HiEvTycHi_meJAl3etNsXQ/edit?usp=sharing';
+
 export const TRANSPARENCY_META_SEED: TransparencyMeta = {
   driveMinutesUrl: 'https://drive.google.com/drive/folders/17inJZ1UIeAbiNAk9hQNl6IZh988bvn-N',
+  spreadsheetUrl: DEFAULT_TRANSPARENCY_SHEET_URL,
   currentBalanceCents: 442548,
   projectedBalanceCents: 442548,
   investedBalanceCents: 2137163,

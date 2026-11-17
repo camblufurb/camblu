@@ -26,8 +26,8 @@ export function AccountMenuButton() {
 
   if (loading) {
     return (
-      <span className="m3-badge" aria-busy="true">
-        {t('common.loading')}
+      <span className="header-icon-btn" aria-busy="true" aria-label={t('common.loading')}>
+        <Icon name="more_horiz" size={21} />
       </span>
     );
   }
@@ -59,9 +59,14 @@ export function AccountMenuButton() {
   if (!profile) {
     return (
       <>
-        <button type="button" className="m3-btn m3-btn--blue" onClick={handleLoginClick}>
-          <Icon name="login" size={19} />
-          <span>{t('auth.signInGoogle')}</span>
+        <button
+          type="button"
+          className="header-icon-btn"
+          aria-label={t('auth.signInGoogle')}
+          title={t('auth.signInGoogle')}
+          onClick={handleLoginClick}
+        >
+          <Icon name="account_circle" size={23} />
         </button>
 
         <M3Dialog
@@ -95,23 +100,23 @@ export function AccountMenuButton() {
     );
   }
 
-  const firstName = profile.name.split(' ')[0];
+  const avatarInitial = profile.name.trim().charAt(0).toUpperCase() || 'C';
 
   return (
     <div ref={wrapRef} className="nav-dropdown">
       <button
         type="button"
-        className="m3-btn m3-btn--tonal"
-        style={{ paddingInline: '0.85rem', minBlockSize: '42px' }}
+        className="header-icon-btn"
+        aria-label={`Conta de ${profile.name}`}
+        title={profile.name}
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen((o) => !o)}
       >
-        <Icon name={isAdmin ? 'verified_user' : 'account_circle'} filled size={20} />
-        <span>{firstName}</span>
+        <span className="header-avatar-badge">
+          {isAdmin ? <Icon name="verified_user" filled size={18} /> : avatarInitial}
+        </span>
         {!profile.profileCompleted && (
-          <span className="m3-badge m3-badge--gold" style={{ paddingBlock: '0.1rem' }}>
-            !
-          </span>
+          <span className="header-icon-dot" aria-label="Cadastro incompleto" />
         )}
       </button>
 
@@ -136,6 +141,14 @@ export function AccountMenuButton() {
         <Link to="/meus-ingressos" className="dropdown-item" onClick={() => setMenuOpen(false)}>
           <Icon name="qr_code_2" size={20} />
           <span>{t('nav.myTickets')}</span>
+        </Link>
+        <Link to="/meus-ingressos/historico" className="dropdown-item" onClick={() => setMenuOpen(false)}>
+          <Icon name="history" size={20} />
+          <span>Histórico de Ingressos</span>
+        </Link>
+        <Link to="/meus-pedidos" className="dropdown-item" onClick={() => setMenuOpen(false)}>
+          <Icon name="receipt_long" size={20} />
+          <span>Compras na Lojinha</span>
         </Link>
         <Link to="/certificados" className="dropdown-item" onClick={() => setMenuOpen(false)}>
           <Icon name="workspace_premium" size={20} />

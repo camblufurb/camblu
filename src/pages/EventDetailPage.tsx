@@ -18,7 +18,6 @@ export function EventDetailPage() {
 
   const event = events.find((e) => e.slug === slug || e.id === slug);
   const [selectedLotId, setSelectedLotId] = useState<string>('');
-  const [paymentMethod, setPaymentMethod] = useState<'stripe_pix' | 'stripe_card'>('stripe_pix');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -63,8 +62,20 @@ export function EventDetailPage() {
   const shareUrl = `${window.location.origin}/eventos/${event.slug}`;
 
   const handleCopyShareLink = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    notify('Link do evento copiado! O compartilhamento gera prévia automática (Social Preview).');
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: event.title, url: shareUrl });
+        return;
+      } catch {
+        // segue para cópia na área de transferência
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      notify('Link do evento copiado!');
+    } catch {
+      notify('Copie o endereço da página para compartilhar.', 'info');
+    }
   };
 
   const handleCheckout = async () => {
@@ -93,7 +104,6 @@ export function EventDetailPage() {
           body: JSON.stringify({
             eventId: event.id,
             lotId: activeLot.id,
-            paymentMethod,
           }),
         });
         if (!res.ok) throw new Error('Falha ao iniciar pagamento.');
@@ -155,11 +165,23 @@ export function EventDetailPage() {
     }
   };
 
+  const isPastEvent = Boolean(
+    event.archived ||
+      (event.endAt && !Number.isNaN(new Date(event.endAt).getTime()) && new Date(event.endAt).getTime() < Date.now()),
+  );
+
   const revealVirtualLink =
-    event.mode === 'virtual' &&
+    (event.mode === 'virtual' || event.mode === 'misto') &&
     event.virtualAccessUrl &&
     userAlreadyHasTicket &&
     (!event.virtualRevealAt || new Date() >= new Date(event.virtualRevealAt));
+
+  const modeLabel =
+    event.mode === 'misto'
+      ? 'Híbrido (Presencial + Virtual)'
+      : event.mode === 'virtual'
+        ? 'Evento Virtual'
+        : 'Evento Presencial';
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
@@ -171,11 +193,11 @@ export function EventDetailPage() {
 
         <button type="button" className="m3-btn m3-btn--outlined" onClick={handleCopyShareLink}>
           <Icon name="share" size={18} />
-          <span>Compartilhar link (Social Preview)</span>
+          <span>Compartilhar</span>
         </button>
       </div>
 
-      <div className="grid-two">
+      <div className={isPastEvent ? undefined : 'grid-two'}>
         <div style={{ display: 'grid', gap: '1.25rem', alignContent: 'start' }}>
           <div
             style={{
@@ -197,11 +219,13 @@ export function EventDetailPage() {
 
           <div className="m3-card" style={{ display: 'grid', gap: '0.9rem' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1rem', fontSize: '0.86rem', color: 'var(--md-sys-color-on-surface-variant)' }}>
-              <strong style={{ color: 'var(--camblu-action-blue)' }}>
-                {event.mode === 'virtual' ? 'Evento Virtual' : 'Evento Presencial'}
-              </strong>
-              <span>·</span>
-              <span>Capacidade máxima: {event.maxCapacity} pessoas</span>
+              <strong style={{ color: 'var(--camblu-action-blue)' }}>{modeLabel}</strong>
+              {!isPastEvent && (
+                <>
+                  <span>·</span>
+                  <span>Capacidade máxima: {event.maxCapacity} pessoas</span>
+                </>
+              )}
               {event.hasCoffee && (
                 <>
                   <span>·</span>
@@ -240,7 +264,22 @@ export function EventDetailPage() {
               )}
             </div>
 
-            {event.mode === 'virtual' && (
+            {isPastEvent && (
+              <div className="m3-card m3-card--tonal" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                <div>
+                  <h2 style={{ marginBlockEnd: '0.25rem' }}>Evento Encerrado — Certificados</h2>
+                  <p className="text-muted">
+                    Emita ou baixe em PDF o certificado correspondente às presenças validadas neste evento.
+                  </p>
+                </div>
+                <Link to="/certificados" className="m3-btn m3-btn--filled">
+                  <Icon name="workspace_premium" size={18} />
+                  <span>Baixar Certificado</span>
+                </Link>
+              </div>
+            )}
+
+            {(event.mode === 'virtual' || event.mode === 'misto') && !isPastEvent && (
               <div className="m3-card m3-card--tonal">
                 <h2 style={{ marginBlockEnd: '0.35rem' }}>
                   Acesso à Sala Virtual
@@ -260,7 +299,8 @@ export function EventDetailPage() {
           </div>
         </div>
 
-        <aside className="m3-card" style={{ display: 'grid', gap: '1.15rem', alignContent: 'start' }}>
+        {!isPastEvent && (
+          <aside className="m3-card" style={{ display: 'grid', gap: '1.15rem', alignContent: 'start' }}>
           <h2>Escolha seu Lote & QR Codes</h2>
 
           <div style={{ display: 'grid', gap: '0.65rem' }}>
@@ -338,25 +378,22 @@ export function EventDetailPage() {
               </div>
 
               {pricing.finalCents > 0 && (
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="m3-chip"
-                    aria-pressed={paymentMethod === 'stripe_pix'}
-                    onClick={() => setPaymentMethod('stripe_pix')}
-                  >
-                    <Icon name="qr_code" size={17} />
-                    <span>PIX</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="m3-chip"
-                    aria-pressed={paymentMethod === 'stripe_card'}
-                    onClick={() => setPaymentMethod('stripe_card')}
-                  >
-                    <Icon name="credit_card" size={17} />
-                    <span>Cartão / Apple & Google Pay</span>
-                  </button>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: 'var(--md-sys-shape-corner-md)',
+                    background: 'var(--md-sys-color-surface-container-low)',
+                    fontSize: '0.84rem',
+                    color: 'var(--md-sys-color-on-surface-variant)',
+                  }}
+                >
+                  <Icon name="credit_card" size={18} className="m3-badge--blue" />
+                  <span>
+                    No Stripe você poderá pagar com <strong>PIX, Cartão de Crédito, Apple Pay ou Google Pay</strong>.
+                  </span>
                 </div>
               )}
 
@@ -380,6 +417,7 @@ export function EventDetailPage() {
             </>
           )}
         </aside>
+        )}
       </div>
     </section>
   );

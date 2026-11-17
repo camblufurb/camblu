@@ -105,23 +105,14 @@ export function DemandsPage() {
           <legend className="m3-title-large" style={{ marginBlockEnd: '0.25rem' }}>
             1. Selecione o tópico (Assunto do e-mail)
           </legend>
-          <div className="grid-cards">
+          <div className="demand-topics-grid">
             {TOPICS.map((item) => {
               const selected = topic === item.topic;
               return (
                 <button
                   key={item.topic}
                   type="button"
-                  className={`m3-card ${selected ? 'm3-card--gold' : 'm3-card--tonal'}`}
-                  style={{
-                    textAlign: 'start',
-                    cursor: 'pointer',
-                    padding: '0.95rem 1rem',
-                    borderColor: selected ? 'var(--md-sys-color-primary)' : 'transparent',
-                    borderWidth: '2px',
-                    display: 'grid',
-                    gap: '0.25rem',
-                  }}
+                  className={`m3-card demand-topic-btn ${selected ? 'm3-card--gold' : 'm3-card--tonal'}`}
                   aria-pressed={selected}
                   onClick={() => handleTopicChange(item.topic)}
                 >
@@ -192,10 +183,10 @@ export function DemandsPage() {
           />
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+        <div className="demand-submit-row">
           <button type="submit" className="m3-btn m3-btn--filled" disabled={sending}>
             <Icon name="send" size={18} />
-            <span>{sending ? 'Enviando...' : `Enviar para ${ADMIN_EMAIL}`}</span>
+            <span>{sending ? 'Enviando...' : 'Enviar Demanda'}</span>
           </button>
           <a href={mailtoHref} className="m3-btn m3-btn--outlined">
             <Icon name="mail" size={18} />

@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon';
 
 interface M3CarouselProps {
   label: string;
   peek?: boolean;
   variant?: 'hero' | 'multi-browse';
+  infinite?: boolean;
   items: {
     id: string;
     title: string;
@@ -12,53 +13,173 @@ interface M3CarouselProps {
   }[];
 }
 
-export function M3Carousel({ label, peek = true, variant = 'hero', items }: M3CarouselProps) {
+/**
+ * Expressive Material 3 carousel supporting infinite wrapping, single-step arrow navigation,
+ * and reliable active-card focus detection on both hero and multi-browse tracks.
+ */
+export function M3Carousel({
+  label,
+  peek = true,
+  variant = 'hero',
+  infinite = true,
+  items,
+}: M3CarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
-  const pendingTargetRef = useRef<number | null>(null);
+  const pendingTargetDomRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLoopingEnabled = infinite && items.length > 1;
+  const cloneCount = isLoopingEnabled ? (variant === 'multi-browse' ? Math.min(3, items.length) : 1) : 0;
 
-  const getNearestIndex = () => {
-    const track = trackRef.current;
-    if (!track) return 0;
-    const slides = Array.from(track.children) as HTMLElement[];
-    if (slides.length === 0) return 0;
-    const trackFocusX =
-      variant === 'multi-browse' ? track.scrollLeft + track.clientWidth * 0.24 : track.scrollLeft + track.clientWidth / 2;
-    let bestIdx = 0;
-    let bestDist = Infinity;
-    slides.forEach((slide, i) => {
-      const slideFocusX = variant === 'multi-browse' ? slide.offsetLeft : slide.offsetLeft + slide.offsetWidth / 2;
-      const dist = Math.abs(trackFocusX - slideFocusX);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIdx = i;
+  const extendedItems = useMemo(() => {
+    if (!isLoopingEnabled || cloneCount === 0) {
+      return items.map((item, realIdx) => ({ ...item, domKey: item.id, realIdx, isClone: false }));
+    }
+    const head = items.slice(items.length - cloneCount).map((item, idx) => ({
+      ...item,
+      domKey: `${item.id}--clone-head-${idx}`,
+      realIdx: items.length - cloneCount + idx,
+      isClone: true,
+    }));
+    const core = items.map((item, realIdx) => ({
+      ...item,
+      domKey: item.id,
+      realIdx,
+      isClone: false,
+    }));
+    const tail = items.slice(0, cloneCount).map((item, idx) => ({
+      ...item,
+      domKey: `${item.id}--clone-tail-${idx}`,
+      realIdx: idx,
+      isClone: true,
+    }));
+    return [...head, ...core, ...tail];
+  }, [cloneCount, isLoopingEnabled, items]);
+
+  const computeScrollLeftForDomIndex = useCallback(
+    (track: HTMLDivElement, domIdx: number): number => {
+      const slide = track.children[domIdx] as HTMLElement | undefined;
+      if (!slide) return 0;
+      if (variant === 'multi-browse') {
+        return Math.max(0, slide.offsetLeft - 8);
       }
-    });
-    return bestIdx;
-  };
+      return Math.max(0, slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2);
+    },
+    [variant],
+  );
 
-  const scrollToSlide = (index: number, announce = true) => {
+  const findNearestDomIndex = useCallback(
+    (track: HTMLDivElement): number => {
+      const slides = Array.from(track.children) as HTMLElement[];
+      if (slides.length === 0) return 0;
+
+      const focusX =
+        variant === 'multi-browse'
+          ? track.scrollLeft + 16
+          : track.scrollLeft + track.clientWidth / 2;
+
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      slides.forEach((slide, idx) => {
+        const slideAnchorX =
+          variant === 'multi-browse' ? slide.offsetLeft : slide.offsetLeft + slide.offsetWidth / 2;
+        const dist = Math.abs(focusX - slideAnchorX);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = idx;
+        }
+      });
+      return bestIdx;
+    },
+    [variant],
+  );
+
+  const normalizeDomIndexIfCloned = useCallback(
+    (track: HTMLDivElement, domIdx: number): number => {
+      if (!isLoopingEnabled || items.length === 0) return domIdx;
+      let realIdx = (domIdx - cloneCount) % items.length;
+      if (realIdx < 0) realIdx += items.length;
+      const canonicalDomIdx = cloneCount + realIdx;
+      if (domIdx < cloneCount || domIdx >= cloneCount + items.length) {
+        const left = computeScrollLeftForDomIndex(track, canonicalDomIdx);
+        track.scrollTo({ left, behavior: 'auto' });
+      }
+      return realIdx;
+    },
+    [cloneCount, computeScrollLeftForDomIndex, isLoopingEnabled, items.length],
+  );
+
+  // Align cleanly onto real item 0 on mount or item count change
+  useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track || items.length === 0) return;
-    const wrapped = ((index % items.length) + items.length) % items.length;
-    const slide = track.children[wrapped] as HTMLElement | undefined;
-    if (!slide) return;
-    pendingTargetRef.current = wrapped;
-    setActiveIndex(wrapped);
-    const targetLeft =
-      variant === 'multi-browse'
-        ? slide.offsetLeft
-        : slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2;
-    track.scrollTo({
-      left: Math.max(0, targetLeft),
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
-    if (announce) {
-      setStatusMessage(`Slide ${wrapped + 1} de ${items.length}: ${items[wrapped].title}`);
+    pendingTargetDomRef.current = null;
+    setActiveIndex(0);
+    const initialLeft = computeScrollLeftForDomIndex(track, cloneCount);
+    track.scrollTo({ left: initialLeft, behavior: 'auto' });
+  }, [cloneCount, computeScrollLeftForDomIndex, items.length]);
+
+  const scrollStep = (delta: -1 | 1) => {
+    const track = trackRef.current;
+    if (!track || items.length === 0) return;
+
+    const currentDom = pendingTargetDomRef.current ?? findNearestDomIndex(track);
+    let nextDom = currentDom + delta;
+
+    if (!isLoopingEnabled) {
+      nextDom = ((nextDom % items.length) + items.length) % items.length;
+    } else if (nextDom < 0) {
+      nextDom = cloneCount - 1;
+    } else if (nextDom >= extendedItems.length) {
+      nextDom = cloneCount + items.length;
     }
+
+    const mappedReal = isLoopingEnabled
+      ? (((nextDom - cloneCount) % items.length) + items.length) % items.length
+      : nextDom;
+
+    pendingTargetDomRef.current = nextDom;
+    setActiveIndex(mappedReal);
+
+    const targetLeft = computeScrollLeftForDomIndex(track, nextDom);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    track.scrollTo({
+      left: targetLeft,
+      behavior: reduced ? 'auto' : 'smooth',
+    });
+
+    setStatusMessage(`Slide ${mappedReal + 1} de ${items.length}: ${items[mappedReal].title}`);
+
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = setTimeout(() => {
+      if (!trackRef.current) return;
+      const landed = pendingTargetDomRef.current ?? findNearestDomIndex(trackRef.current);
+      pendingTargetDomRef.current = null;
+      const normalized = normalizeDomIndexIfCloned(trackRef.current, landed);
+      setActiveIndex(normalized);
+    }, reduced ? 20 : 380);
+  };
+
+  const scrollToRealIndex = (realIdx: number) => {
+    const track = trackRef.current;
+    if (!track || items.length === 0) return;
+    const bounded = ((realIdx % items.length) + items.length) % items.length;
+    const targetDom = cloneCount + bounded;
+    pendingTargetDomRef.current = targetDom;
+    setActiveIndex(bounded);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    track.scrollTo({
+      left: computeScrollLeftForDomIndex(track, targetDom),
+      behavior: reduced ? 'auto' : 'smooth',
+    });
+    setStatusMessage(`Slide ${bounded + 1} de ${items.length}: ${items[bounded].title}`);
+
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = setTimeout(() => {
+      pendingTargetDomRef.current = null;
+    }, reduced ? 20 : 380);
   };
 
   useEffect(() => {
@@ -66,22 +187,27 @@ export function M3Carousel({ label, peek = true, variant = 'hero', items }: M3Ca
     if (!track) return;
 
     const handleSettle = () => {
-      const settled = getNearestIndex();
-      pendingTargetRef.current = null;
-      setActiveIndex(settled);
+      const settledDom = pendingTargetDomRef.current ?? findNearestDomIndex(track);
+      pendingTargetDomRef.current = null;
+      const realIdx = normalizeDomIndexIfCloned(track, settledDom);
+      setActiveIndex(realIdx);
     };
 
     const supportsScrollEnd = 'onscrollend' in globalThis;
 
     const handleScroll = () => {
-      if (pendingTargetRef.current !== null) return;
+      if (pendingTargetDomRef.current !== null) return;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
-        setActiveIndex(getNearestIndex());
+        const nearestDom = findNearestDomIndex(track);
+        const mapped = isLoopingEnabled
+          ? (((nearestDom - cloneCount) % items.length) + items.length) % items.length
+          : nearestDom;
+        setActiveIndex(mapped);
       });
       if (!supportsScrollEnd) {
         if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-        settleTimerRef.current = setTimeout(handleSettle, 120);
+        settleTimerRef.current = setTimeout(handleSettle, 150);
       }
     };
 
@@ -93,7 +219,7 @@ export function M3Carousel({ label, peek = true, variant = 'hero', items }: M3Ca
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     };
-  }, [items.length, variant]);
+  }, [cloneCount, findNearestDomIndex, isLoopingEnabled, items.length, normalizeDomIndexIfCloned]);
 
   if (items.length === 0) return null;
 
@@ -105,14 +231,14 @@ export function M3Carousel({ label, peek = true, variant = 'hero', items }: M3Ca
             <button
               type="button"
               aria-label="Slide anterior"
-              onClick={() => scrollToSlide((pendingTargetRef.current ?? activeIndex) - 1)}
+              onClick={() => scrollStep(-1)}
             >
               <Icon name="chevron_left" />
             </button>
             <button
               type="button"
               aria-label="Próximo slide"
-              onClick={() => scrollToSlide((pendingTargetRef.current ?? activeIndex) + 1)}
+              onClick={() => scrollStep(1)}
             >
               <Icon name="chevron_right" />
             </button>
@@ -128,14 +254,15 @@ export function M3Carousel({ label, peek = true, variant = 'hero', items }: M3Ca
           role="group"
           aria-label="Slides"
         >
-          {items.map((item, idx) => (
+          {extendedItems.map((item) => (
             <div
-              key={item.id}
+              key={item.domKey}
               className="m3-carousel-slide"
-              data-active={activeIndex === idx ? 'true' : 'false'}
+              data-active={!item.isClone && activeIndex === item.realIdx ? 'true' : activeIndex === item.realIdx ? 'true' : 'false'}
+              aria-hidden={item.isClone || undefined}
               role="group"
               aria-roledescription="slide"
-              aria-label={`${idx + 1} de ${items.length}: ${item.title}`}
+              aria-label={`${item.realIdx + 1} de ${items.length}: ${item.title}`}
             >
               {item.content}
             </div>
@@ -143,24 +270,24 @@ export function M3Carousel({ label, peek = true, variant = 'hero', items }: M3Ca
         </div>
       </div>
 
-      <p className="visually-hidden" role="status" aria-live="polite">
-        {statusMessage}
-      </p>
-
       {items.length > 1 && (
-        <nav className="m3-carousel-markers" aria-label={`Escolher slide em ${label}`}>
+        <div className="m3-carousel-markers" aria-label="Indicadores de slide">
           {items.map((item, idx) => (
             <button
               key={item.id}
               type="button"
               className="m3-carousel-marker"
-              aria-label={`Ir para slide ${idx + 1}: ${item.title}`}
               aria-current={activeIndex === idx ? 'true' : undefined}
-              onClick={() => scrollToSlide(idx)}
+              aria-label={`Ir para slide ${idx + 1}: ${item.title}`}
+              onClick={() => scrollToRealIndex(idx)}
             />
           ))}
-        </nav>
+        </div>
       )}
+
+      <div className="visually-hidden" aria-live="polite">
+        {statusMessage}
+      </div>
     </section>
   );
 }

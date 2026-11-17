@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
 import { formatBrlFromCents } from '../lib/validators';
 
 const MONTH_ORDER = [
@@ -35,7 +34,14 @@ export function TransparencyPage() {
     }).filter((m) => m.receitas > 0 || m.despesas > 0);
   }, [transparencyEntries]);
 
+  // Heatmap desconsidera a SECIMED para não distorcer a intensidade dos meses regulares
+  const heatmapMonths = useMemo(
+    () => monthlyStats.filter((m) => m.sheet.toLowerCase() !== 'secimed'),
+    [monthlyStats],
+  );
+
   const maxMonthlyVal = Math.max(1, ...monthlyStats.flatMap((m) => [m.receitas, m.despesas]));
+  const maxHeatmapVal = Math.max(1, ...heatmapMonths.flatMap((m) => [m.receitas, m.despesas]));
 
   const categoryTotals = useMemo(() => {
     const map = new Map<string, { receitas: number; despesas: number }>();
@@ -184,36 +190,35 @@ export function TransparencyPage() {
         </article>
       </div>
 
-      {/* Heatmap de Meses com mais Entradas e Saídas */}
+      {/* Heatmap de Meses com mais Entradas e Saídas (sem SECIMED) */}
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div>
           <h2>Heatmap de Intensidade Financeira por Mês</h2>
           <p className="text-muted">
-            Intensidade visual indicando os meses com maior volume de entradas e saídas.
+            Intensidade visual indicando os meses regulares com maior volume de entradas e saídas (desconsiderando SECIMED).
           </p>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ inlineSize: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+        <div className="table-wrapper">
+          <table className="admin-table">
             <thead>
               <tr>
-                <th scope="col" style={{ textAlign: 'start', padding: '0.5rem' }}>Período</th>
-                <th scope="col" style={{ textAlign: 'center', padding: '0.5rem' }}>Entradas</th>
-                <th scope="col" style={{ textAlign: 'center', padding: '0.5rem' }}>Saídas</th>
-                <th scope="col" style={{ textAlign: 'center', padding: '0.5rem' }}>Lançamentos</th>
+                <th scope="col">Período</th>
+                <th scope="col" style={{ textAlign: 'center' }}>Entradas</th>
+                <th scope="col" style={{ textAlign: 'center' }}>Saídas</th>
+                <th scope="col" style={{ textAlign: 'center' }}>Lançamentos</th>
               </tr>
             </thead>
             <tbody>
-              {monthlyStats.map((m) => {
-                const inAlpha = 0.12 + 0.78 * (m.receitas / maxMonthlyVal);
-                const outAlpha = 0.12 + 0.78 * (m.despesas / maxMonthlyVal);
+              {heatmapMonths.map((m) => {
+                const inAlpha = 0.12 + 0.78 * (m.receitas / maxHeatmapVal);
+                const outAlpha = 0.12 + 0.78 * (m.despesas / maxHeatmapVal);
                 return (
-                  <tr key={m.sheet} style={{ borderBlockStart: '1px solid var(--md-sys-color-outline-variant)' }}>
-                    <th scope="row" style={{ textAlign: 'start', padding: '0.55rem' }}>{m.sheet}</th>
+                  <tr key={m.sheet}>
+                    <th scope="row">{m.sheet}</th>
                     <td
                       style={{
                         textAlign: 'center',
-                        padding: '0.55rem',
                         background: `rgb(20 108 67 / ${inAlpha.toFixed(2)})`,
                         color: inAlpha > 0.48 ? '#ffffff' : 'inherit',
                         fontWeight: 650,
@@ -224,7 +229,6 @@ export function TransparencyPage() {
                     <td
                       style={{
                         textAlign: 'center',
-                        padding: '0.55rem',
                         background: `rgb(59 130 247 / ${outAlpha.toFixed(2)})`,
                         color: outAlpha > 0.48 ? '#ffffff' : 'inherit',
                         fontWeight: 650,
@@ -232,7 +236,7 @@ export function TransparencyPage() {
                     >
                       {formatBrlFromCents(m.despesas)}
                     </td>
-                    <td style={{ textAlign: 'center', padding: '0.55rem' }}>{m.count}</td>
+                    <td style={{ textAlign: 'center' }}>{m.count}</td>
                   </tr>
                 );
               })}
@@ -241,10 +245,15 @@ export function TransparencyPage() {
         </div>
       </article>
 
-      {/* Movimentações Detalhadas */}
+      {/* 10 Últimas Movimentações + Link para a Planilha Google Completa */}
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
-          <h2>Movimentações Registradas</h2>
+          <div>
+            <h2>Movimentações Registradas (10 mais recentes)</h2>
+            <p className="text-muted">
+              Exibindo {Math.min(10, filteredEntries.length)} de {filteredEntries.length} movimentações neste filtro.
+            </p>
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             <select
               className="m3-select"
@@ -274,29 +283,28 @@ export function TransparencyPage() {
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ inlineSize: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+        <div className="table-wrapper">
+          <table className="admin-table">
             <thead>
-              <tr style={{ borderBlockEnd: '2px solid var(--md-sys-color-outline-variant)' }}>
-                <th scope="col" style={{ textAlign: 'start', padding: '0.55rem' }}>Data</th>
-                <th scope="col" style={{ textAlign: 'start', padding: '0.55rem' }}>Aba</th>
-                <th scope="col" style={{ textAlign: 'start', padding: '0.55rem' }}>Categoria</th>
-                <th scope="col" style={{ textAlign: 'start', padding: '0.55rem' }}>Descrição</th>
-                <th scope="col" style={{ textAlign: 'end', padding: '0.55rem' }}>Valor</th>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">Aba</th>
+                <th scope="col">Categoria</th>
+                <th scope="col">Descrição</th>
+                <th scope="col" style={{ textAlign: 'end' }}>Valor</th>
               </tr>
             </thead>
             <tbody>
-              {filteredEntries.map((e) => (
-                <tr key={e.id} style={{ borderBlockEnd: '1px solid var(--md-sys-color-outline-variant)' }}>
-                  <td style={{ padding: '0.55rem', whiteSpace: 'nowrap' }}>{e.date}</td>
-                  <td style={{ padding: '0.55rem' }}>{e.sheet}</td>
-                  <td style={{ padding: '0.55rem' }}>
+              {filteredEntries.slice(0, 10).map((e) => (
+                <tr key={e.id}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{e.date}</td>
+                  <td>{e.sheet}</td>
+                  <td>
                     <span className="m3-badge">{e.category}</span>
                   </td>
-                  <td style={{ padding: '0.55rem' }}>{e.description}</td>
+                  <td>{e.description}</td>
                   <td
                     style={{
-                      padding: '0.55rem',
                       textAlign: 'end',
                       fontWeight: 700,
                       whiteSpace: 'nowrap',
@@ -311,9 +319,21 @@ export function TransparencyPage() {
             </tbody>
           </table>
         </div>
-      </article>
 
-      <SponsorsStrip />
+        {transparencyMeta.spreadsheetUrl && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <a
+              href={transparencyMeta.spreadsheetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="m3-btn m3-btn--blue"
+            >
+              <Icon name="table_view" size={18} />
+              <span>Ver mais na planilha completa (Google Sheets)</span>
+            </a>
+          </div>
+        )}
+      </article>
     </section>
   );
 }

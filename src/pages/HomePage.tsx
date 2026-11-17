@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HOME_CAROUSEL_SLIDES } from '../data/institutional';
+import { FURB_INSTITUTIONS, HOME_CAROUSEL_SLIDES } from '../data/institutional';
+import { InstitutionLogo, type InstitutionLogoId } from '../components/InstitutionLogo';
 import { M3Carousel } from '../components/M3Carousel';
 import { Icon } from '../components/Icon';
-import { CambluCrest, SponsorsStrip } from '../components/SponsorLogos';
+import { CambluCrest } from '../components/SponsorLogos';
 
 type PortalCategoryId = 'graduacao' | 'ciencia' | 'servicos' | 'gestao';
 
@@ -80,12 +81,12 @@ const JOURNEY_TABS: {
         icon: 'medical_services',
       },
       {
-        id: 'tab-instituicoes',
-        to: '/medfurb/instituicoes',
-        title: 'Instituições Estudantis',
-        summary: 'Como CAMBLU, DCE FURB, Atlética AAARIH e IFMSA Brazil FURB atuam juntas na graduação.',
-        cta: 'Conhecer instituições',
-        icon: 'handshake',
+        id: 'tab-sobre',
+        to: '/sobre',
+        title: 'Sobre o CAMBLU',
+        summary: 'Conheça a atuação estatutária do Centro Acadêmico desde 1990, suas diretorias e salas no Edifício Cristina.',
+        cta: 'Conhecer o CAMBLU',
+        icon: 'apartment',
       },
       {
         id: 'tab-calouro',
@@ -386,42 +387,17 @@ export function HomePage() {
               'radial-gradient(circle at 90% 14%, rgb(237 209 110 / 0.22), transparent 42%), linear-gradient(140deg, #071b13 0%, #0f3325 58%, #184b37 100%)',
           }}
         >
-          <div className="m3-hero-copy" style={{ display: 'grid', gap: '1.25rem', maxInlineSize: '44rem', flex: '1 1 22rem' }}>
-            <span className="m3-label-large" style={{ color: '#f1de97' }}>
-              Medicina FURB · Representação discente desde 1990
-            </span>
-
+          <div className="m3-hero-copy" style={{ display: 'grid', gap: '1.1rem', maxInlineSize: '44rem', flex: '1 1 18rem' }}>
             <h1 style={{ color: '#ffffff' }}>Centro Acadêmico de Medicina de Blumenau</h1>
 
             <p style={{ color: '#dceddf' }}>
               Um único portal para acessar eventos, certificados, ligas acadêmicas, manual do calouro, transparência
               financeira, lojinha oficial e canais de acolhimento da MEDFURB.
             </p>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingBlockStart: '0.25rem' }}>
-              <Link to="/sobre" className="m3-btn m3-btn--blue">
-                <span>Conheça o CAMBLU</span>
-                <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
-              </Link>
-              <Link to="/medfurb/instituicoes" className="m3-btn m3-btn--gold">
-                <Icon name="groups" size={18} />
-                <span>Instituições Estudantis</span>
-              </Link>
-            </div>
           </div>
 
-          <div
-            className="m3-hero-emblem"
-            style={{
-              flex: '0 0 auto',
-              marginInline: 'auto',
-              padding: '1.1rem',
-              borderRadius: '9999px',
-              background: 'rgb(255 255 255 / 0.06)',
-              border: '1px solid rgb(237 209 110 / 0.28)',
-            }}
-          >
-            <CambluCrest size={160} variant="clean" />
+          <div className="m3-hero-emblem home-hero-emblem">
+            <CambluCrest size={140} variant="clean" />
           </div>
         </div>
       </section>
@@ -476,7 +452,53 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* 3. Carrossel M3 Hero Showcase ("Em um pacote seguro e flexível") */}
+      {/* 3. Resumo das Instituições Estudantis da MEDFURB */}
+      <section className="page-section container" style={{ paddingBlockStart: '0.5rem', display: 'grid', gap: '1.5rem' }}>
+        <div className="m3-motion-from-start" style={{ maxInlineSize: '46rem', display: 'grid', gap: '0.45rem' }}>
+          <h2>Instituições Estudantis da Medicina FURB</h2>
+          <p className="text-muted">
+            Conheça resumidamente o papel de cada entidade acadêmica, esportiva, humanitária e representativa do curso.
+          </p>
+        </div>
+
+        <div className="grid-cards">
+          {FURB_INSTITUTIONS.map((inst, idx) => (
+            <article
+              key={inst.id}
+              className="m3-card m3-motion-stagger"
+              style={
+                {
+                  '--stagger-i': idx,
+                  display: 'grid',
+                  gap: '0.85rem',
+                  alignContent: 'start',
+                } as React.CSSProperties
+              }
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                <InstitutionLogo id={inst.id as InstitutionLogoId} size="3.5rem" alt={`Logo ${inst.acronym}`} />
+                <div>
+                  <h3>{inst.acronym}</h3>
+                  <span className="text-muted" style={{ fontSize: '0.82rem', display: 'block' }}>
+                    {inst.name}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-muted">{inst.summary}</p>
+            </article>
+          ))}
+        </div>
+
+        <div>
+          <Link to="/medfurb/instituicoes" className="m3-btn m3-btn--blue">
+            <span>Explorar Instituições Estudantis em detalhes</span>
+            <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
+          </Link>
+        </div>
+      </section>
+
+      {/* 4. Carrossel M3 Hero Showcase ("Em um pacote seguro e flexível") */}
       <section className="page-section" style={{ background: 'var(--md-sys-color-surface-container-low)' }}>
         <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
           <div className="m3-motion-from-end" style={{ maxInlineSize: '46rem', display: 'grid', gap: '0.4rem' }}>
@@ -593,10 +615,6 @@ export function HomePage() {
             ))}
           </div>
         </div>
-      </section>
-
-      <section className="container" style={{ paddingBlock: '2.5rem 3rem' }}>
-        <SponsorsStrip />
       </section>
     </div>
   );

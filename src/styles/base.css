@@ -4,6 +4,11 @@
     color: var(--md-sys-color-on-background);
     font-family: var(--font-sans);
     font-optical-sizing: auto;
+    scroll-padding-top: calc(var(--header-block-size) + 1.5rem);
+  }
+
+  [id] {
+    scroll-margin-top: calc(var(--header-block-size) + 1.5rem);
   }
 
   body {

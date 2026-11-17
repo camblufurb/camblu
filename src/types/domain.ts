@@ -49,6 +49,7 @@ export interface CertificateFieldPosition {
   xPercent: number; // 0..100 from left
   yPercent: number; // 0..100 from top
   fontSizePt: number;
+  widthPercent?: number; // 15..95 max printable width box
   colorHex: string;
   align: 'left' | 'center' | 'right';
 }
@@ -60,9 +61,7 @@ export interface CertificateTemplateConfig {
   fields: {
     name: CertificateFieldPosition;
     cpf: CertificateFieldPosition;
-    event: CertificateFieldPosition;
     hours: CertificateFieldPosition;
-    date: CertificateFieldPosition;
     code: CertificateFieldPosition;
     qr?: {
       xPercent: number;
@@ -72,6 +71,13 @@ export interface CertificateTemplateConfig {
   };
 }
 
+export interface SecimedPaletteConfig {
+  primary: string;
+  secondary1: string;
+  secondary2: string;
+  background: string;
+}
+
 export interface CambluEvent {
   id: string;
   slug: string;
@@ -79,7 +85,7 @@ export interface CambluEvent {
   description: string;
   imageUrl: string;
   maxCapacity: number;
-  mode: 'presencial' | 'virtual';
+  mode: 'presencial' | 'virtual' | 'misto';
   locationShort: string;
   mapsUrl?: string;
   virtualAccessUrl?: string;
@@ -87,6 +93,10 @@ export interface CambluEvent {
   category: 'camblu_coffee' | 'secimed' | 'academico' | 'integracao';
   isSecimed: boolean;
   hasCoffee: boolean;
+  archived?: boolean;
+  qrScannerHidden?: boolean;
+  secimedPalette?: SecimedPaletteConfig;
+  secimedFeaturePhotos?: Record<string, string>;
   startAt: string;
   endAt: string;
   lots: EventLot[];
@@ -214,6 +224,8 @@ export interface TransparencyEntry {
 
 export interface TransparencyMeta {
   driveMinutesUrl: string;
+  spreadsheetUrl?: string;
+  lastSyncedAt?: string;
   currentBalanceCents: number;
   projectedBalanceCents: number;
   investedBalanceCents: number;
@@ -224,7 +236,7 @@ export interface TransparencyMeta {
 export interface EditalItem {
   id: string;
   title: string;
-  program: 'E-PAF' | 'E-PAATC' | 'E-PAFLIEC' | 'SECIMED' | 'Eleições' | 'Outro';
+  program: string;
   summary: string;
   status: 'aberto' | 'encerrado' | 'em_breve';
   deadline: string;
@@ -240,6 +252,7 @@ export interface AnaisEdition {
   issn: string;
   summary: string;
   pdfUrl: string;
+  coverImageUrl?: string;
   zenodoUrl?: string;
   publishedAt: string;
 }

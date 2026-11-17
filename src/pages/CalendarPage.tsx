@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
 
 export function CalendarPage() {
   const { events, editais } = useAppData();
@@ -112,8 +111,6 @@ export function CalendarPage() {
           </div>
         </div>
       </div>
-
-      <SponsorsStrip />
     </section>
   );
 }

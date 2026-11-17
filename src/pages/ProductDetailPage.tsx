@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FloatingCartPill } from '../components/FloatingCartPill';
 import { Icon } from '../components/Icon';
-import { ShopCartDialog } from '../components/ShopCartDialog';
-import { SponsorsStrip } from '../components/SponsorLogos';
 import { useToast } from '../components/ToastProvider';
 import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,7 +21,7 @@ export function ProductDetailPage() {
   const navigate = useNavigate();
   const { products } = useAppData();
   const { profile } = useAuth();
-  const { addToCart, isFavorite, toggleFavorite, totalItemsCount, setCartOpen } = useShopCart();
+  const { addToCart, totalItemsCount, setCartOpen } = useShopCart();
   const { notify } = useToast();
 
   const rawProduct = findProductBySlug(products, slug);
@@ -93,8 +91,6 @@ export function ProductDetailPage() {
   const relatedProducts = products
     .filter((p) => p.active && p.id !== product.id)
     .slice(0, 3);
-
-  const favorited = isFavorite(product.id);
 
   const handleShareLink = async () => {
     const shareUrl = window.location.href;
@@ -305,7 +301,7 @@ export function ProductDetailPage() {
             </div>
           )}
 
-          {/* CTA Principal (#3b82f7) + Favoritar + Compartilhar */}
+          {/* CTA Principal (#3b82f7) + Compartilhar */}
           <div className="product-cta-row">
             <button
               type="button"
@@ -319,17 +315,7 @@ export function ProductDetailPage() {
 
             <button
               type="button"
-              className="product-cta-fav"
-              aria-label={favorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
-              aria-pressed={favorited}
-              onClick={() => toggleFavorite(product)}
-            >
-              <Icon name="favorite" size={22} filled={favorited} />
-            </button>
-
-            <button
-              type="button"
-              className="product-cta-fav"
+              className="product-cta-secondary"
               aria-label="Copiar link do produto"
               onClick={handleShareLink}
             >
@@ -467,9 +453,7 @@ export function ProductDetailPage() {
         </section>
       )}
 
-      <SponsorsStrip />
       <FloatingCartPill />
-      <ShopCartDialog />
     </section>
   );
 }

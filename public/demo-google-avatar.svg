@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Avatar de conta Google demo">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dbe9ff" />
+      <stop offset="55%" stop-color="#c7ecd9" />
+      <stop offset="100%" stop-color="#f1de97" />
+    </linearGradient>
+    <linearGradient id="coat" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f3325" />
+      <stop offset="100%" stop-color="#216148" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="64" fill="url(#bg)" />
+  <circle cx="64" cy="48" r="22" fill="url(#coat)" />
+  <path d="M24 118c4-22 20-34 40-34s36 12 40 34" fill="url(#coat)" />
+</svg>

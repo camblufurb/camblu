@@ -60,7 +60,7 @@ export const SPACES_DATA = [
   {
     id: 'convivencia',
     name: 'Sala de Convivência',
-    location: 'Edifício Cristina · Medicina FURB',
+    location: 'Edifício Cristina',
     icon: 'coffee',
     status: 'Disponível',
     description:
@@ -70,7 +70,7 @@ export const SPACES_DATA = [
   {
     id: 'coworking',
     name: 'Sala de Coworking',
-    location: 'Edifício Cristina · Medicina FURB',
+    location: 'Edifício Cristina',
     icon: 'menu_book',
     status: 'Disponível',
     description:
@@ -80,7 +80,7 @@ export const SPACES_DATA = [
   {
     id: 'descanso',
     name: 'Sala de Descanso',
-    location: 'Edifício Cristina · Medicina FURB',
+    location: 'Edifício Cristina',
     icon: 'hotel',
     status: 'Em reforma e ampliação',
     description:
@@ -216,15 +216,15 @@ export const MEDFURB_DATA = {
       url: 'https://www.furb.br/web/5940/servicos/portal-academico/apoio-ao-estudante/universidade-gratuita',
     },
     {
-      name: 'Credifurb',
+      name: 'Financiamento Estudantil Unicred',
       summary:
-        'Crédito educativo próprio da FURB: pague 50% da mensalidade durante a graduação e os outros 50% após a conclusão do vínculo. Compatível com editais semestrais.',
-      url: 'https://www.furb.br/web/5270/servicos/portal-academico/apoio-ao-estudante/credifurb',
+        'Linha de financiamento acadêmico oferecida pela Unicred, patrocinadora institucional do CAMBLU, com condições diferenciadas para estudantes de Medicina.',
+      url: 'https://www.unicred.com.br/',
     },
     {
       name: 'FlexFURB',
       summary:
-        'Financiamento estudantil de até 70% dos encargos educacionais durante o curso (incompatível apenas com quem já possui Credifurb).',
+        'Financiamento estudantil da FURB de até 70% dos encargos educacionais durante o curso, com contratação e editais próprios da universidade.',
       url: 'https://www.furb.br/web/5270/servicos/portal-academico/apoio-ao-estudante/flexfurb',
     },
     {

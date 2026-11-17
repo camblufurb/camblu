@@ -7,6 +7,16 @@ export interface TransparencyPosterSlide {
   dataUrl: string;
 }
 
+const PIE_PALETTE = [
+  '#edd16e',
+  '#3b82f7',
+  '#6ee7b7',
+  '#f472b6',
+  '#a78bfa',
+  '#fb923c',
+  '#38bdf8',
+];
+
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -31,14 +41,12 @@ function paintSlideBase(ctx: CanvasRenderingContext2D, slideNum: number, monthLa
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle decorative arcs
   ctx.strokeStyle = 'rgba(237, 209, 110, 0.16)';
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.arc(W - 90, 120, 220, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Header badge
   ctx.fillStyle = '#edd16e';
   drawRoundedRect(ctx, 72, 72, 390, 56, 28);
   ctx.fill();
@@ -49,13 +57,11 @@ function paintSlideBase(ctx: CanvasRenderingContext2D, slideNum: number, monthLa
   ctx.textBaseline = 'middle';
   ctx.fillText('TRANSPARÊNCIA CAMBLU', 267, 100);
 
-  // Page indicator
   ctx.fillStyle = '#f1de97';
   ctx.font = '700 26px "Roboto Flex", system-ui, sans-serif';
   ctx.textAlign = 'right';
-  ctx.fillText(`${slideNum} / 4`, W - 72, 100);
+  ctx.fillText(`${slideNum} / 3`, W - 72, 100);
 
-  // Footer
   ctx.fillStyle = 'rgba(255,255,255,0.12)';
   ctx.fillRect(72, H - 120, W - 144, 2);
   ctx.fillStyle = '#c4d8cc';
@@ -91,10 +97,95 @@ function wrapText(
   if (line) ctx.fillText(line, x, currY);
 }
 
+function aggregateForPie(entries: TransparencyEntry[]): { label: string; cents: number; color: string }[] {
+  const byCategory = new Map<string, number>();
+  for (const e of entries) {
+    const key = e.category && e.category !== 'Geral' ? e.category : e.description.slice(0, 26);
+    byCategory.set(key, (byCategory.get(key) || 0) + e.amountCents);
+  }
+  const sorted = Array.from(byCategory.entries())
+    .sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, 5);
+  const othersCents = sorted.slice(5).reduce((sum, [, v]) => sum + v, 0);
+  if (othersCents > 0) top.push(['Outros', othersCents]);
+  return top.map(([label, cents], idx) => ({
+    label,
+    cents,
+    color: PIE_PALETTE[idx % PIE_PALETTE.length],
+  }));
+}
+
+function paintPieAndLegend(
+  ctx: CanvasRenderingContext2D,
+  slices: { label: string; cents: number; color: string }[],
+  totalCents: number,
+  emptyMessage: string,
+) {
+  const W = 1080;
+  if (slices.length === 0 || totalCents <= 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    drawRoundedRect(ctx, 72, 410, W - 144, 180, 28);
+    ctx.fill();
+    ctx.fillStyle = '#c4d8cc';
+    ctx.font = '600 30px "Roboto Flex", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(emptyMessage, W / 2, 500);
+    return;
+  }
+
+  const cx = W / 2;
+  const cy = 570;
+  const radius = 195;
+  let angle = -Math.PI / 2;
+
+  for (const sl of slices) {
+    const portion = sl.cents / totalCents;
+    const endAngle = angle + portion * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, angle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = sl.color;
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#071b13';
+    ctx.stroke();
+    angle = endAngle;
+  }
+
+  let legendY = 825;
+  for (const sl of slices) {
+    const pct = Math.round((sl.cents / totalCents) * 100);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    drawRoundedRect(ctx, 72, legendY, W - 144, 62, 16);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(108, legendY + 31, 13, 0, Math.PI * 2);
+    ctx.fillStyle = sl.color;
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 26px "Roboto Flex", system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${sl.label.slice(0, 28)} (${pct}%)`, 136, legendY + 32);
+
+    ctx.fillStyle = sl.color;
+    ctx.font = '800 26px "Roboto Flex", system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(formatBrlFromCents(sl.cents), W - 96, legendY + 32);
+
+    legendY += 72;
+  }
+}
+
+/**
+ * Generates the 3 monthly transparency carousel cards (1080x1350 PNG):
+ * 1) Cover with Monthly Net Result; 2) Incomes Pie Chart; 3) Saídas e Investimentos Pie Chart.
+ */
 export function generateTransparencyPostSlides(
   monthLabel: string,
   entries: TransparencyEntry[],
-  investedBalanceCents: number,
 ): TransparencyPosterSlide[] {
   const W = 1080;
   const H = 1350;
@@ -102,6 +193,8 @@ export function generateTransparencyPostSlides(
   const despesas = entries.filter((e) => e.type === 'despesa');
   const totalIn = receitas.reduce((s, e) => s + e.amountCents, 0);
   const totalOut = despesas.reduce((s, e) => s + e.amountCents, 0);
+  const netResultCents = totalIn - totalOut;
+  const netPrefix = netResultCents >= 0 ? '+' : '-';
 
   const makeCanvas = () => {
     const c = document.createElement('canvas');
@@ -110,128 +203,83 @@ export function generateTransparencyPostSlides(
     return c;
   };
 
-  // SLIDE 1 — Capa
+  // SLIDE 1 — Capa + Resultado do Mês
   const c1 = makeCanvas();
   const ctx1 = c1.getContext('2d')!;
   paintSlideBase(ctx1, 1, monthLabel);
   ctx1.textAlign = 'left';
   ctx1.fillStyle = '#f1de97';
   ctx1.font = '700 34px "Roboto Flex", system-ui, sans-serif';
-  ctx1.fillText('PRESTAÇÃO DE CONTAS MENSAL', 72, 290);
+  ctx1.fillText('PRESTAÇÃO DE CONTAS MENSAL', 72, 280);
   ctx1.fillStyle = '#ffffff';
   ctx1.font = '800 84px "Roboto Flex", system-ui, sans-serif';
-  wrapText(ctx1, `Balanço de ${monthLabel}`, 72, 390, W - 144, 96);
+  wrapText(ctx1, `Balanço de ${monthLabel}`, 72, 380, W - 144, 96);
   ctx1.fillStyle = '#d7ece0';
   ctx1.font = '500 34px "Roboto Flex", system-ui, sans-serif';
   wrapText(
     ctx1,
-    `Confira todas as entradas, investimentos estudantis e saídas registradas no mês com total transparência.`,
+    'Confira as entradas, saídas e investimentos registrados no período com total transparência.',
     72,
-    620,
+    595,
     W - 144,
     46,
   );
   ctx1.fillStyle = 'rgba(237, 209, 110, 0.14)';
-  drawRoundedRect(ctx1, 72, 820, W - 144, 240, 32);
+  drawRoundedRect(ctx1, 72, 760, W - 144, 310, 32);
   ctx1.fill();
   ctx1.fillStyle = '#edd16e';
   ctx1.font = '700 28px "Roboto Flex", system-ui, sans-serif';
-  ctx1.fillText('RESUMO RÁPIDO', 110, 885);
-  ctx1.fillStyle = '#ffffff';
-  ctx1.font = '700 40px "Roboto Flex", system-ui, sans-serif';
-  ctx1.fillText(`${entries.length} movimentações auditadas`, 110, 955);
+  ctx1.fillText('RESULTADO DO MÊS', 110, 825);
+  ctx1.fillStyle = netResultCents >= 0 ? '#6ee7b7' : '#f1de97';
+  ctx1.font = '800 76px "Roboto Flex", system-ui, sans-serif';
+  ctx1.fillText(`${netPrefix}${formatBrlFromCents(Math.abs(netResultCents))}`, 110, 915);
   ctx1.fillStyle = '#c4d8cc';
-  ctx1.font = '500 30px "Roboto Flex", system-ui, sans-serif';
-  ctx1.fillText('Arraste para conferir entradas, despesas e investimentos', 110, 1015);
+  ctx1.font = '600 28px "Roboto Flex", system-ui, sans-serif';
+  ctx1.fillText(
+    `Entradas: +${formatBrlFromCents(totalIn)}   ·   Saídas: -${formatBrlFromCents(totalOut)}`,
+    110,
+    1005,
+  );
 
-  // SLIDE 2 — Entradas
+  // SLIDE 2 — Entradas com Gráfico de Pizza
   const c2 = makeCanvas();
   const ctx2 = c2.getContext('2d')!;
   paintSlideBase(ctx2, 2, monthLabel);
   ctx2.textAlign = 'left';
   ctx2.fillStyle = '#edd16e';
   ctx2.font = '700 32px "Roboto Flex", system-ui, sans-serif';
-  ctx2.fillText('ENTRADAS DO PERÍODO', 72, 220);
+  ctx2.fillText('ENTRADAS DO MÊS', 72, 220);
   ctx2.fillStyle = '#ffffff';
-  ctx2.font = '800 72px "Roboto Flex", system-ui, sans-serif';
-  ctx2.fillText(formatBrlFromCents(totalIn), 72, 310);
+  ctx2.font = '800 68px "Roboto Flex", system-ui, sans-serif';
+  ctx2.fillText(`+${formatBrlFromCents(totalIn)}`, 72, 300);
+  paintPieAndLegend(
+    ctx2,
+    aggregateForPie(receitas),
+    totalIn,
+    'Nenhuma entrada registrada neste mês.',
+  );
 
-  let y2 = 420;
-  for (const item of receitas.slice(0, 7)) {
-    ctx2.fillStyle = 'rgba(255,255,255,0.08)';
-    drawRoundedRect(ctx2, 72, y2, W - 144, 88, 20);
-    ctx2.fill();
-    ctx2.fillStyle = '#ffffff';
-    ctx2.font = '600 28px "Roboto Flex", system-ui, sans-serif';
-    ctx2.textAlign = 'left';
-    ctx2.fillText(item.description.slice(0, 36), 100, y2 + 45);
-    ctx2.fillStyle = '#6ee7b7';
-    ctx2.font = '800 28px "Roboto Flex", system-ui, sans-serif';
-    ctx2.textAlign = 'right';
-    ctx2.fillText(`+${formatBrlFromCents(item.amountCents)}`, W - 100, y2 + 45);
-    y2 += 104;
-  }
-
-  // SLIDE 3 — Saídas
+  // SLIDE 3 — Apenas Saídas e Investimentos com Gráfico de Pizza
   const c3 = makeCanvas();
   const ctx3 = c3.getContext('2d')!;
   paintSlideBase(ctx3, 3, monthLabel);
   ctx3.textAlign = 'left';
   ctx3.fillStyle = '#edd16e';
-  ctx3.font = '700 32px "Roboto Flex", system-ui, sans-serif';
-  ctx3.fillText('SAÍDAS & INVESTIMENTOS EM AÇÕES', 72, 220);
+  ctx3.font = '700 34px "Roboto Flex", system-ui, sans-serif';
+  ctx3.fillText('Saídas e Investimentos', 72, 220);
   ctx3.fillStyle = '#ffffff';
-  ctx3.font = '800 72px "Roboto Flex", system-ui, sans-serif';
-  ctx3.fillText(formatBrlFromCents(totalOut), 72, 310);
-
-  let y3 = 420;
-  for (const item of despesas.slice(0, 7)) {
-    ctx3.fillStyle = 'rgba(255,255,255,0.08)';
-    drawRoundedRect(ctx3, 72, y3, W - 144, 88, 20);
-    ctx3.fill();
-    ctx3.fillStyle = '#ffffff';
-    ctx3.font = '600 28px "Roboto Flex", system-ui, sans-serif';
-    ctx3.textAlign = 'left';
-    ctx3.fillText(item.description.slice(0, 36), 100, y3 + 45);
-    ctx3.fillStyle = '#f1de97';
-    ctx3.font = '800 28px "Roboto Flex", system-ui, sans-serif';
-    ctx3.textAlign = 'right';
-    ctx3.fillText(`-${formatBrlFromCents(item.amountCents)}`, W - 100, y3 + 45);
-    y3 += 104;
-  }
-
-  // SLIDE 4 — Fechamento & Reserva
-  const c4 = makeCanvas();
-  const ctx4 = c4.getContext('2d')!;
-  paintSlideBase(ctx4, 4, monthLabel);
-  ctx4.textAlign = 'left';
-  ctx4.fillStyle = '#edd16e';
-  ctx4.font = '700 32px "Roboto Flex", system-ui, sans-serif';
-  ctx4.fillText('BALANÇO & RESERVA PATRIMONIAL', 72, 230);
-
-  const cards = [
-    { label: 'Resultado Operacional do Mês', value: formatBrlFromCents(totalIn - totalOut) },
-    { label: 'Reserva Aplicada (Renda Fixa)', value: formatBrlFromCents(investedBalanceCents) },
-    { label: 'Atas & Comprovantes Completos', value: 'Disponíveis no portal oficial' },
-  ];
-  let y4 = 340;
-  for (const card of cards) {
-    ctx4.fillStyle = 'rgba(255,255,255,0.09)';
-    drawRoundedRect(ctx4, 72, y4, W - 144, 175, 28);
-    ctx4.fill();
-    ctx4.fillStyle = '#c4d8cc';
-    ctx4.font = '600 26px "Roboto Flex", system-ui, sans-serif';
-    ctx4.fillText(card.label, 110, y4 + 58);
-    ctx4.fillStyle = '#edd16e';
-    ctx4.font = '800 44px "Roboto Flex", system-ui, sans-serif';
-    ctx4.fillText(card.value, 110, y4 + 122);
-    y4 += 210;
-  }
+  ctx3.font = '800 68px "Roboto Flex", system-ui, sans-serif';
+  ctx3.fillText(`-${formatBrlFromCents(totalOut)}`, 72, 300);
+  paintPieAndLegend(
+    ctx3,
+    aggregateForPie(despesas),
+    totalOut,
+    'Nenhuma saída registrada neste mês.',
+  );
 
   return [
-    { index: 1, title: 'Capa do Mês', dataUrl: c1.toDataURL('image/png') },
-    { index: 2, title: 'Entradas', dataUrl: c2.toDataURL('image/png') },
-    { index: 3, title: 'Saídas & Projetos', dataUrl: c3.toDataURL('image/png') },
-    { index: 4, title: 'Balanço & Atas', dataUrl: c4.toDataURL('image/png') },
+    { index: 1, title: 'Resultado do Mês', dataUrl: c1.toDataURL('image/png') },
+    { index: 2, title: 'Entradas (Pizza)', dataUrl: c2.toDataURL('image/png') },
+    { index: 3, title: 'Saídas e Investimentos', dataUrl: c3.toDataURL('image/png') },
   ];
 }

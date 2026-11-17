@@ -105,19 +105,23 @@ export function ProfilePage() {
   };
 
   return (
-    <section className="page-section container m3-reveal">
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '1rem', marginBlockEnd: '1.5rem' }}>
-        <div>
+    <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gap: '1rem' }}>
+        <div style={{ display: 'grid', gap: '0.4rem' }}>
           <h1>Meu Perfil & Cadastro Acadêmico</h1>
           <p className="text-muted">
             Seus dados garantem emissão correta de certificados, transferência de ingressos via CPF e entrega na Lojinha.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <Link to="/meus-ingressos" className="m3-btn m3-btn--tonal">
             <Icon name="confirmation_number" size={18} />
             <span>Meus Ingressos</span>
+          </Link>
+          <Link to="/meus-pedidos" className="m3-btn m3-btn--outlined">
+            <Icon name="receipt_long" size={18} />
+            <span>Compras na Lojinha</span>
           </Link>
           <Link to="/certificados" className="m3-btn m3-btn--outlined">
             <Icon name="workspace_premium" size={18} />
@@ -127,7 +131,7 @@ export function ProfilePage() {
       </div>
 
       <div className="grid-two">
-        <form onSubmit={handleSubmit} className="m3-card" style={{ display: 'grid', gap: '1rem' }} noValidate>
+        <form onSubmit={handleSubmit} className="m3-card" style={{ display: 'grid', gap: '1.25rem' }} noValidate>
           <h2>Dados Pessoais & Vínculo</h2>
 
           <div className="m3-field">

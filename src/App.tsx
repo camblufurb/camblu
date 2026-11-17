@@ -17,6 +17,8 @@ import { GestoesPage } from './pages/GestoesPage';
 import { ManualCalouroPage } from './pages/ManualCalouroPage';
 import { EventsPage } from './pages/EventsPage';
 import { EventDetailPage } from './pages/EventDetailPage';
+import { MyShopOrdersPage } from './pages/MyShopOrdersPage';
+import { MyTicketsHistoryPage } from './pages/MyTicketsHistoryPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
 import { SecimedPage } from './pages/SecimedPage';
 import { AnaisSecimedPage } from './pages/AnaisSecimedPage';
@@ -108,6 +110,10 @@ export function App() {
                     <Route path="/eventos" element={<EventsPage />} />
                     <Route path="/eventos/:slug" element={<EventDetailPage />} />
                     <Route path="/meus-ingressos" element={<MyTicketsPage />} />
+                    <Route path="/meus-ingressos/historico" element={<MyTicketsHistoryPage />} />
+                    <Route path="/meus-pedidos" element={<MyShopOrdersPage />} />
+                    <Route path="/historico/ingressos" element={<Navigate to="/meus-ingressos/historico" replace />} />
+                    <Route path="/historico/lojinha" element={<Navigate to="/meus-pedidos" replace />} />
                     <Route path="/certificados" element={<CertificatesPage />} />
                     <Route path="/certificados/validar" element={<CertificatesPage />} />
                     <Route path="/certificados/validar/:codigo" element={<CertificatesPage />} />
@@ -122,7 +128,7 @@ export function App() {
                     <Route path="/editais" element={<EditaisPage />} />
                     <Route path="/demandas" element={<DemandsPage />} />
                     <Route path="/camblu-mulher" element={<CambluMulherPage />} />
-                    <Route path="/back" element={<AdminBackPage />} />
+                    <Route path="/back/*" element={<AdminBackPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </Suspense>

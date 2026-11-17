@@ -5,7 +5,6 @@ export type SupportedLocale = 'pt-BR';
 const dictionary = {
   'pt-BR': {
     'app.title': 'CAMBLU',
-    'app.subtitle': 'Medicina FURB · Desde 1990',
     'skip.toContent': 'Pular para o conteúdo principal',
     'nav.home': 'Início',
     'nav.events': 'Eventos',

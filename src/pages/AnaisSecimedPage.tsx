@@ -2,9 +2,12 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
 import { SECIMED_INFO } from '../data/institutional';
 
+/**
+ * Displays published SECIMED proceedings (Anais) with cover art and direct edition PDF downloads;
+ * global Zenodo repository link appears exclusively in the header hero.
+ */
 export function AnaisSecimedPage() {
   const { anais } = useAppData();
   const [search, setSearch] = useState('');
@@ -52,7 +55,7 @@ export function AnaisSecimedPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
           <div>
             <h2>Edições Publicadas (PDF)</h2>
-            <p className="text-muted">Anais submetidos e indexados pela Comissão Editorial do CAMBLU.</p>
+            <p className="text-muted">Cada edição publicada conta com capa e arquivo PDF próprio submetido pela Comissão Editorial.</p>
           </div>
           <input
             type="search"
@@ -67,27 +70,52 @@ export function AnaisSecimedPage() {
 
         <div className="grid-two">
           {filtered.map((ed) => (
-            <article key={ed.id} className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.75rem', alignContent: 'space-between' }}>
-              <div>
-                <span className="m3-label-small text-muted" style={{ display: 'block', marginBlockEnd: '0.35rem' }}>
-                  Edição {ed.year} · ISSN {ed.issn}
-                </span>
-                <h3 style={{ marginBlockEnd: '0.35rem' }}>
-                  {ed.editionTitle}
-                </h3>
-                <p className="text-muted">{ed.summary}</p>
+            <article key={ed.id} className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between' }}>
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                <div
+                  style={{
+                    aspectRatio: '16 / 10',
+                    borderRadius: 'var(--md-sys-shape-corner-md)',
+                    overflow: 'hidden',
+                    background: 'linear-gradient(135deg, #0f3325, #1b563e)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: '#edd16e',
+                    border: '1px solid var(--md-sys-color-outline-variant)',
+                  }}
+                >
+                  {ed.coverImageUrl ? (
+                    <img
+                      src={ed.coverImageUrl}
+                      alt={`Capa ${ed.editionTitle}`}
+                      style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div style={{ display: 'grid', placeItems: 'center', gap: '0.35rem', padding: '1rem', textAlign: 'center' }}>
+                      <Icon name="menu_book" size={40} />
+                      <strong style={{ color: '#ffffff' }}>SECIMED {ed.year}</strong>
+                      <span style={{ fontSize: '0.78rem', color: '#f1de97' }}>ISSN {ed.issn}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <span className="m3-label-small text-muted" style={{ display: 'block', marginBlockEnd: '0.35rem' }}>
+                    Edição {ed.year} · ISSN {ed.issn}
+                  </span>
+                  <h3 style={{ marginBlockEnd: '0.35rem' }}>
+                    {ed.editionTitle}
+                  </h3>
+                  <p className="text-muted">{ed.summary}</p>
+                </div>
               </div>
+
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
                 <a href={ed.pdfUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--filled">
                   <Icon name="picture_as_pdf" size={18} />
-                  <span>Abrir Anais (PDF)</span>
+                  <span>Abrir PDF da Edição</span>
                 </a>
-                {ed.zenodoUrl && (
-                  <a href={ed.zenodoUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--outlined">
-                    <Icon name="open_in_new" size={18} />
-                    <span>Zenodo</span>
-                  </a>
-                )}
               </div>
             </article>
           ))}
@@ -120,15 +148,13 @@ export function AnaisSecimedPage() {
             Após triagem inicial (Desk Review), cada resumo passa por dois pareceristas independentes avaliando 0 /
             0,5 / 1,0 ponto por critério:
           </p>
-          <ol style={{ margin: 0, paddingInlineStart: '1.25rem', display: 'grid', gap: '0.3rem', fontSize: '0.92rem' }}>
+          <ol style={{ margin: 0, paddingInlineStart: '1.25rem', display: 'grid', gap: '0.35rem', fontSize: '0.9375rem' }}>
             {SECIMED_INFO.evaluationCriteria.map((c) => (
               <li key={c}>{c}</li>
             ))}
           </ol>
         </div>
       </div>
-
-      <SponsorsStrip />
     </section>
   );
 }

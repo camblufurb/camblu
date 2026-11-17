@@ -14,11 +14,9 @@ export interface CartEntry {
 }
 
 const CART_STORAGE_KEY = 'camblu.shop_cart.v1';
-const FAVS_STORAGE_KEY = 'camblu.shop_favs.v1';
 
 interface ShopCartContextValue {
   cart: CartEntry[];
-  favorites: string[];
   cartOpen: boolean;
   setCartOpen: (open: boolean) => void;
   paymentMethod: 'stripe_pix' | 'stripe_card';
@@ -31,8 +29,6 @@ interface ShopCartContextValue {
   addToCart: (product: ShopProduct, size: string, colorName?: string) => boolean;
   updateQuantity: (productId: string, size: string, colorName: string | undefined, delta: number) => void;
   removeFromCart: (productId: string, size: string, colorName?: string) => void;
-  toggleFavorite: (product: ShopProduct) => void;
-  isFavorite: (productId: string) => boolean;
   checkout: (onRequireProfile: () => void) => Promise<void>;
 }
 
@@ -53,7 +49,6 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
   const { notify } = useToast();
 
   const [cart, setCart] = useState<CartEntry[]>(() => loadJson<CartEntry[]>(CART_STORAGE_KEY, []));
-  const [favorites, setFavorites] = useState<string[]>(() => loadJson<string[]>(FAVS_STORAGE_KEY, []));
   const [cartOpen, setCartOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'stripe_pix' | 'stripe_card'>('stripe_pix');
   const [submitting, setSubmitting] = useState(false);
@@ -65,14 +60,6 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
       // ignore storage quota errors
     }
   }, [cart]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(FAVS_STORAGE_KEY, JSON.stringify(favorites));
-    } catch {
-      // ignore storage quota errors
-    }
-  }, [favorites]);
 
   const subtotalCents = cart.reduce((acc, item) => acc + item.product.priceCents * item.quantity, 0);
   const { totalCents, discountCents } = calculateShopPrice(
@@ -138,17 +125,6 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
       ),
     );
   };
-
-  const toggleFavorite = (product: ShopProduct) => {
-    setFavorites((prev) => {
-      const exists = prev.includes(product.id);
-      const next = exists ? prev.filter((id) => id !== product.id) : [...prev, product.id];
-      notify(exists ? `${product.name} removido dos favoritos.` : `${product.name} salvo nos favoritos!`, 'info');
-      return next;
-    });
-  };
-
-  const isFavorite = (productId: string) => favorites.includes(productId);
 
   const checkout = async (onRequireProfile: () => void) => {
     if (cart.length === 0) return;
@@ -226,7 +202,6 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
     <ShopCartContext.Provider
       value={{
         cart,
-        favorites,
         cartOpen,
         setCartOpen,
         paymentMethod,
@@ -239,8 +214,6 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
         addToCart,
         updateQuantity,
         removeFromCart,
-        toggleFavorite,
-        isFavorite,
         checkout,
       }}
     >

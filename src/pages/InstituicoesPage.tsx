@@ -1,9 +1,5 @@
-import cambluLogoUrl from '../../assets/logos/logo_color.png';
-import dceLogoUrl from '../../assets/logos/dce.jpg';
-import aaarihLogoUrl from '../../assets/logos/aaarih.jpg';
-import ifmsaLogoUrl from '../../assets/logos/ifmsa.png';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
+import { InstitutionLogo, type InstitutionLogoId } from '../components/InstitutionLogo';
 
 const CAMBLU_STATUTORY_PILLARS = [
   'Promover debates, palestras, grupos de discussão, seminários, jornadas, eventos culturais e esportivos.',
@@ -104,40 +100,34 @@ export function InstituicoesPage() {
 
       {/* Visão Geral Rápida com Logos Oficiais */}
       <div className="grid-cards">
-        {[
-          {
-            id: 'camblu',
-            href: '#inst-camblu',
-            logo: cambluLogoUrl,
-            bg: '#0f3325',
-            name: 'CAMBLU',
-            desc: 'Centro Acadêmico de Medicina de Blumenau — representação máxima do curso desde 1990.',
-          },
-          {
-            id: 'dce',
-            href: '#inst-dce',
-            logo: dceLogoUrl,
-            bg: '#141414',
-            name: 'DCE FURB',
-            desc: 'Diretório Central dos Estudantes — representação universitária nos conselhos superiores.',
-          },
-          {
-            id: 'aaarih',
-            href: '#inst-aaarih',
-            logo: aaarihLogoUrl,
-            bg: '#1c120d',
-            name: 'AAARIH',
-            desc: 'Associação Atlética Acadêmica Romualdo Izon Heil — desporto, filantropia e integração.',
-          },
-          {
-            id: 'ifmsa',
-            href: '#inst-ifmsa',
-            logo: ifmsaLogoUrl,
-            bg: '#124076',
-            name: 'IFMSA Brazil FURB',
-            desc: 'Comitê local ligado à maior federação internacional de estudantes de medicina.',
-          },
-        ].map((inst, idx) => (
+        {(
+          [
+            {
+              id: 'camblu',
+              href: '#inst-camblu',
+              name: 'CAMBLU',
+              desc: 'Centro Acadêmico de Medicina de Blumenau — representação máxima do curso desde 1990.',
+            },
+            {
+              id: 'dce',
+              href: '#inst-dce',
+              name: 'DCE FURB',
+              desc: 'Diretório Central dos Estudantes — representação universitária nos conselhos superiores.',
+            },
+            {
+              id: 'aaarih',
+              href: '#inst-aaarih',
+              name: 'AAARIH',
+              desc: 'Associação Atlética Acadêmica Romualdo Izon Heil — desporto, filantropia e integração.',
+            },
+            {
+              id: 'ifmsa',
+              href: '#inst-ifmsa',
+              name: 'IFMSA Brazil FURB',
+              desc: 'Comitê local ligado à maior federação internacional de estudantes de medicina.',
+            },
+          ] satisfies { id: InstitutionLogoId; href: string; name: string; desc: string }[]
+        ).map((inst, idx) => (
           <a
             key={inst.id}
             href={inst.href}
@@ -153,22 +143,7 @@ export function InstituicoesPage() {
               } as React.CSSProperties
             }
           >
-            <div
-              style={{
-                inlineSize: '4.5rem',
-                blockSize: '4.5rem',
-                borderRadius: 'var(--md-sys-shape-corner-md)',
-                overflow: 'hidden',
-                background: inst.bg,
-                border: '1px solid var(--md-sys-color-outline-variant)',
-              }}
-            >
-              <img
-                src={inst.logo}
-                alt={`Logo ${inst.name}`}
-                style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
-              />
-            </div>
+            <InstitutionLogo id={inst.id} size="4.5rem" alt={`Logo ${inst.name}`} />
             <div>
               <h2 style={{ marginBlockEnd: '0.3rem' }}>{inst.name}</h2>
               <p className="text-muted">{inst.desc}</p>
@@ -184,17 +159,7 @@ export function InstituicoesPage() {
         style={{ display: 'grid', gap: '1.25rem' }}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.15rem' }}>
-          <img
-            src={cambluLogoUrl}
-            alt="Logo oficial do CAMBLU"
-            style={{
-              inlineSize: '5.5rem',
-              blockSize: '5.5rem',
-              borderRadius: '9999px',
-              objectFit: 'cover',
-              border: '1px solid var(--md-sys-color-outline-variant)',
-            }}
-          />
+          <InstitutionLogo id="camblu" size="5.5rem" />
           <div>
             <h2>Centro Acadêmico de Medicina de Blumenau — CAMBLU</h2>
             <p className="text-muted">
@@ -229,16 +194,7 @@ export function InstituicoesPage() {
         style={{ display: 'grid', gap: '1.25rem' }}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.15rem' }}>
-          <img
-            src={dceLogoUrl}
-            alt="Logo do Diretório Central dos Estudantes — DCE FURB"
-            style={{
-              inlineSize: '5.5rem',
-              blockSize: '5.5rem',
-              borderRadius: 'var(--md-sys-shape-corner-md)',
-              objectFit: 'cover',
-            }}
-          />
+          <InstitutionLogo id="dce" size="5.5rem" />
           <div>
             <h2>Diretório Central dos Estudantes — DCE FURB</h2>
             <p className="text-muted">
@@ -282,17 +238,7 @@ export function InstituicoesPage() {
         style={{ display: 'grid', gap: '1.25rem' }}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.15rem' }}>
-          <img
-            src={aaarihLogoUrl}
-            alt="Logo da Associação Atlética Acadêmica Romualdo Izon Heil — AAARIH"
-            style={{
-              inlineSize: '5.5rem',
-              blockSize: '5.5rem',
-              borderRadius: '9999px',
-              objectFit: 'cover',
-              border: '1px solid var(--md-sys-color-outline-variant)',
-            }}
-          />
+          <InstitutionLogo id="aaarih" size="5.5rem" />
           <div>
             <h2>Associação Atlética Acadêmica Romualdo Izon Heil — AAARIH</h2>
             <p className="text-muted">
@@ -336,16 +282,7 @@ export function InstituicoesPage() {
         style={{ display: 'grid', gap: '1.25rem' }}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.15rem' }}>
-          <img
-            src={ifmsaLogoUrl}
-            alt="Logo da IFMSA Brazil FURB"
-            style={{
-              inlineSize: '5.5rem',
-              blockSize: '5.5rem',
-              borderRadius: 'var(--md-sys-shape-corner-md)',
-              objectFit: 'cover',
-            }}
-          />
+          <InstitutionLogo id="ifmsa" size="5.5rem" />
           <div>
             <h2>IFMSA Brazil FURB</h2>
             <p className="text-muted">
@@ -383,8 +320,6 @@ export function InstituicoesPage() {
           </a>
         </div>
       </article>
-
-      <SponsorsStrip />
     </section>
   );
 }

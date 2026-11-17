@@ -181,7 +181,7 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
     id: 'auxilios',
     title: 'Auxílio Estudantil e Bolsas',
     icon: 'payments',
-    summary: 'Universidade Gratuita, FlexFURB, Credifurb e apoio da CAE.',
+    summary: 'Universidade Gratuita, FlexFURB, Financiamento Estudantil Unicred e apoio da CAE.',
     blocks: [
       {
         heading: 'Opções de permanência na FURB',

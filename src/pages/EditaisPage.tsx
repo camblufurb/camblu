@@ -1,22 +1,30 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
+import type { EditalItem } from '../types/domain';
 
+const SECTION_CONFIG: { status: EditalItem['status']; heading: string; badgeClass: string; badgeLabel: string }[] = [
+  { status: 'aberto', heading: 'Editais Abertos', badgeClass: 'm3-badge--success', badgeLabel: 'Inscrições Abertas' },
+  { status: 'em_breve', heading: 'Em Breve', badgeClass: 'm3-badge--blue', badgeLabel: 'Em breve' },
+  { status: 'encerrado', heading: 'Encerrados', badgeClass: '', badgeLabel: 'Encerrado' },
+];
+
+/**
+ * Displays official CAMBLU funding and election notices grouped into open, upcoming, and closed sections.
+ */
 export function EditaisPage() {
   const { editais } = useAppData();
   const [statusFilter, setStatusFilter] = useState<'todos' | 'aberto' | 'em_breve' | 'encerrado'>('todos');
 
-  const filtered = useMemo(
-    () => editais.filter((e) => statusFilter === 'todos' || e.status === statusFilter),
-    [editais, statusFilter],
-  );
-
-  const badgeForStatus = (status: string) => {
-    if (status === 'aberto') return { cls: 'm3-badge--success', text: 'Inscrições Abertas' };
-    if (status === 'em_breve') return { cls: 'm3-badge--blue', text: 'Em breve' };
-    return { cls: '', text: 'Encerrado' };
-  };
+  const sections = useMemo(() => {
+    return SECTION_CONFIG
+      .filter((sec) => statusFilter === 'todos' || sec.status === statusFilter)
+      .map((sec) => ({
+        ...sec,
+        items: editais.filter((e) => e.status === sec.status),
+      }))
+      .filter((sec) => sec.items.length > 0);
+  }, [editais, statusFilter]);
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
@@ -24,7 +32,7 @@ export function EditaisPage() {
         <h1 style={{ marginBlockEnd: '0.5rem' }}>Editais do CAMBLU</h1>
         <p style={{ color: '#dceddf' }}>
           Programas de apoio acadêmico e financeiro (E-PAF, E-PAATC, E-PAFLIEC), eleições estudantis e chamadas da
-          SECIMED com download direto do edital em PDF e formulário oficial para envio de documentos.
+          SECIMED com download direto do edital oficial em PDF.
         </p>
       </div>
 
@@ -47,41 +55,49 @@ export function EditaisPage() {
         ))}
       </div>
 
-      <div className="grid-two">
-        {filtered.map((ed) => {
-          const st = badgeForStatus(ed.status);
-          return (
-            <article key={ed.id} className="m3-card" style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between' }}>
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
-                  <span className="m3-label-small" style={{ color: 'var(--md-sys-color-primary)' }}>
-                    {ed.program}
-                  </span>
-                  <span className={`m3-badge ${st.cls}`}>{st.text}</span>
-                  <span className="text-muted" style={{ fontSize: '0.84rem' }}>
-                    Prazo: {ed.deadline}
-                  </span>
-                </div>
-                <h2>{ed.title}</h2>
-                <p className="text-muted">{ed.summary}</p>
+      {sections.length === 0 ? (
+        <div className="m3-card m3-card--tonal">
+          <p className="text-muted">Nenhum edital encontrado nesta categoria.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '2rem' }}>
+          {sections.map((section) => (
+            <div key={section.status} style={{ display: 'grid', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h2>{section.heading}</h2>
+                <span className={`m3-badge ${section.badgeClass}`}>{section.items.length}</span>
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
-                <a href={ed.pdfUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--outlined">
-                  <Icon name="picture_as_pdf" size={18} />
-                  <span>Abrir Edital (PDF)</span>
-                </a>
-                <a href={ed.formsUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--filled">
-                  <Icon name="assignment_turned_in" size={18} />
-                  <span>Inscrever / Enviar Documentos</span>
-                </a>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+              <div className="grid-two">
+                {section.items.map((ed) => (
+                  <article key={ed.id} className="m3-card" style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between' }}>
+                    <div style={{ display: 'grid', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
+                        <span className="m3-label-small" style={{ color: 'var(--md-sys-color-primary)' }}>
+                          {ed.program}
+                        </span>
+                        <span className={`m3-badge ${section.badgeClass}`}>{section.badgeLabel}</span>
+                        <span className="text-muted" style={{ fontSize: '0.84rem' }}>
+                          Prazo: {ed.deadline}
+                        </span>
+                      </div>
+                      <h3>{ed.title}</h3>
+                      <p className="text-muted">{ed.summary}</p>
+                    </div>
 
-      <SponsorsStrip />
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
+                      <a href={ed.pdfUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--outlined">
+                        <Icon name="picture_as_pdf" size={18} />
+                        <span>Abrir Edital (PDF)</span>
+                      </a>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

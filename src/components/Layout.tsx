@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useShopCart } from '../context/ShopCartContext';
 import { useI18n } from '../i18n/i18n';
 import { Icon } from './Icon';
+import { PortalSearchDialog } from './PortalSearchDialog';
+import { ShopCartDialog } from './ShopCartDialog';
 import { CambluCrest, SponsorsStrip } from './SponsorLogos';
 import { M3ShapeDefs } from './ExpressiveShapeFrame';
 
@@ -12,9 +15,16 @@ interface LayoutProps {
 
 export function Layout({ children, userSlot }: LayoutProps) {
   const { t } = useI18n();
+  const { totalItemsCount, setCartOpen } = useShopCart();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(() =>
+    typeof window !== 'undefined' ? window.scrollY > 12 : false,
+  );
   const [openMenu, setOpenMenu] = useState<'academic' | 'institucional' | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -22,14 +32,40 @@ export function Layout({ children, userSlot }: LayoutProps) {
   }, [location.pathname]);
 
   useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setScrolled(!entry.isIntersecting);
+      },
+      { threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setDrawerOpen(false);
         setOpenMenu(null);
       }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    const onDocClick = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setOpenMenu(null);
+      }
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    document.addEventListener('click', onDocClick);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('click', onDocClick);
+    };
   }, []);
 
   const academicLinks = [
@@ -51,89 +87,143 @@ export function Layout({ children, userSlot }: LayoutProps) {
     { to: '/camblu-mulher', label: t('nav.cambluMulher'), icon: 'shield_with_heart' },
   ];
 
+  const isAcademicActive = academicLinks.some(
+    (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+  );
+  const isInstitutionalActive = institutionalLinks.some(
+    (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+  );
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minBlockSize: '100dvh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minBlockSize: '100dvh', position: 'relative' }}>
+      <div
+        ref={sentinelRef}
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          insetBlockStart: 0,
+          insetInlineStart: 0,
+          inlineSize: '1px',
+          blockSize: '12px',
+          pointerEvents: 'none',
+        }}
+      />
       <M3ShapeDefs />
       <a href="#main-content" className="skip-link visually-hidden">
         {t('skip.toContent')}
       </a>
 
-      <header className="site-header">
-        <div className="container header-inner">
-          <button
-            type="button"
-            className="m3-icon-btn mobile-menu-trigger"
-            aria-label="Abrir menu de navegação"
-            aria-expanded={drawerOpen}
-            onClick={() => setDrawerOpen(true)}
-          >
-            <Icon name="menu" />
-          </button>
+      <header className="site-header" data-scrolled={scrolled ? 'true' : 'false'}>
+        <div className="header-shell">
+          <div className="header-inner">
+            <button
+              type="button"
+              className="header-icon-btn mobile-menu-trigger"
+              aria-label="Abrir menu de navegação"
+              aria-expanded={drawerOpen}
+              onClick={() => setDrawerOpen(true)}
+            >
+              <Icon name="menu" size={22} />
+            </button>
 
-          <Link to="/" className="brand-link">
-            <CambluCrest size={38} />
-            <span>
-              <span style={{ fontSize: '1.12rem', fontWeight: 850 }}>{t('app.title')}</span>
-              <span className="brand-subtitle">{t('app.subtitle')}</span>
-            </span>
-          </Link>
+            <Link to="/" className="brand-link" aria-label="CAMBLU — Página inicial" title="CAMBLU">
+              <CambluCrest size={36} />
+            </Link>
 
-          <nav className="primary-nav" aria-label="Navegação principal">
-            <NavLink to="/" end className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-              {t('nav.home')}
-            </NavLink>
-            <NavLink to="/eventos" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-              {t('nav.events')}
-            </NavLink>
-            <NavLink to="/lojinha" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-              {t('nav.shop')}
-            </NavLink>
-            <NavLink to="/clube" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-              {t('nav.club')}
-            </NavLink>
+            <nav ref={navRef} className="primary-nav" aria-label="Navegação principal">
+              <NavLink to="/" end className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
+                {t('nav.home')}
+              </NavLink>
+              <NavLink to="/eventos" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
+                {t('nav.events')}
+              </NavLink>
+              <NavLink to="/lojinha" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
+                {t('nav.shop')}
+              </NavLink>
+              <NavLink to="/clube" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
+                {t('nav.club')}
+              </NavLink>
 
-            <div className="nav-dropdown">
+              <div className="nav-dropdown">
+                <button
+                  type="button"
+                  className={`nav-pill ${isAcademicActive ? 'is-active' : ''}`}
+                  aria-expanded={openMenu === 'academic'}
+                  onClick={() => setOpenMenu((m) => (m === 'academic' ? null : 'academic'))}
+                >
+                  <span>{t('nav.academic')}</span>
+                  <Icon name="expand_more" size={18} className="nav-chevron" />
+                </button>
+                <div className="m3-dropdown-panel" data-open={openMenu === 'academic'}>
+                  {academicLinks.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="dropdown-item"
+                      onClick={() => setOpenMenu(null)}
+                    >
+                      <Icon name={item.icon} size={20} />
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="nav-dropdown">
+                <button
+                  type="button"
+                  className={`nav-pill ${isInstitutionalActive ? 'is-active' : ''}`}
+                  aria-expanded={openMenu === 'institucional'}
+                  onClick={() => setOpenMenu((m) => (m === 'institucional' ? null : 'institucional'))}
+                >
+                  <span>{t('nav.more')}</span>
+                  <Icon name="expand_more" size={18} className="nav-chevron" />
+                </button>
+                <div className="m3-dropdown-panel" data-open={openMenu === 'institucional'}>
+                  {institutionalLinks.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="dropdown-item"
+                      onClick={() => setOpenMenu(null)}
+                    >
+                      <Icon name={item.icon} size={20} />
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </nav>
+
+            <div className="header-actions">
               <button
                 type="button"
-                className="nav-pill"
-                aria-expanded={openMenu === 'academic'}
-                onClick={() => setOpenMenu((m) => (m === 'academic' ? null : 'academic'))}
+                className="header-icon-btn"
+                aria-label="Pesquisar no portal"
+                title="Pesquisar (Ctrl + K)"
+                onClick={() => setSearchOpen(true)}
               >
-                {t('nav.academic')}
-                <Icon name="expand_more" size={18} />
+                <Icon name="search" size={22} />
               </button>
-              <div className="m3-dropdown-panel" data-open={openMenu === 'academic'}>
-                {academicLinks.map((item) => (
-                  <Link key={item.to} to={item.to} className="dropdown-item">
-                    <Icon name={item.icon} size={20} />
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
 
-            <div className="nav-dropdown">
-              <button
-                type="button"
-                className="nav-pill"
-                aria-expanded={openMenu === 'institucional'}
-                onClick={() => setOpenMenu((m) => (m === 'institucional' ? null : 'institucional'))}
-              >
-                {t('nav.more')}
-                <Icon name="expand_more" size={18} />
-              </button>
-              <div className="m3-dropdown-panel" data-open={openMenu === 'institucional'}>
-                {institutionalLinks.map((item) => (
-                  <Link key={item.to} to={item.to} className="dropdown-item">
-                    <Icon name={item.icon} size={20} />
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </nav>
+              {(totalItemsCount > 0 || location.pathname.startsWith('/lojinha')) && (
+                <button
+                  type="button"
+                  className="header-icon-btn"
+                  aria-label={
+                    totalItemsCount > 0 ? `Abrir sacola (${totalItemsCount} itens)` : 'Abrir sacola da Lojinha'
+                  }
+                  title="Sacola da Lojinha"
+                  onClick={() => setCartOpen(true)}
+                >
+                  <Icon name="shopping_cart" size={22} />
+                  {totalItemsCount > 0 && <span className="header-cart-badge">{totalItemsCount}</span>}
+                </button>
+              )}
 
-          <div className="header-actions">{userSlot}</div>
+              {userSlot}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -189,6 +279,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
               to={item.to}
               end={item.to === '/'}
               className={({ isActive }) => `dropdown-item ${isActive ? 'is-active' : ''}`}
+              onClick={() => setDrawerOpen(false)}
               style={({ isActive }) =>
                 isActive
                   ? {
@@ -282,6 +373,9 @@ export function Layout({ children, userSlot }: LayoutProps) {
           </div>
         </div>
       </footer>
+
+      <ShopCartDialog />
+      <PortalSearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }
