@@ -1,0 +1,186 @@
+@layer reset, tokens, base, shapes, components, utilities;
+
+@layer tokens {
+  :root {
+    color-scheme: light dark;
+
+    /* ============================================================
+       Identidade CAMBLU + Material Design 3 Expressive Tokens
+       Principal: #0f3325 | Secundária: #edd16e | Terciária: #f1de97
+       Acento Interativo: #3b82f7
+       ============================================================ */
+
+    --camblu-forest-950: #071b13;
+    --camblu-forest-900: #0f3325;
+    --camblu-forest-800: #174936;
+    --camblu-forest-700: #216148;
+    --camblu-forest-200: #9fd7be;
+    --camblu-forest-100: #c7ecd9;
+    --camblu-forest-050: #ebf8f1;
+
+    --camblu-gold-500: #edd16e;
+    --camblu-gold-300: #f1de97;
+    --camblu-gold-100: #fbf3d5;
+    --camblu-gold-800: #6d5809;
+    --camblu-gold-900: #3d3002;
+
+    --camblu-blue-500: #3b82f7;
+    --camblu-blue-300: #7eb0ff;
+    --camblu-blue-100: #dbe9ff;
+    --camblu-blue-900: #0d2b66;
+
+    /* Color Roles (light-dark with media fallback below) */
+    --md-sys-color-primary: light-dark(#0f3325, #8fd9b6);
+    --md-sys-color-on-primary: light-dark(#ffffff, #042117);
+    --md-sys-color-primary-container: light-dark(#c7ecd9, #184b37);
+    --md-sys-color-on-primary-container: light-dark(#082419, #d6f5e5);
+
+    --md-sys-color-secondary: light-dark(#edd16e, #edd16e);
+    --md-sys-color-on-secondary: light-dark(#241c00, #241c00);
+    --md-sys-color-secondary-container: light-dark(#f1de97, #594808);
+    --md-sys-color-on-secondary-container: light-dark(#2b2100, #fbf0c2);
+
+    --md-sys-color-tertiary: light-dark(#f1de97, #f1de97);
+    --md-sys-color-on-tertiary: light-dark(#271e00, #271e00);
+    --md-sys-color-tertiary-container: light-dark(#fbf3d5, #473a0a);
+    --md-sys-color-on-tertiary-container: light-dark(#2c2200, #fff7db);
+
+    --camblu-action-blue: light-dark(#3b82f7, #7eb0ff);
+    --camblu-on-action-blue: light-dark(#ffffff, #072252);
+    --camblu-action-blue-container: light-dark(#e3eeff, #17366f);
+    --camblu-on-action-blue-container: light-dark(#0b3482, #d8e7ff);
+
+    --md-sys-color-background: light-dark(#f6f8f5, #0b1410);
+    --md-sys-color-on-background: light-dark(#141d18, #e6ede8);
+
+    --md-sys-color-surface: light-dark(#fbfcf9, #0e1914);
+    --md-sys-color-on-surface: light-dark(#141d18, #e6ede8);
+    --md-sys-color-on-surface-variant: light-dark(#3e4c44, #b6c5bc);
+
+    --md-sys-color-surface-container-lowest: light-dark(#ffffff, #07100c);
+    --md-sys-color-surface-container-low: light-dark(#f2f6f2, #13211b);
+    --md-sys-color-surface-container: light-dark(#eaf1ec, #172720);
+    --md-sys-color-surface-container-high: light-dark(#e1ebe4, #1e3128);
+    --md-sys-color-surface-container-highest: light-dark(#d7e4dc, #253b31);
+
+    --md-sys-color-outline: light-dark(#6c7b72, #85968c);
+    --md-sys-color-outline-variant: light-dark(#c3d0c7, #32443b);
+
+    --md-sys-color-error: light-dark(#b3261e, #f2b8b5);
+    --md-sys-color-on-error: light-dark(#ffffff, #601410);
+    --md-sys-color-error-container: light-dark(#f9dedc, #8c1d18);
+    --md-sys-color-on-error-container: light-dark(#410e0b, #f9dedc);
+
+    --md-sys-color-success: light-dark(#146c43, #6ee7b7);
+    --md-sys-color-success-container: light-dark(#d1f4e2, #0f3f2a);
+    --md-sys-color-on-success-container: light-dark(#073620, #c8f7df);
+
+    /* Typography */
+    --font-sans: 'Roboto Flex', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+    /* Shape Tokens (M3 Expressive) */
+    --md-sys-shape-corner-xs: 0.5rem;
+    --md-sys-shape-corner-sm: 0.75rem;
+    --md-sys-shape-corner-md: 1.125rem;
+    --md-sys-shape-corner-lg: 1.75rem;
+    --md-sys-shape-corner-xl: 2.25rem;
+    --md-sys-shape-corner-full: 9999px;
+
+    /* Elevation */
+    --elevation-1: 0 1px 3px rgb(8 28 19 / 0.08), 0 1px 2px rgb(8 28 19 / 0.06);
+    --elevation-2: 0 6px 18px rgb(8 28 19 / 0.1), 0 2px 6px rgb(8 28 19 / 0.06);
+    --elevation-3: 0 16px 38px rgb(8 28 19 / 0.16), 0 4px 12px rgb(8 28 19 / 0.08);
+
+    /* Scrollbar & Selection */
+    --scrollbar-track: light-dark(#e9efe9, #101d17);
+    --scrollbar-thumb: light-dark(#647a6e, #6d897a);
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    accent-color: var(--camblu-action-blue);
+
+    /* Layout spacing */
+    --page-max-inline: 82rem;
+    --header-block-size: 4.5rem;
+
+    /* Enable intrinsic keyword transitions */
+    interpolate-size: allow-keywords;
+  }
+
+  /* Manual theme overrides */
+  :root[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  /* Fallback for browsers without light-dark() */
+  @supports not (color: light-dark(#000, #fff)) {
+    :root {
+      --md-sys-color-primary: #0f3325;
+      --md-sys-color-on-primary: #ffffff;
+      --md-sys-color-primary-container: #c7ecd9;
+      --md-sys-color-on-primary-container: #082419;
+      --md-sys-color-secondary: #edd16e;
+      --md-sys-color-on-secondary: #241c00;
+      --md-sys-color-secondary-container: #f1de97;
+      --md-sys-color-on-secondary-container: #2b2100;
+      --md-sys-color-tertiary: #f1de97;
+      --md-sys-color-on-tertiary: #271e00;
+      --md-sys-color-tertiary-container: #fbf3d5;
+      --md-sys-color-on-tertiary-container: #2c2200;
+      --camblu-action-blue: #3b82f7;
+      --camblu-on-action-blue: #ffffff;
+      --camblu-action-blue-container: #e3eeff;
+      --camblu-on-action-blue-container: #0b3482;
+      --md-sys-color-background: #f6f8f5;
+      --md-sys-color-on-background: #141d18;
+      --md-sys-color-surface: #fbfcf9;
+      --md-sys-color-on-surface: #141d18;
+      --md-sys-color-on-surface-variant: #3e4c44;
+      --md-sys-color-surface-container-lowest: #ffffff;
+      --md-sys-color-surface-container-low: #f2f6f2;
+      --md-sys-color-surface-container: #eaf1ec;
+      --md-sys-color-surface-container-high: #e1ebe4;
+      --md-sys-color-surface-container-highest: #d7e4dc;
+      --md-sys-color-outline: #6c7b72;
+      --md-sys-color-outline-variant: #c3d0c7;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme='light']) {
+        --md-sys-color-primary: #8fd9b6;
+        --md-sys-color-on-primary: #042117;
+        --md-sys-color-primary-container: #184b37;
+        --md-sys-color-on-primary-container: #d6f5e5;
+        --md-sys-color-background: #0b1410;
+        --md-sys-color-on-background: #e6ede8;
+        --md-sys-color-surface: #0e1914;
+        --md-sys-color-on-surface: #e6ede8;
+        --md-sys-color-on-surface-variant: #b6c5bc;
+        --md-sys-color-surface-container-lowest: #07100c;
+        --md-sys-color-surface-container-low: #13211b;
+        --md-sys-color-surface-container: #172720;
+        --md-sys-color-surface-container-high: #1e3128;
+        --md-sys-color-surface-container-highest: #253b31;
+        --md-sys-color-outline: #85968c;
+        --md-sys-color-outline-variant: #32443b;
+        --camblu-action-blue: #7eb0ff;
+        --camblu-on-action-blue: #072252;
+        --camblu-action-blue-container: #17366f;
+        --camblu-on-action-blue-container: #d8e7ff;
+      }
+    }
+  }
+
+  @media (forced-colors: active) {
+    :root {
+      --md-sys-color-primary: Highlight;
+      --md-sys-color-on-primary: HighlightText;
+      --camblu-action-blue: LinkText;
+      --md-sys-color-outline: CanvasText;
+      --md-sys-color-outline-variant: CanvasText;
+    }
+  }
+}

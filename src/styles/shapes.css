@@ -1,0 +1,104 @@
+@layer shapes {
+  /* ======================================================================
+     Material Design 3 Expressive Variable Shapes
+     https://m3.material.io/styles/shape/overview-principles
+     ====================================================================== */
+
+  .m3-shape-frame {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1 / 1;
+    inline-size: 100%;
+    transition:
+      transform 280ms ease-out,
+      filter 260ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .m3-shape-frame {
+      transition:
+        transform 380ms linear(0, 0.45 15%, 1.07 40%, 0.98 65%, 1),
+        filter 240ms ease-out;
+    }
+  }
+
+  .m3-shape-clip {
+    inline-size: 100%;
+    block-size: 100%;
+    overflow: hidden;
+    background: var(--md-sys-color-surface-container-high);
+    transition: transform 320ms ease-out;
+  }
+
+  .m3-shape-clip > img,
+  .m3-shape-clip > svg {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  /* Shape variants mapped to inline SVG clipPath IDs or native border-radius */
+  .m3-shape--circle .m3-shape-clip {
+    border-radius: 50%;
+  }
+
+  .m3-shape--squircle .m3-shape-clip {
+    border-radius: 28%;
+  }
+
+  @supports (corner-shape: squircle) {
+    .m3-shape--squircle .m3-shape-clip {
+      corner-shape: squircle;
+      border-radius: 34%;
+    }
+  }
+
+  .m3-shape--pill .m3-shape-clip {
+    border-radius: 9999px 9999px 32% 32% / 9999px 9999px 32% 32%;
+  }
+
+  .m3-shape--arch .m3-shape-clip {
+    border-radius: 50% 50% 18% 18% / 56% 56% 18% 18%;
+  }
+
+  .m3-shape--clover4 .m3-shape-clip {
+    clip-path: url(#m3-clip-clover4);
+  }
+
+  .m3-shape--clover8 .m3-shape-clip {
+    clip-path: url(#m3-clip-clover8);
+  }
+
+  .m3-shape--flower .m3-shape-clip {
+    clip-path: url(#m3-clip-flower);
+  }
+
+  .m3-shape--gem .m3-shape-clip {
+    clip-path: url(#m3-clip-gem);
+  }
+
+  .m3-shape--sunny .m3-shape-clip {
+    clip-path: url(#m3-clip-sunny);
+  }
+
+  /* Interactive expressive hover & focus motion (GPU-composited) */
+  .m3-shape-card:is(:hover, :focus-within) .m3-shape-frame {
+    transform: translateY(-4px) scale(1.045) rotate(var(--shape-hover-rotate, 4deg));
+    filter: drop-shadow(0 12px 22px rgb(15 51 37 / 0.22));
+  }
+
+  .m3-shape-card:is(:hover, :focus-within) .m3-shape-clip > img {
+    transform: scale(1.06) rotate(calc(var(--shape-hover-rotate, 4deg) * -0.5));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .m3-shape-card:is(:hover, :focus-within) .m3-shape-frame {
+      transform: none;
+    }
+
+    .m3-shape-card:is(:hover, :focus-within) .m3-shape-clip > img {
+      transform: none;
+    }
+  }
+}

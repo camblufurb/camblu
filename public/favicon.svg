@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Emblema CAMBLU">
+  <rect width="64" height="64" rx="18" fill="#0f3325"/>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="none" stroke="#edd16e" stroke-width="2.5"/>
+  <path d="M32 14v36M22 24c4-4 16-4 20 0M24 38c3 4 13 4 16 0" fill="none" stroke="#edd16e" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="32" cy="14" r="3.5" fill="#f1de97"/>
+  <path d="M26 28c6 3 12 3 12 9s-6 6-12 9" fill="none" stroke="#f1de97" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

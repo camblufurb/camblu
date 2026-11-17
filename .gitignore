@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+functions/node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+functions/lib/
+coverage/
+*.tsbuildinfo
+
+# Environment & Secrets (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+functions/.env
+functions/.env.*
+*.pem
+*serviceAccount*.json
+*service-account*.json
+
+# Firebase caches & logs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+pubsub-debug.log*
+storage-debug.log*
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
