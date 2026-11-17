@@ -7,7 +7,7 @@ import { useToast } from '../components/ToastProvider';
 import { M3Dialog } from '../components/M3Dialog';
 import { Icon } from '../components/Icon';
 import { digitsOnly, formatCpf, isValidCpf } from '../lib/validators';
-import { API_BASE_URL } from '../lib/firebase';
+import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
 import type { Ticket } from '../types/domain';
 
 function QrPreviewTile({ code }: { code: string }) {
@@ -94,10 +94,9 @@ export function MyTicketsPage() {
       if (!isDemoMode) {
         const res = await fetch(`${API_BASE_URL}/tickets/transfer`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await getAuthHeaders(),
           body: JSON.stringify({
             ticketId: transferTargetTicket.id,
-            fromUid: profile.uid,
             toCpf: cleanRecipient,
           }),
         });

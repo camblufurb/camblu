@@ -6,7 +6,7 @@ import { Icon } from '../components/Icon';
 import { SponsorsStrip } from '../components/SponsorLogos';
 import { CLUB_PLANS, getPlanPriceCents } from '../lib/clubPricing';
 import { formatBrlFromCents } from '../lib/validators';
-import { API_BASE_URL } from '../lib/firebase';
+import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
 import type { MembershipCycle, MembershipTier } from '../types/domain';
 
 export function ClubPage() {
@@ -28,9 +28,8 @@ export function ClubPage() {
       if (!isDemoMode) {
         const res = await fetch(`${API_BASE_URL}/checkout/membership`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await getAuthHeaders(),
           body: JSON.stringify({
-            uid: profile.uid,
             tier,
             cycle,
           }),

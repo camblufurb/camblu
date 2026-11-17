@@ -8,7 +8,7 @@ import { Icon } from '../components/Icon';
 import { SponsorsStrip } from '../components/SponsorLogos';
 import { calculateShopPrice } from '../lib/clubPricing';
 import { formatBrlFromCents } from '../lib/validators';
-import { API_BASE_URL } from '../lib/firebase';
+import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
 import type { ShopOrder, ShopOrderItem, ShopProduct } from '../types/domain';
 
 interface CartEntry {
@@ -103,9 +103,8 @@ export function ShopPage() {
       if (!isDemoMode) {
         const res = await fetch(`${API_BASE_URL}/checkout/shop`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await getAuthHeaders(),
           body: JSON.stringify({
-            uid: profile.uid,
             items: orderItems,
             paymentMethod,
           }),

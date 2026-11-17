@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { collection, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, setDoc, where, type Query } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { ANAIS_SEED, EDITAIS_SEED, EVENTS_SEED, ORDERS_SEED, PRODUCTS_SEED } from '../data/catalogSeeds';
 import { GESTOES_SEED } from '../data/gestoes';
@@ -165,9 +165,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isFirebaseConfigured || !db) return;
     const unsubs: (() => void)[] = [];
-    const bindCollection = <K extends keyof AppDataState>(colName: string, key: K) => {
+    const bindQuery = <K extends keyof AppDataState>(q: Query, key: K) => {
       const unsub = onSnapshot(
-        collection(db!, colName),
+        q,
         (snap) => {
           if (!snap.empty) {
             const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -181,19 +181,41 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       unsubs.push(unsub);
     };
 
-    bindCollection('events', 'events');
-    bindCollection('products', 'products');
-    bindCollection('editais', 'editais');
-    bindCollection('anais', 'anais');
-    bindCollection('gestoes', 'gestoes');
-    bindCollection('ligas', 'ligas');
-    bindCollection('transparencyEntries', 'transparencyEntries');
+    bindQuery(query(collection(db, 'events'), where('published', '==', true)), 'events');
+    bindQuery(query(collection(db, 'products'), where('active', '==', true)), 'products');
+    bindQuery(collection(db, 'editais'), 'editais');
+    bindQuery(collection(db, 'anais'), 'anais');
+    bindQuery(collection(db, 'gestoes'), 'gestoes');
+    bindQuery(collection(db, 'ligas'), 'ligas');
+    bindQuery(collection(db, 'transparencyEntries'), 'transparencyEntries');
+
+    const unsubPublicMeta = onSnapshot(
+      doc(db, 'transparencyMeta', 'public'),
+      (snap) => {
+        if (snap.exists()) {
+          const d = snap.data() as Partial<TransparencyMeta>;
+          setState((prev) => ({
+            ...prev,
+            transparencyMeta: {
+              ...prev.transparencyMeta,
+              driveMinutesUrl: d.driveMinutesUrl ?? prev.transparencyMeta.driveMinutesUrl,
+              savedCategories: d.savedCategories ?? prev.transparencyMeta.savedCategories,
+            },
+          }));
+        }
+      },
+      () => {},
+    );
+    unsubs.push(unsubPublicMeta);
 
     const unsubMeta = onSnapshot(
       doc(db, 'transparencyMeta', 'config'),
       (snap) => {
         if (snap.exists()) {
-          setState((prev) => ({ ...prev, transparencyMeta: snap.data() as TransparencyMeta }));
+          setState((prev) => ({
+            ...prev,
+            transparencyMeta: { ...prev.transparencyMeta, ...(snap.data() as Partial<TransparencyMeta>) },
+          }));
         }
       },
       () => {},
@@ -293,6 +315,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     },
     updateTransparencyMeta: async (meta) => {
       setState((p) => ({ ...p, transparencyMeta: meta }));
+      await persistDoc('transparencyMeta', 'public', {
+        driveMinutesUrl: meta.driveMinutesUrl,
+        savedCategories: meta.savedCategories,
+      });
       await persistDoc('transparencyMeta', 'config', meta);
     },
     saveEdital: async (edital) => {

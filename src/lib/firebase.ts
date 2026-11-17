@@ -35,4 +35,13 @@ if (isFirebaseConfigured) {
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (auth?.currentUser) {
+    const token = await auth.currentUser.getIdToken();
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export { app, auth, db, storage, firebaseConfig };

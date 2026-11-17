@@ -6,7 +6,7 @@ import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
 import { calculateEventTicketPrice } from '../lib/clubPricing';
 import { formatBrlFromCents } from '../lib/validators';
-import { API_BASE_URL } from '../lib/firebase';
+import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
 import type { EventLot, Ticket } from '../types/domain';
 
 export function EventDetailPage() {
@@ -86,21 +86,25 @@ export function EventDetailPage() {
     setSubmitting(true);
     try {
       // Se pagamento for maior que zero e não estivermos em modo demo local, chama Cloud Function Stripe
-      if (pricing.finalCents > 0 && !isDemoMode) {
+      if (!isDemoMode) {
         const res = await fetch(`${API_BASE_URL}/checkout/event`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await getAuthHeaders(),
           body: JSON.stringify({
             eventId: event.id,
             lotId: activeLot.id,
-            uid: profile.uid,
             paymentMethod,
           }),
         });
         if (!res.ok) throw new Error('Falha ao iniciar checkout Stripe.');
-        const data = (await res.json()) as { checkoutUrl?: string };
+        const data = (await res.json()) as { checkoutUrl?: string; freeIssued?: boolean };
         if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
+          return;
+        }
+        if (data.freeIssued) {
+          notify('Ingresso gratuito emitido pelo Clube CAMBLU!');
+          navigate('/meus-ingressos');
           return;
         }
       }

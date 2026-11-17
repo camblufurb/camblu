@@ -11,6 +11,7 @@ import {
   triggerBlobDownload,
 } from '../lib/certificateRenderer';
 import { digitsOnly, formatCpf } from '../lib/validators';
+import { API_BASE_URL, isFirebaseConfigured } from '../lib/firebase';
 import type { CertificateRecord, CertificateTemplateConfig } from '../types/domain';
 
 function CertificateLiveCanvas({
@@ -49,6 +50,26 @@ export function CertificatesPage() {
   const { notify } = useToast();
   const [searchCode, setSearchCode] = useState(codigo || '');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [remoteVerified, setRemoteVerified] = useState<{
+    valid: boolean;
+    code?: string;
+    ownerName?: string;
+    maskedCpf?: string;
+    eventTitle?: string;
+    totalHours?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const target = (searchCode || codigo || '').trim();
+    if (codigo === undefined || !target || !isFirebaseConfigured) {
+      setRemoteVerified(null);
+      return;
+    }
+    fetch(`${API_BASE_URL}/certificates/verify?code=${encodeURIComponent(target)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setRemoteVerified(d))
+      .catch(() => setRemoteVerified(null));
+  }, [codigo, searchCode]);
 
   const handleDownloadPdf = async (cert: CertificateRecord) => {
     setBusyId(`${cert.id}-pdf`);
@@ -114,6 +135,18 @@ export function CertificatesPage() {
                 cert={found}
                 template={events.find((e) => e.id === found.eventId)?.certificateTemplate}
               />
+            </div>
+          ) : remoteVerified?.valid ? (
+            <div className="m3-card m3-card--gold" style={{ display: 'grid', gap: '0.5rem' }}>
+              <span className="m3-badge m3-badge--success" style={{ justifySelf: 'start' }}>
+                <Icon name="verified" size={16} />
+                Certificado Autêntico e Válido
+              </span>
+              <h2>{remoteVerified.ownerName}</h2>
+              <p>
+                <strong>CPF:</strong> {remoteVerified.maskedCpf} · <strong>Evento:</strong> {remoteVerified.eventTitle} ·{' '}
+                <strong>Carga horária:</strong> {remoteVerified.totalHours}h
+              </p>
             </div>
           ) : (
             <p className="m3-body-medium">Nenhum certificado localizado com o código informado.</p>

@@ -1,0 +1,188 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model (CAMBLU - Medicina FURB)
+// ===============================================================
+//
+// Collection: users/{uid} (CONTAINS PII: cpf, email, phone)
+//   - Owner read only + Admin read/write. Non-admins cannot escalate role or membership fields.
+// Collection: events/{eventId} (Public catalog, admin write)
+// Collection: tickets/{ticketId} (Owner or Admin read; Admin/Cloud Function write only)
+// Collection: certificates/{certId} (Owner or Admin read; Admin/Cloud Function write only)
+// Collection: products/{productId} (Public catalog, admin write)
+// Collection: orders/{orderId} (Buyer or Admin read; Admin/Cloud Function write only)
+// Collection: transparencyEntries/{entryId} (Public read, admin write; no account balance stored)
+// Collection: transparencyMeta/{docId} ('public' readable for Drive minutes URL, 'config' admin-only for current balance)
+// Collection: editais/{id}, anais/{id}, gestoes/{id}, ligas/{id} (Public read, admin write)
+// Collection: demands/{demandId} (Public create with size validation, Admin read/manage only)
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             request.auth.token.email == 'camblufurb@gmail.com' &&
+             request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function validStr(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+             email.size() <= 160 &&
+             email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$');
+    }
+
+    function isValidUserCreate(uid) {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+               'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
+               'affiliation', 'turma', 'isCalouro', 'tshirtSize',
+               'membershipTier', 'membershipCycle', 'membershipValidUntil',
+               'membershipActive', 'role', 'profileCompleted', 'createdAt', 'updatedAt'
+             ]) &&
+             d.uid == uid &&
+             validStr(d.name, 1, 140) &&
+             isValidEmail(d.email) &&
+             d.cpf is string && d.cpf.size() <= 14 &&
+             d.phone is string && d.phone.size() <= 20 &&
+             d.affiliation in ['FURB', 'externo'] &&
+             d.isCalouro is bool &&
+             d.profileCompleted is bool &&
+             d.role == 'student' &&
+             d.membershipTier == 'none' &&
+             d.membershipActive == false;
+    }
+
+    function isValidUserSelfUpdate(uid) {
+      let d = request.resource.data;
+      let immutableKeys = [
+        'uid', 'email', 'role', 'membershipTier', 'membershipActive',
+        'membershipValidUntil', 'membershipCycle', 'stripeCustomerId',
+        'stripeSubscriptionId', 'createdAt'
+      ];
+      return hasOnlyAllowedFields([
+               'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
+               'affiliation', 'turma', 'isCalouro', 'tshirtSize',
+               'membershipTier', 'membershipCycle', 'membershipValidUntil',
+               'membershipActive', 'stripeCustomerId', 'stripeSubscriptionId',
+               'role', 'profileCompleted', 'createdAt', 'updatedAt'
+             ]) &&
+             !d.diff(resource.data).affectedKeys().hasAny(immutableKeys) &&
+             d.uid == uid &&
+             validStr(d.name, 2, 140) &&
+             d.cpf is string && d.cpf.size() <= 14 &&
+             d.phone is string && d.phone.size() <= 20 &&
+             d.affiliation in ['FURB', 'externo'] &&
+             (!('turma' in d) || d.turma == null || (d.turma is string && d.turma.size() <= 12)) &&
+             (!('tshirtSize' in d) || d.tshirtSize == null || (d.tshirtSize is string && d.tshirtSize.size() <= 20)) &&
+             d.isCalouro is bool &&
+             d.profileCompleted is bool;
+    }
+
+    function isValidDemandCreate() {
+      let d = request.resource.data;
+      return hasOnlyAllowedFields([
+               'id', 'topic', 'senderName', 'senderEmail', 'turma',
+               'anonymous', 'message', 'createdAt', 'dispatchedEmail'
+             ]) &&
+             d.topic in ['Demanda de turma', 'Demanda pessoal', 'Dúvida', 'Reclamação', 'CAMBLU Mulher'] &&
+             d.anonymous is bool &&
+             validStr(d.message, 5, 4000) &&
+             d.dispatchedEmail is bool &&
+             d.createdAt is string && d.createdAt.size() <= 40;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if (isOwner(uid) && isValidUserCreate(uid)) || isAdmin();
+      allow update: if (isOwner(uid) && isValidUserSelfUpdate(uid)) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if resource.data.published == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    match /certificates/{certId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if resource.data.active == true || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.buyerUid == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    match /transparencyEntries/{entryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Saldo atual fica apenas em 'config' (somente Admin); link das atas fica em 'public'
+    match /transparencyMeta/public {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /transparencyMeta/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /editais/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /anais/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /gestoes/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /ligas/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /demands/{demandId} {
+      allow create: if isValidDemandCreate();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Default deny for everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

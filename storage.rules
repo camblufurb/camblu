@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email == 'camblufurb@gmail.com' &&
+             request.auth.token.email_verified == true;
+    }
+
+    // Capas de eventos, fotos da lojinha, templates de certificado (PNG), editais/anais (PDF) e fotos 1:1 de gestões
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && request.resource.size < 25 * 1024 * 1024;
+    }
+
+    // Templates privados ou exportações temporárias
+    match /admin/{allPaths=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -5,6 +5,7 @@ import { useToast } from '../ToastProvider';
 import { Icon } from '../Icon';
 import { DEFAULT_CERTIFICATE_TEMPLATE } from '../../lib/certificateRenderer';
 import { formatBrlFromCents, slugify } from '../../lib/validators';
+import { API_BASE_URL, getAuthHeaders, isFirebaseConfigured } from '../../lib/firebase';
 import type { CambluEvent, CertificateRecord, CertificateTemplateConfig, EventLot, EventQrDefinition } from '../../types/domain';
 
 type TemplateFieldKey = 'name' | 'cpf' | 'event' | 'hours' | 'date' | 'code';
@@ -118,6 +119,25 @@ export function AdminEventsTab() {
   const validateQrCode = async (rawCode: string) => {
     const code = rawCode.trim();
     if (!code) return;
+
+    if (isFirebaseConfigured) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/tickets/checkin`, {
+          method: 'POST',
+          headers: await getAuthHeaders(),
+          body: JSON.stringify({ qrCode: code }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { ownerName: string; totalHours: number };
+          setManualCode('');
+          notify(`Presença confirmada: ${data.ownerName} (Total ${data.totalHours}h)!`);
+          return;
+        }
+      } catch {
+        // fallback to client store if Functions not yet deployed
+      }
+    }
+
     const ticket = tickets.find((t) => t.qrInstances.some((q) => q.qrCode === code));
     if (!ticket) {
       notify(`QR Code "${code}" não encontrado.`, 'error');

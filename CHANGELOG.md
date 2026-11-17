@@ -2,6 +2,17 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.6.0] - 2026-11-16 (Etapa 6)
+### Adicionado
+- Configuração completa do Firebase (`firebase.json`, `.firebaserc`, `firestore.rules`, `firestore.indexes.json`, `storage.rules`).
+- Isolamento de saldo financeiro privado em `transparencyMeta/config` (restrito ao `/back`) vs `transparencyMeta/public` (link público das atas).
+- Backend serverless **Cloud Functions v2 (`functions/`)**:
+  - Sessões **Stripe Checkout** (Cartão, PIX, Google Pay, Apple Pay) com taxas absorvidas e cálculo server-side do Clube CAMBLU.
+  - Webhook assinado Stripe para emissão atômica de ingressos/QR codes, baixa de estoque na Lojinha e ativação/cancelamento de assinaturas.
+  - API aberta `/api/clube/status`, transferência atômica de ingressos via CPF, check-in administrativo de QR codes, verificação pública mascarada de certificados e envio de demandas para `camblufurb@gmail.com`.
+  - Função `eventSocialPreview` para OpenGraph dinâmico em `/eventos/:slug`.
+- Workflows GitHub Actions (`ci.yml` e `firebase-deploy.yml`).
+
 ## [0.5.0] - 2026-11-16 (Etapa 5)
 ### Adicionado
 - **Painel Administrativo (`/back`)** exclusivo para `camblufurb@gmail.com`:

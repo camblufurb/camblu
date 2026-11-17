@@ -1,0 +1,42 @@
+name: Deploy Firebase Hosting & Functions
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    if: ${{ vars.ENABLE_FIREBASE_AUTO_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build frontend
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: camblu.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: camblu
+          VITE_FIREBASE_STORAGE_BUCKET: camblu.firebasestorage.app
+          VITE_FIREBASE_MESSAGING_SENDER_ID: '830416621306'
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ vars.VITE_STRIPE_PUBLISHABLE_KEY }}
+          VITE_API_BASE_URL: /api
+          VITE_ADMIN_EMAIL: camblufurb@gmail.com
+        run: npm ci && npm run build
+
+      - name: Build Cloud Functions
+        run: npm --prefix functions ci && npm --prefix functions run build
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CAMBLU }}
+          projectId: camblu
+          channelId: live
