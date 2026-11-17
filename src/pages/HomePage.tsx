@@ -1,78 +1,379 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAppData } from '../context/AppDataContext';
-import { FURB_INSTITUTIONS, HOME_CAROUSEL_SLIDES } from '../data/institutional';
+import { HOME_CAROUSEL_SLIDES } from '../data/institutional';
 import { M3Carousel } from '../components/M3Carousel';
-import { ExpressiveShapeFrame, M3_SHAPE_ROTATION } from '../components/ExpressiveShapeFrame';
 import { Icon } from '../components/Icon';
 import { CambluCrest, SponsorsStrip } from '../components/SponsorLogos';
-import { formatBrlFromCents } from '../lib/validators';
+
+type PortalCategoryId = 'graduacao' | 'ciencia' | 'servicos' | 'gestao';
+
+interface PortalAreaCard {
+  id: string;
+  to: string;
+  title: string;
+  summary: string;
+  cta: string;
+  icon: string;
+}
+
+const FLAGSHIP_PILLARS: PortalAreaCard[] = [
+  {
+    id: 'sobre',
+    to: '/sobre',
+    title: 'O CAMBLU e Nossos Espaços',
+    summary:
+      'Conheça nossa atuação estatutária desde 1990 e as salas de convivência, coworking e descanso no Edifício Cristina.',
+    cta: 'Saiba mais',
+    icon: 'apartment',
+  },
+  {
+    id: 'eventos',
+    to: '/eventos',
+    title: 'Eventos & Certificados',
+    summary:
+      'Inscreva-se em simpósios e jornadas com QR Code integrado, acompanhe sua presença e emita certificados de AACCs.',
+    cta: 'Explorar eventos',
+    icon: 'confirmation_number',
+  },
+  {
+    id: 'lojinha',
+    to: '/lojinha',
+    title: 'Lojinha Oficial',
+    summary:
+      'Moletons, camisetas, garrafas e acessórios da Medicina FURB com compra digital e retirada presencial no campus.',
+    cta: 'Ver produtos',
+    icon: 'shopping_bag',
+  },
+  {
+    id: 'clube',
+    to: '/clube',
+    title: 'Clube CAMBLU',
+    summary:
+      'Apoie os projetos do Centro Acadêmico e aproveite descontos na Lojinha, isenções em eventos e cartão digital.',
+    cta: 'Conhecer planos',
+    icon: 'workspace_premium',
+  },
+];
+
+const JOURNEY_TABS: {
+  id: PortalCategoryId;
+  label: string;
+  icon: string;
+  headline: string;
+  description: string;
+  items: PortalAreaCard[];
+}[] = [
+  {
+    id: 'graduacao',
+    label: 'Graduação & Calouros',
+    icon: 'school',
+    headline: 'Apoio completo do primeiro semestre ao internato',
+    description:
+      'Guias práticos para calouros, visão institucional do curso acreditado pelo SAEME e papel de cada entidade estudantil.',
+    items: [
+      {
+        id: 'tab-medfurb',
+        to: '/medfurb',
+        title: 'Sobre a MEDFURB',
+        summary: 'Acreditação SAEME, diretoria, auxílios estudantis, estágios optativos e normas de TCC.',
+        cta: 'Acessar guia do curso',
+        icon: 'medical_services',
+      },
+      {
+        id: 'tab-instituicoes',
+        to: '/medfurb/instituicoes',
+        title: 'Instituições Estudantis',
+        summary: 'Como CAMBLU, DCE FURB, Atlética AAARIH e IFMSA Brazil FURB atuam juntas na graduação.',
+        cta: 'Conhecer instituições',
+        icon: 'handshake',
+      },
+      {
+        id: 'tab-calouro',
+        to: '/manual-do-calouro',
+        title: 'Manual do Calouro',
+        summary: 'Checklist de boas-vindas, Cerimônia do Jaleco, linhagens, sistemas FURB e orientações iniciais.',
+        cta: 'Abrir manual',
+        icon: 'menu_book',
+      },
+    ],
+  },
+  {
+    id: 'ciencia',
+    label: 'Ciência, Ligas & Editais',
+    icon: 'science',
+    headline: 'Pesquisa, extensão e fomento acadêmico',
+    description:
+      'Acesse a Semana Científica de Medicina, as produções indexadas nos Anais, nossas 35 ligas acadêmicas e editais de apoio.',
+    items: [
+      {
+        id: 'tab-ligas',
+        to: '/ligas',
+        title: '35 Ligas Acadêmicas',
+        summary: 'Catálogo completo das ligas ativas da MEDFURB filtrável por especialidade com canais oficiais.',
+        cta: 'Explorar ligas',
+        icon: 'biotech',
+      },
+      {
+        id: 'tab-secimed',
+        to: '/secimed',
+        title: 'SECIMED',
+        summary: 'A Semana Científica de Medicina da FURB: palestras, workshops práticos e mostra científica.',
+        cta: 'Conhecer a SECIMED',
+        icon: 'prescriptions',
+      },
+      {
+        id: 'tab-anais',
+        to: '/secimed/anais-secimed',
+        title: 'Anais SECIMED (ISSN)',
+        summary: 'Edições publicadas em acesso aberto com revisão duplo-cega por pares e repositório Zenodo.',
+        cta: 'Consultar Anais',
+        icon: 'article',
+      },
+      {
+        id: 'tab-editais',
+        to: '/editais',
+        title: 'Editais de Apoio',
+        summary: 'Chamadas E-PAF, E-PAATC, E-PAFLIEC e editais eleitorais com PDF e formulários de envio.',
+        cta: 'Ver editais',
+        icon: 'description',
+      },
+    ],
+  },
+  {
+    id: 'servicos',
+    label: 'Serviços & Carteira Digital',
+    icon: 'qr_code_2',
+    headline: 'Ingressos, certificados e benefícios em um só lugar',
+    description:
+      'Ferramentas digitais para acompanhar sua presença nos eventos, validar documentos oficiais e gerenciar sua conta.',
+    items: [
+      {
+        id: 'tab-ingressos',
+        to: '/meus-ingressos',
+        title: 'Meus Ingressos',
+        summary: 'QR Codes de acesso pessoal para credenciamento nos eventos e transferência segura por CPF.',
+        cta: 'Abrir ingressos',
+        icon: 'confirmation_number',
+      },
+      {
+        id: 'tab-certificados',
+        to: '/certificados',
+        title: 'Certificados & Validação',
+        summary: 'Download em PDF ou PNG após presença confirmada e conferência pública por código.',
+        cta: 'Emitir ou validar',
+        icon: 'verified',
+      },
+      {
+        id: 'tab-cartao',
+        to: '/clube/cartao',
+        title: 'Cartão Digital do Clube',
+        summary: 'Identificação interativa para assinantes do Clube CAMBLU desbloquearem vantagens.',
+        cta: 'Ver cartão',
+        icon: 'badge',
+      },
+      {
+        id: 'tab-perfil',
+        to: '/perfil',
+        title: 'Meu Perfil Acadêmico',
+        summary: 'Atualize CPF, turma, WhatsApp e tamanho de camiseta com sincronização via conta Google.',
+        cta: 'Acessar perfil',
+        icon: 'person',
+      },
+    ],
+  },
+  {
+    id: 'gestao',
+    label: 'Transparência & Acolhimento',
+    icon: 'monitoring',
+    headline: 'Contas abertas, agenda unificada e escuta ativa',
+    description:
+      'Acompanhe o uso dos recursos estudantis, participe das pautas do curso e conte com nosso canal de acolhimento.',
+    items: [
+      {
+        id: 'tab-transparencia',
+        to: '/transparencia',
+        title: 'Transparência & Atas',
+        summary: 'Indicadores financeiros mensais, despesas por categoria, mapa de calor anual e atas de reunião.',
+        cta: 'Ver transparência',
+        icon: 'analytics',
+      },
+      {
+        id: 'tab-calendario',
+        to: '/calendario',
+        title: 'Calendário Acadêmico',
+        summary: 'Agenda unificada com eventos do CAMBLU, atividades das ligas e prazos de editais (.ics).',
+        cta: 'Abrir calendário',
+        icon: 'calendar_month',
+      },
+      {
+        id: 'tab-gestoes',
+        to: '/gestoes',
+        title: 'Gestões do CAMBLU',
+        summary: 'Diretorias eleitas, integrantes e propostas que conduzem o Centro Acadêmico ano a ano.',
+        cta: 'Conhecer gestões',
+        icon: 'groups',
+      },
+      {
+        id: 'tab-demandas',
+        to: '/demandas',
+        title: 'Demandas & CAMBLU Mulher',
+        summary: 'Envie solicitações para a diretoria ou acesse o canal sigiloso de escuta e apoio CAMBLU Mulher.',
+        cta: 'Enviar demanda',
+        icon: 'support_agent',
+      },
+    ],
+  },
+];
+
+const DIRECTORY_SLIDES: PortalAreaCard[] = [
+  ...FLAGSHIP_PILLARS,
+  {
+    id: 'dir-instituicoes',
+    to: '/medfurb/instituicoes',
+    title: 'Instituições MEDFURB',
+    summary: 'CAMBLU, DCE FURB, AAARIH e IFMSA Brazil FURB detalhados em uma página dedicada.',
+    cta: 'Acessar',
+    icon: 'handshake',
+  },
+  {
+    id: 'dir-ligas',
+    to: '/ligas',
+    title: '35 Ligas Acadêmicas',
+    summary: 'Explore especialidades clínicas, cirúrgicas e de saúde coletiva com contatos diretos.',
+    cta: 'Explorar',
+    icon: 'biotech',
+  },
+  {
+    id: 'dir-transparencia',
+    to: '/transparencia',
+    title: 'Transparência Pública',
+    summary: 'Acompanhe receitas, investimentos em projetos estudantis e atas das reuniões.',
+    cta: 'Visualizar',
+    icon: 'monitoring',
+  },
+  {
+    id: 'dir-mulher',
+    to: '/camblu-mulher',
+    title: 'CAMBLU Mulher',
+    summary: 'Canal de acolhimento sigiloso, orientação jurídica e rede de apoio às estudantes.',
+    cta: 'Saiba mais',
+    icon: 'shield_with_heart',
+  },
+];
+
+const HOME_FAQS = [
+  {
+    q: 'Onde encontro informações detalhadas sobre DCE, Atlética AAARIH e IFMSA?',
+    a: 'Reunimos a explicação completa de todas as entidades representativas da Medicina FURB na página dedicada de Instituições Estudantis.',
+    to: '/medfurb/instituicoes',
+    cta: 'Ir para Instituições Estudantis',
+  },
+  {
+    q: 'Como faço para acessar as salas do CAMBLU no Edifício Cristina?',
+    a: 'Na página Sobre & Espaços você conhece a Sala de Convivência, o Coworking e a Sala de Descanso, além de como solicitar a senha atualizada com a gestão.',
+    to: '/sobre',
+    cta: 'Ver Sobre & Espaços',
+  },
+  {
+    q: 'Onde emito meus certificados após participar de eventos e da SECIMED?',
+    a: 'Após validar seu QR Code na entrada do evento, seus certificados ficam disponíveis para download em PDF e PNG na área de Certificados.',
+    to: '/certificados',
+    cta: 'Abrir Meus Certificados',
+  },
+  {
+    q: 'Como entrar em contato com o CAMBLU sobre demandas da turma ou relatos sigilosos?',
+    a: 'Use a página Enviar Demanda para encaminhar sua pauta diretamente por assunto, ou acesse o CAMBLU Mulher para canais especializados de apoio.',
+    to: '/demandas',
+    cta: 'Enviar uma demanda',
+  },
+];
 
 export function HomePage() {
-  const { events, editais } = useAppData();
+  const [activeTabId, setActiveTabId] = useState<PortalCategoryId>('graduacao');
+  const activeTab = JOURNEY_TABS.find((t) => t.id === activeTabId) || JOURNEY_TABS[0];
 
-  const carouselItems = HOME_CAROUSEL_SLIDES.map((s) => ({
-    id: s.id,
-    title: s.title,
+  const heroCarouselItems = HOME_CAROUSEL_SLIDES.map((slide) => ({
+    id: slide.id,
+    title: slide.title,
     content: (
       <div
         style={{
-          minBlockSize: 'clamp(16rem, 28vw, 22rem)',
+          minBlockSize: 'clamp(17rem, 29vw, 23rem)',
           padding: 'clamp(1.5rem, 3.5vw, 2.75rem)',
-          background: `radial-gradient(circle at 88% 18%, rgb(237 209 110 / 0.28), transparent 46%), linear-gradient(135deg, ${s.accent}, #071b13)`,
+          background: `radial-gradient(circle at 86% 18%, rgb(237 209 110 / 0.24), transparent 46%), linear-gradient(135deg, ${slide.accent}, #071b13)`,
           color: '#ffffff',
           display: 'grid',
           alignContent: 'space-between',
-          gap: '1rem',
+          gap: '1.25rem',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-          <span className="m3-badge m3-badge--gold">
-            <Icon name={s.icon} size={16} />
-            {s.badge}
-          </span>
-          <span
-            style={{
-              fontSize: '0.78rem',
-              padding: '0.25rem 0.65rem',
-              borderRadius: '9999px',
-              border: '1px solid rgb(255 255 255 / 0.25)',
-              color: '#f1de97',
-            }}
-          >
-            Espaço reservado para foto real
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', color: '#f1de97' }}>
+          <Icon name={slide.icon} size={22} />
+          <span className="m3-label-large">{slide.badge}</span>
         </div>
 
-        <div style={{ maxInlineSize: '42rem' }}>
-          <h2 style={{ color: '#ffffff', marginBlockEnd: '0.55rem' }}>{s.title}</h2>
-          <p style={{ color: '#dfeee5' }}>{s.subtitle}</p>
+        <div className="m3-carousel-caption" style={{ display: 'grid', gap: '0.85rem', maxInlineSize: '42rem' }}>
+          <h3 style={{ color: '#ffffff' }}>{slide.title}</h3>
+          <p style={{ color: '#dfeee5' }}>{slide.subtitle}</p>
+          <div>
+            <Link to={slide.to} className="m3-btn m3-btn--gold">
+              <span>{slide.ctaLabel}</span>
+              <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
+            </Link>
+          </div>
         </div>
       </div>
     ),
   }));
 
-  const quickShortcuts = [
-    { to: '/eventos', title: 'Eventos & Ingressos', desc: 'Lotes, PIX, QR codes e certificados', icon: 'confirmation_number' },
-    { to: '/lojinha', title: 'Lojinha CAMBLU', desc: 'Moletons, camisetas, garrafas e kits', icon: 'shopping_bag' },
-    { to: '/clube', title: 'Clube CAMBLU', desc: 'Comum, Raro, Épico e Lendário', icon: 'workspace_premium' },
-    { to: '/transparencia', title: 'Transparência', desc: 'Gráficos financeiros, heatmap e atas', icon: 'monitoring' },
-    { to: '/ligas', title: '35 Ligas Acadêmicas', desc: 'Explore especialidades e Instagrams', icon: 'biotech' },
-    { to: '/secimed/anais-secimed', title: 'SECIMED & Anais', desc: 'Anais científicos ISSN 3086-612X', icon: 'menu_book' },
-    { to: '/manual-do-calouro', title: 'Manual do Calouro', desc: 'Guia completo MEDFURB 2026', icon: 'school' },
-    { to: '/demandas', title: 'Demandas & CAMBLU Mulher', desc: 'Canal direto e acolhimento seguro', icon: 'support_agent' },
-  ];
+  const multiBrowseItems = DIRECTORY_SLIDES.map((area) => ({
+    id: area.id,
+    title: area.title,
+    content: (
+      <div
+        style={{
+          minBlockSize: '15.5rem',
+          padding: '1.5rem',
+          background: 'var(--md-sys-color-surface-container-lowest)',
+          display: 'grid',
+          alignContent: 'space-between',
+          gap: '1rem',
+        }}
+      >
+        <div style={{ display: 'grid', gap: '0.65rem' }}>
+          <div
+            style={{
+              inlineSize: '2.75rem',
+              blockSize: '2.75rem',
+              borderRadius: 'var(--md-sys-shape-corner-md)',
+              background: 'var(--camblu-action-blue-container)',
+              color: 'var(--camblu-action-blue)',
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <Icon name={area.icon} size={23} />
+          </div>
+          <h3>{area.title}</h3>
+          <p className="text-muted">{area.summary}</p>
+        </div>
 
-  const featuredEvents = events.filter((e) => e.published).slice(0, 3);
-  const openEditais = editais.filter((ed) => ed.status === 'aberto');
+        <Link to={area.to} className="m3-btn m3-btn--text" style={{ justifySelf: 'start', paddingInlineStart: 0 }}>
+          <span>{area.cta}</span>
+          <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
+        </Link>
+      </div>
+    ),
+  }));
 
   return (
     <div>
-      {/* Expressive Hero */}
-      <section className="page-section container m3-reveal">
+      {/* 1. Hero Editorial — Apresentação Geral do Portal (Estilo Google for Education) */}
+      <section className="page-section container m3-motion-hero">
         <div
           className="m3-card m3-card--forest"
           style={{
-            padding: 'clamp(1.75rem, 4vw, 3.5rem)',
+            padding: 'clamp(1.85rem, 4.5vw, 3.75rem)',
             borderRadius: 'var(--md-sys-shape-corner-xl)',
             position: 'relative',
             overflow: 'hidden',
@@ -80,262 +381,221 @@ export function HomePage() {
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '2rem',
+            gap: '2.25rem',
             background:
-              'radial-gradient(circle at 92% 14%, rgb(237 209 110 / 0.25), transparent 40%), linear-gradient(140deg, #071b13 0%, #0f3325 56%, #184b37 100%)',
+              'radial-gradient(circle at 90% 14%, rgb(237 209 110 / 0.22), transparent 42%), linear-gradient(140deg, #071b13 0%, #0f3325 58%, #184b37 100%)',
           }}
         >
-          <div style={{ display: 'grid', gap: '1.35rem', maxInlineSize: '46rem', flex: '1 1 22rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <span className="m3-badge m3-badge--gold">
-                <Icon name="verified" size={15} />
-                Medicina FURB · Fundado em 1990
-              </span>
-              <span
-                className="m3-badge"
-                style={{ background: 'rgb(255 255 255 / 0.14)', color: '#f1de97' }}
-              >
-                Único curso em SC com Acreditação SAEME
-              </span>
-            </div>
+          <div className="m3-hero-copy" style={{ display: 'grid', gap: '1.25rem', maxInlineSize: '44rem', flex: '1 1 22rem' }}>
+            <span className="m3-label-large" style={{ color: '#f1de97' }}>
+              Medicina FURB · Representação discente desde 1990
+            </span>
 
-            <h1 style={{ color: '#ffffff' }}>
-              Centro Acadêmico de Medicina de Blumenau
-            </h1>
+            <h1 style={{ color: '#ffffff' }}>Centro Acadêmico de Medicina de Blumenau</h1>
 
             <p style={{ color: '#dceddf' }}>
-              Entidade sem fins lucrativos e apartidária dedicada a ser a voz dos estudantes de Medicina da FURB —
-              conectando representação democrática, ciência, eventos, transparência financeira e acolhimento.
+              Um único portal para acessar eventos, certificados, ligas acadêmicas, manual do calouro, transparência
+              financeira, lojinha oficial e canais de acolhimento da MEDFURB.
             </p>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <Link to="/eventos" className="m3-btn m3-btn--gold">
-                <Icon name="confirmation_number" size={19} />
-                <span>Explorar Eventos</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingBlockStart: '0.25rem' }}>
+              <Link to="/sobre" className="m3-btn m3-btn--blue">
+                <span>Conheça o CAMBLU</span>
+                <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
               </Link>
-              <Link to="/clube" className="m3-btn m3-btn--blue">
-                <Icon name="workspace_premium" size={19} />
-                <span>Conhecer Clube CAMBLU</span>
-              </Link>
-              <Link
-                to="/manual-do-calouro"
-                className="m3-btn m3-btn--outlined"
-                style={{ color: '#ffffff', borderColor: 'rgb(255 255 255 / 0.36)' }}
-              >
-                <Icon name="school" size={19} />
-                <span>Manual do Calouro</span>
+              <Link to="/medfurb/instituicoes" className="m3-btn m3-btn--gold">
+                <Icon name="groups" size={18} />
+                <span>Instituições Estudantis</span>
               </Link>
             </div>
           </div>
 
           <div
+            className="m3-hero-emblem"
             style={{
               flex: '0 0 auto',
               marginInline: 'auto',
-              padding: '1rem',
+              padding: '1.1rem',
               borderRadius: '9999px',
               background: 'rgb(255 255 255 / 0.06)',
               border: '1px solid rgb(237 209 110 / 0.28)',
             }}
           >
-            <CambluCrest size={156} variant="clean" />
+            <CambluCrest size={160} variant="clean" />
           </div>
         </div>
       </section>
 
-      {/* M3 Visual Carousel (Placeholders ready for photos) */}
-      <section className="container m3-reveal" style={{ paddingBlockEnd: '2.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', flexWrap: 'wrap', gap: '0.75rem', marginBlockEnd: '1rem' }}>
-          <div>
-            <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
-              Destaques CAMBLU
-            </span>
-            <h2>Vida acadêmica e espaços da MEDFURB</h2>
-          </div>
-          <Link to="/sobre" className="m3-btn m3-btn--text">
-            <span>Ver sobre o CAMBLU e espaços</span>
-            <Icon name="arrow_forward" size={18} />
-          </Link>
+      {/* 2. Os 4 Pilares Principais do Portal (como "Educação para hoje e para o futuro") */}
+      <section className="page-section container" style={{ paddingBlockStart: '1rem', display: 'grid', gap: '1.75rem' }}>
+        <div className="m3-motion-from-start" style={{ maxInlineSize: '46rem', display: 'grid', gap: '0.45rem' }}>
+          <h2>Tudo o que o portal oferece para a sua jornada na Medicina FURB</h2>
+          <p className="text-muted">
+            Cada área do site foi organizada em páginas próprias. Escolha o destino que deseja explorar:
+          </p>
         </div>
-        <M3Carousel label="Destaques do CAMBLU e MEDFURB" items={carouselItems} />
+
+        <div className="grid-cards">
+          {FLAGSHIP_PILLARS.map((pillar, idx) => (
+            <article
+              key={pillar.id}
+              className="m3-card m3-card--interactive m3-motion-stagger"
+              style={
+                {
+                  '--stagger-i': idx,
+                  display: 'grid',
+                  gap: '1rem',
+                  alignContent: 'space-between',
+                } as React.CSSProperties
+              }
+            >
+              <div style={{ display: 'grid', gap: '0.65rem' }}>
+                <div
+                  style={{
+                    inlineSize: '2.9rem',
+                    blockSize: '2.9rem',
+                    borderRadius: 'var(--md-sys-shape-corner-md)',
+                    background: 'var(--camblu-action-blue-container)',
+                    color: 'var(--camblu-action-blue)',
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <Icon name={pillar.icon} size={24} />
+                </div>
+                <h3>{pillar.title}</h3>
+                <p className="text-muted">{pillar.summary}</p>
+              </div>
+
+              <Link to={pillar.to} className="m3-btn m3-btn--text" style={{ justifySelf: 'start', paddingInlineStart: 0 }}>
+                <span>{pillar.cta}</span>
+                <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
+              </Link>
+            </article>
+          ))}
+        </div>
       </section>
 
-      {/* Representação Estudantil FURB */}
+      {/* 3. Carrossel M3 Hero Showcase ("Em um pacote seguro e flexível") */}
       <section className="page-section" style={{ background: 'var(--md-sys-color-surface-container-low)' }}>
-        <div className="container m3-reveal">
-          <div style={{ marginBlockEnd: '1.5rem' }}>
-            <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
-              Representação Estudantil
-            </span>
-            <h2>As instituições estudantis da Medicina FURB</h2>
+        <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
+          <div className="m3-motion-from-end" style={{ maxInlineSize: '46rem', display: 'grid', gap: '0.4rem' }}>
+            <h2>Conheça nossos espaços, eventos e frentes de atuação</h2>
             <p className="text-muted">
-              Conheça como CAMBLU, IFMSA Brazil FURB, DCE e Atlética AAARIH trabalham juntos na formação acadêmica,
-              esportiva, científica e política.
+              Navegue pelos destaques para ir direto à página completa de cada frente estudantil.
             </p>
+          </div>
+          <M3Carousel label="Destaques de áreas do CAMBLU" variant="hero" items={heroCarouselItems} />
+        </div>
+      </section>
+
+      {/* 4. Navegação por Perfil e Momento Acadêmico (Inspirada nas abas do Google for Education) */}
+      <section className="page-section container" style={{ display: 'grid', gap: '1.75rem' }}>
+        <div className="m3-motion-from-start" style={{ display: 'grid', gap: '0.5rem', textAlign: 'center', justifyItems: 'center' }}>
+          <h2>Uma estrutura pensada para cada necessidade do estudante</h2>
+          <p className="text-muted">
+            Selecione uma categoria abaixo para ver o que cada seção do site reúne e acessar diretamente.
+          </p>
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="Explorar áreas do site por tema"
+          style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem' }}
+        >
+          {JOURNEY_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTabId === tab.id}
+              className="m3-chip"
+              onClick={() => setActiveTabId(tab.id)}
+            >
+              <Icon name={tab.icon} size={18} />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div
+          key={activeTab.id}
+          role="tabpanel"
+          className="m3-card m3-card--tonal m3-motion-panel"
+          style={{ display: 'grid', gap: '1.5rem' }}
+        >
+          <div style={{ maxInlineSize: '46rem', display: 'grid', gap: '0.35rem' }}>
+            <h3>{activeTab.headline}</h3>
+            <p className="text-muted">{activeTab.description}</p>
           </div>
 
           <div className="grid-cards">
-            {FURB_INSTITUTIONS.map((inst, idx) => (
-              <article
-                key={inst.id}
-                className="m3-card m3-card--interactive m3-shape-card"
-                style={{ display: 'grid', gap: '0.9rem', alignContent: 'start' }}
+            {activeTab.items.map((item) => (
+              <div
+                key={item.id}
+                className="m3-card"
+                style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between' }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-                  <ExpressiveShapeFrame shape={M3_SHAPE_ROTATION[idx % M3_SHAPE_ROTATION.length]} maxWidth="4.25rem">
-                    <div
-                      style={{
-                        inlineSize: '100%',
-                        blockSize: '100%',
-                        display: 'grid',
-                        placeItems: 'center',
-                        background: idx % 2 === 0 ? 'var(--camblu-forest-900)' : 'var(--camblu-action-blue)',
-                        color: idx % 2 === 0 ? '#edd16e' : '#ffffff',
-                      }}
-                    >
-                      <Icon name={inst.icon} size={28} />
-                    </div>
-                  </ExpressiveShapeFrame>
-                  <div>
-                    <span className="m3-badge">{inst.founded}</span>
-                    <h3 style={{ marginBlockStart: '0.25rem' }}>
-                      {inst.acronym}
-                    </h3>
+                <div style={{ display: 'grid', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', color: 'var(--camblu-action-blue)' }}>
+                    <Icon name={item.icon} size={22} />
+                    <strong>{item.title}</strong>
                   </div>
+                  <p className="text-muted">{item.summary}</p>
                 </div>
 
-                <p style={{ fontWeight: 600, color: 'var(--md-sys-color-on-surface)' }}>
-                  {inst.name}
-                </p>
-                <p className="text-muted">{inst.summary}</p>
-                <ul style={{ margin: 0, paddingInlineStart: '1.1rem', display: 'grid', gap: '0.25rem', fontSize: '0.86rem' }}>
-                  {inst.pillars.map((p) => (
-                    <li key={p}>{p}</li>
-                  ))}
-                </ul>
-              </article>
+                <Link to={item.to} className="m3-btn m3-btn--blue" style={{ justifySelf: 'start' }}>
+                  <span>{item.cta}</span>
+                  <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
+                </Link>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Portal Quick Directory */}
-      <section className="page-section container m3-reveal">
-        <div style={{ marginBlockEnd: '1.5rem' }}>
-          <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
-            Ecossistema Completo
-          </span>
-          <h2>Acesse todas as áreas do portal</h2>
+      {/* 5. Multi-browse Carousel: Tour rápido por todas as páginas */}
+      <section className="page-section container" style={{ paddingBlockStart: '0.5rem', display: 'grid', gap: '1.35rem' }}>
+        <div className="m3-motion-from-end" style={{ maxInlineSize: '44rem', display: 'grid', gap: '0.35rem' }}>
+          <h2>Acesse qualquer canto do portal</h2>
+          <p className="text-muted">
+            Deslize os cartões para explorar serviços, representações estudantis, editais e canais de apoio.
+          </p>
         </div>
-
-        <div className="grid-cards">
-          {quickShortcuts.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="m3-card m3-card--interactive"
-              style={{
-                textDecoration: 'none',
-                color: 'inherit',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.9rem',
-              }}
-            >
-              <div
-                style={{
-                  inlineSize: '2.9rem',
-                  blockSize: '2.9rem',
-                  borderRadius: 'var(--md-sys-shape-corner-md)',
-                  background: 'var(--camblu-action-blue-container)',
-                  color: 'var(--camblu-action-blue)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <Icon name={item.icon} size={24} />
-              </div>
-              <div>
-                <h3 style={{ marginBlockEnd: '0.2rem' }}>
-                  {item.title}
-                </h3>
-                <p className="text-muted">{item.desc}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <M3Carousel label="Tour pelas áreas do site" variant="multi-browse" items={multiBrowseItems} />
       </section>
 
-      {/* Eventos & Editais Highlights */}
-      <section className="page-section container m3-reveal">
-        <div className="grid-two">
-          <div className="m3-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBlockEnd: '1rem' }}>
-              <h2>Próximos Eventos</h2>
-              <Link to="/eventos" className="m3-btn m3-btn--text">
-                Ver todos
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gap: '0.75rem' }}>
-              {featuredEvents.map((ev) => {
-                const lowestLot = ev.lots[0];
-                return (
-                  <Link
-                    key={ev.id}
-                    to={`/eventos/${ev.slug}`}
-                    className="m3-card m3-card--tonal m3-card--interactive"
-                    style={{ textDecoration: 'none', color: 'inherit', padding: '1rem', display: 'grid', gap: '0.35rem' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span className="m3-badge m3-badge--blue">
-                        {ev.mode === 'virtual' ? 'Online' : 'Presencial'}
-                      </span>
-                      {lowestLot && (
-                        <strong style={{ color: 'var(--md-sys-color-primary)' }}>
-                          {formatBrlFromCents(lowestLot.priceCents)}
-                        </strong>
-                      )}
-                    </div>
-                    <strong>{ev.title}</strong>
-                    <span className="m3-body-medium">{ev.locationShort}</span>
-                  </Link>
-                );
-              })}
-            </div>
+      {/* 6. Dúvidas? Nós temos as respostas (Acordeões finais com links diretos) */}
+      <section className="page-section" style={{ background: 'var(--md-sys-color-surface-container-low)' }}>
+        <div className="container" style={{ display: 'grid', gap: '1.5rem', maxInlineSize: '56rem' }}>
+          <div style={{ display: 'grid', gap: '0.4rem' }}>
+            <h2>Dúvidas? Encontre o caminho certo</h2>
+            <p className="text-muted">Respostas rápidas com acesso direto à página responsável.</p>
           </div>
 
-          <div className="m3-card m3-card--gold">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBlockEnd: '1rem' }}>
-              <h2>Editais Abertos & Documentos</h2>
-              <Link to="/editais" className="m3-btn m3-btn--text">
-                Ver editais
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gap: '0.75rem' }}>
-              {openEditais.map((ed) => (
-                <div
-                  key={ed.id}
-                  style={{
-                    background: 'rgb(255 255 255 / 0.65)',
-                    color: '#241c00',
-                    padding: '0.9rem 1rem',
-                    borderRadius: 'var(--md-sys-shape-corner-md)',
-                  }}
-                >
-                  <span className="m3-badge m3-badge--success" style={{ marginBlockEnd: '0.35rem' }}>
-                    {ed.program} · Aberto até {ed.deadline}
-                  </span>
-                  <strong style={{ display: 'block', marginBlockEnd: '0.2rem' }}>{ed.title}</strong>
-                  <span style={{ fontSize: '0.86rem' }}>{ed.summary}</span>
+          <div className="product-accordion">
+            {HOME_FAQS.map((faq) => (
+              <details key={faq.q} className="product-accordion-item">
+                <summary>
+                  <span>{faq.q}</span>
+                  <Icon name="keyboard_arrow_down" size={22} className="product-accordion-chevron" />
+                </summary>
+                <div className="product-accordion-body">
+                  <p className="text-muted">{faq.a}</p>
+                  <div>
+                    <Link to={faq.to} className="m3-btn m3-btn--text" style={{ paddingInlineStart: 0 }}>
+                      <span>{faq.cta}</span>
+                      <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
+                    </Link>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </details>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="container" style={{ paddingBlockEnd: '3rem' }}>
+      <section className="container" style={{ paddingBlock: '2.5rem 3rem' }}>
         <SponsorsStrip />
       </section>
     </div>

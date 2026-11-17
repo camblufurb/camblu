@@ -12,6 +12,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lascofurb',
     instagramUrl: 'https://www.instagram.com/lascofurb/',
     shape: 'squircle',
+    logoUrl: '/ligas/lasco.webp',
   },
   {
     id: 'lageh',
@@ -21,6 +22,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lagehfurb',
     instagramUrl: 'https://www.instagram.com/lagehfurb/',
     shape: 'clover4',
+    logoUrl: '/ligas/lageh.webp',
   },
   {
     id: 'lion',
@@ -30,6 +32,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lionfurb',
     instagramUrl: 'https://www.instagram.com/lionfurb/',
     shape: 'flower',
+    logoUrl: '/ligas/lion.webp',
   },
   {
     id: 'liof',
@@ -39,6 +42,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lioffurb',
     instagramUrl: 'https://www.instagram.com/lioffurb/',
     shape: 'arch',
+    logoUrl: '/ligas/liof.webp',
   },
   {
     id: 'lihem',
@@ -48,6 +52,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lihemfurb',
     instagramUrl: 'https://www.instagram.com/lihemfurb/',
     shape: 'gem',
+    logoUrl: '/ligas/lihem.webp',
   },
   {
     id: 'lirad',
@@ -57,6 +62,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@liradfurb',
     instagramUrl: 'https://www.instagram.com/liradfurb/',
     shape: 'clover8',
+    logoUrl: '/ligas/lirad.webp',
   },
   {
     id: 'laacv',
@@ -66,6 +72,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@laacvfurb',
     instagramUrl: 'https://www.instagram.com/laacvfurb/',
     shape: 'sunny',
+    logoUrl: '/ligas/laacv.webp',
   },
   {
     id: 'lamurgem',
@@ -75,6 +82,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lamurgemfurb',
     instagramUrl: 'https://www.instagram.com/lamurgemfurb/',
     shape: 'pill',
+    logoUrl: '/ligas/lamurgem.webp',
   },
   {
     id: 'lacp',
@@ -84,6 +92,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lacpfurb',
     instagramUrl: 'https://www.instagram.com/lacpfurb/',
     shape: 'circle',
+    logoUrl: '/ligas/lacp.webp',
   },
   {
     id: 'lacipe',
@@ -93,6 +102,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lacipe.furb',
     instagramUrl: 'https://www.instagram.com/lacipe.furb/',
     shape: 'clover4',
+    logoUrl: '/ligas/lacipe.webp',
   },
   {
     id: 'ladi',
@@ -102,6 +112,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@ladifurb',
     instagramUrl: 'https://www.instagram.com/ladifurb/',
     shape: 'squircle',
+    logoUrl: '/ligas/ladi.webp',
   },
   {
     id: 'laciderm',
@@ -111,6 +122,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@laciderm',
     instagramUrl: 'https://www.instagram.com/laciderm/',
     shape: 'flower',
+    logoUrl: '/ligas/laciderm.webp',
   },
   {
     id: 'linut',
@@ -120,6 +132,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@linutfurb',
     instagramUrl: 'https://www.instagram.com/linutfurb/',
     shape: 'arch',
+    logoUrl: '/ligas/linut.webp',
   },
   {
     id: 'lismen',
@@ -129,6 +142,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@ligalismen',
     instagramUrl: 'https://www.instagram.com/ligalismen/',
     shape: 'clover8',
+    logoUrl: '/ligas/lismen.webp',
   },
   {
     id: 'lacc',
@@ -138,6 +152,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@laccfurb',
     instagramUrl: 'https://www.instagram.com/laccfurb/',
     shape: 'gem',
+    logoUrl: '/ligas/lacc.webp',
   },
   {
     id: 'limac',
@@ -147,6 +162,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@limacfurb',
     instagramUrl: 'https://www.instagram.com/limacfurb/',
     shape: 'sunny',
+    logoUrl: '/ligas/limac.webp',
   },
   {
     id: 'liren',
@@ -156,6 +172,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@ligarenalfurb',
     instagramUrl: 'https://www.instagram.com/ligarenalfurb/',
     shape: 'pill',
+    logoUrl: '/ligas/liren.webp',
   },
   {
     id: 'lacm',
@@ -165,6 +182,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lacmfurb',
     instagramUrl: 'https://www.instagram.com/lacmfurb/',
     shape: 'squircle',
+    logoUrl: '/ligas/lacm.webp',
   },
   {
     id: 'liplas',
@@ -174,6 +192,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@liplas.furb',
     instagramUrl: 'https://www.instagram.com/liplas.furb/',
     shape: 'flower',
+    logoUrl: '/ligas/liplas.webp',
   },
   {
     id: 'liem',
@@ -183,6 +202,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@liemfurb',
     instagramUrl: 'https://www.instagram.com/liemfurb/',
     shape: 'clover4',
+    logoUrl: '/ligas/liem.webp',
   },
   {
     id: 'lan',
@@ -192,6 +212,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@ligadeneurociencias',
     instagramUrl: 'https://www.instagram.com/ligadeneurociencias/',
     shape: 'clover8',
+    logoUrl: '/ligas/lan.webp',
   },
   {
     id: 'lisam',
@@ -201,6 +222,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lisamfurb',
     instagramUrl: 'https://www.instagram.com/lisamfurb/',
     shape: 'arch',
+    logoUrl: '/ligas/lisam.webp',
   },
   {
     id: 'liped',
@@ -210,6 +232,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lipedfurb',
     instagramUrl: 'https://www.instagram.com/lipedfurb/',
     shape: 'sunny',
+    logoUrl: '/ligas/liped.webp',
   },
   {
     id: 'lasem',
@@ -219,6 +242,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lasemfurb',
     instagramUrl: 'https://www.instagram.com/lasemfurb/',
     shape: 'gem',
+    logoUrl: '/ligas/lasem.webp',
   },
   {
     id: 'lahcm',
@@ -228,6 +252,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lahcmfurb',
     instagramUrl: 'https://www.instagram.com/lahcmfurb/',
     shape: 'circle',
+    logoUrl: '/ligas/lahcm.webp',
   },
   {
     id: 'liorte',
@@ -237,6 +262,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@liortefurb',
     instagramUrl: 'https://www.instagram.com/liortefurb/',
     shape: 'squircle',
+    logoUrl: '/ligas/liorte.webp',
   },
   {
     id: 'ligami',
@@ -246,6 +272,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@ligamifurb',
     instagramUrl: 'https://www.instagram.com/ligamifurb/',
     shape: 'clover4',
+    logoUrl: '/ligas/ligami.webp',
   },
   {
     id: 'lafam',
@@ -255,6 +282,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lafamfurb',
     instagramUrl: 'https://www.instagram.com/lafamfurb/',
     shape: 'flower',
+    logoUrl: '/ligas/lafam.webp',
   },
   {
     id: 'lacad',
@@ -264,6 +292,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lacadfurb',
     instagramUrl: 'https://www.instagram.com/lacadfurb/',
     shape: 'pill',
+    logoUrl: '/ligas/lacad.webp',
   },
   {
     id: 'liare',
@@ -273,6 +302,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@liarefurb',
     instagramUrl: 'https://www.instagram.com/liarefurb/',
     shape: 'arch',
+    logoUrl: '/ligas/liare.webp',
   },
   {
     id: 'lagma',
@@ -282,6 +312,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lagmafurb',
     instagramUrl: 'https://www.instagram.com/lagmafurb/',
     shape: 'clover8',
+    logoUrl: '/ligas/lagma.webp',
   },
   {
     id: 'laio',
@@ -291,6 +322,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@laiofurb',
     instagramUrl: 'https://www.instagram.com/laiofurb/',
     shape: 'gem',
+    logoUrl: '/ligas/laio.webp',
   },
   {
     id: 'lindes',
@@ -300,6 +332,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lindesfurb',
     instagramUrl: 'https://www.instagram.com/lindesfurb/',
     shape: 'sunny',
+    logoUrl: '/ligas/lindes.webp',
   },
   {
     id: 'lactp',
@@ -309,6 +342,7 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lactp.furb',
     instagramUrl: 'https://www.instagram.com/lactp.furb/',
     shape: 'squircle',
+    logoUrl: '/ligas/lactp.webp',
   },
   {
     id: 'lipat',
@@ -318,5 +352,6 @@ export const LIGAS_SEED: LigaAcademica[] = [
     instagramHandle: '@lipatfurb',
     instagramUrl: 'https://www.instagram.com/lipatfurb/',
     shape: 'flower',
+    logoUrl: '/ligas/lipat.webp',
   },
 ];

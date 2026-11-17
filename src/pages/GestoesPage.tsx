@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { ExpressiveShapeFrame } from '../components/ExpressiveShapeFrame';
-import { Icon } from '../components/Icon';
 import { SponsorsStrip } from '../components/SponsorLogos';
 import type { GestaoCargo, GestaoMember } from '../types/domain';
 
@@ -79,9 +78,8 @@ export function GestoesPage() {
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
         <div style={{ maxInlineSize: '44rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="groups" size={16} />
-            Histórico de Representação Discente
+          <span className="m3-label-large" style={{ display: 'block', marginBlockEnd: '0.4rem', color: '#f1de97' }}>
+            Representação Discente
           </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>
             {currentTerm.chapaName} ({currentTerm.year})

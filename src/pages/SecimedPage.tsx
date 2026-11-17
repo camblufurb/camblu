@@ -14,21 +14,21 @@ export function SecimedPage() {
       id: 'sec-2025',
       title: 'XXII SECIMED — Palestras Magnas & Casos Clínicos',
       subtitle: 'Auditório principal lotado com médicos convidados, discussões multiprofissionais e sorteio de brindes.',
-      badge: 'Edição 2025 · Placeholder Foto',
+      badge: 'Edição 2025',
       bg: 'linear-gradient(135deg, #0f3325, #1e5740)',
     },
     {
       id: 'sec-ws',
       title: 'Workshops Práticos das Ligas Acadêmicas',
       subtitle: 'Sutura, atendimento ao trauma, vias aéreas, interpretação de ECG e semiologia prática.',
-      badge: 'Workshops · Placeholder Foto',
+      badge: 'Workshops & Ligas',
       bg: 'linear-gradient(135deg, #0d2b66, #285eb8)',
     },
     {
       id: 'sec-orais',
       title: 'Mostra de Trabalhos Científicos e Banners',
       subtitle: 'Discentes apresentando pesquisas e relatos de caso avaliados com premiação e publicação nos Anais.',
-      badge: 'Produção Científica · Placeholder Foto',
+      badge: 'Produção Científica',
       bg: 'linear-gradient(135deg, #3c2f05, #6c550b)',
     },
   ].map((item) => ({
@@ -45,8 +45,7 @@ export function SecimedPage() {
           alignContent: 'space-between',
         }}
       >
-        <span className="m3-badge m3-badge--gold" style={{ justifySelf: 'start' }}>
-          <Icon name="photo_camera" size={16} />
+        <span className="m3-label-small" style={{ color: '#f1de97' }}>
           {item.badge}
         </span>
         <div>
@@ -60,12 +59,9 @@ export function SecimedPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'grid', gap: '1rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span className="m3-badge m3-badge--gold">Desde {SECIMED_INFO.since}</span>
-          <span className="m3-badge" style={{ background: 'rgb(255 255 255 / 0.14)', color: '#ffffff' }}>
-            ISSN {SECIMED_INFO.issn}
-          </span>
-        </div>
+        <span className="m3-label-large" style={{ color: '#f1de97' }}>
+          Desde {SECIMED_INFO.since} · Anais ISSN {SECIMED_INFO.issn}
+        </span>
 
         <h1>Semana Científica de Medicina — SECIMED</h1>
         <p style={{ color: '#dceddf' }}>

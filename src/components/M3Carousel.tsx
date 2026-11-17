@@ -4,6 +4,7 @@ import { Icon } from './Icon';
 interface M3CarouselProps {
   label: string;
   peek?: boolean;
+  variant?: 'hero' | 'multi-browse';
   items: {
     id: string;
     title: string;
@@ -11,7 +12,7 @@ interface M3CarouselProps {
   }[];
 }
 
-export function M3Carousel({ label, peek = true, items }: M3CarouselProps) {
+export function M3Carousel({ label, peek = true, variant = 'hero', items }: M3CarouselProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
@@ -24,12 +25,13 @@ export function M3Carousel({ label, peek = true, items }: M3CarouselProps) {
     if (!track) return 0;
     const slides = Array.from(track.children) as HTMLElement[];
     if (slides.length === 0) return 0;
-    const trackCenter = track.scrollLeft + track.clientWidth / 2;
+    const trackFocusX =
+      variant === 'multi-browse' ? track.scrollLeft + track.clientWidth * 0.24 : track.scrollLeft + track.clientWidth / 2;
     let bestIdx = 0;
     let bestDist = Infinity;
     slides.forEach((slide, i) => {
-      const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
-      const dist = Math.abs(trackCenter - slideCenter);
+      const slideFocusX = variant === 'multi-browse' ? slide.offsetLeft : slide.offsetLeft + slide.offsetWidth / 2;
+      const dist = Math.abs(trackFocusX - slideFocusX);
       if (dist < bestDist) {
         bestDist = dist;
         bestIdx = i;
@@ -46,7 +48,10 @@ export function M3Carousel({ label, peek = true, items }: M3CarouselProps) {
     if (!slide) return;
     pendingTargetRef.current = wrapped;
     setActiveIndex(wrapped);
-    const targetLeft = slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2;
+    const targetLeft =
+      variant === 'multi-browse'
+        ? slide.offsetLeft
+        : slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2;
     track.scrollTo({
       left: Math.max(0, targetLeft),
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
@@ -88,7 +93,7 @@ export function M3Carousel({ label, peek = true, items }: M3CarouselProps) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     };
-  }, [items.length]);
+  }, [items.length, variant]);
 
   if (items.length === 0) return null;
 
@@ -117,6 +122,7 @@ export function M3Carousel({ label, peek = true, items }: M3CarouselProps) {
         <div
           ref={trackRef}
           className="m3-carousel-track"
+          data-variant={variant}
           data-peek={peek && items.length > 1 ? 'true' : 'false'}
           tabIndex={0}
           role="group"
@@ -126,6 +132,7 @@ export function M3Carousel({ label, peek = true, items }: M3CarouselProps) {
             <div
               key={item.id}
               className="m3-carousel-slide"
+              data-active={activeIndex === idx ? 'true' : 'false'}
               role="group"
               aria-roledescription="slide"
               aria-label={`${idx + 1} de ${items.length}: ${item.title}`}

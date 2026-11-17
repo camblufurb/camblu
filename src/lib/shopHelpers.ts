@@ -1,4 +1,4 @@
-import logoClean from '../../assets/img/logo_clean.png';
+import logoClean from '../../assets/logos/logo_clean.png';
 import type { ShopProduct } from '../types/domain';
 
 export function slugifyProductName(value: string): string {

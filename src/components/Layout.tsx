@@ -44,6 +44,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
   const institutionalLinks = [
     { to: '/sobre', label: t('nav.about'), icon: 'apartment' },
     { to: '/medfurb', label: t('nav.medfurb'), icon: 'medical_services' },
+    { to: '/medfurb/instituicoes', label: 'Instituições Estudantis', icon: 'handshake' },
     { to: '/gestoes', label: t('nav.gestoes'), icon: 'groups' },
     { to: '/transparencia', label: t('nav.transparency'), icon: 'monitoring' },
     { to: '/demandas', label: t('nav.demands'), icon: 'support_agent' },

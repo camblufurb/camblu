@@ -29,10 +29,6 @@ export function LigasPage() {
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
         <div style={{ maxInlineSize: '46rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="biotech" size={16} />
-            Ensino · Pesquisa · Extensão
-          </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>Catálogo de Ligas Acadêmicas</h1>
           <p style={{ color: '#dceddf' }}>
             A MEDFURB conta com {ligas.length} Ligas Acadêmicas ativas aprovadas pelo DAEX. O CAMBLU organiza o
@@ -65,7 +61,9 @@ export function LigasPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <span className="m3-badge m3-badge--blue">{filtered.length} ligas exibidas</span>
+          <span className="m3-label-large text-muted">
+            {filtered.length} {filtered.length === 1 ? 'liga exibida' : 'ligas exibidas'}
+          </span>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }} role="group" aria-label="Filtrar por área">
@@ -91,14 +89,34 @@ export function LigasPage() {
             style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between', textAlign: 'center' }}
           >
             <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem' }}>
-              <ExpressiveShapeFrame
-                shape={liga.shape}
-                maxWidth="7.5rem"
-                hoverRotateDeg={idx % 2 === 0 ? 6 : -6}
-              >
-                {liga.logoUrl ? (
-                  <img src={liga.logoUrl} alt={`Logo ${liga.acronym}`} loading="lazy" />
-                ) : (
+              {liga.logoUrl ? (
+                <div
+                  style={{
+                    inlineSize: '7.5rem',
+                    blockSize: '7.5rem',
+                    borderRadius: '9999px',
+                    background: '#ffffff',
+                    border: '1px solid var(--md-sys-color-outline-variant)',
+                    boxShadow: 'var(--elevation-1)',
+                    padding: '0.45rem',
+                    display: 'grid',
+                    placeItems: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={liga.logoUrl}
+                    alt={`Logo ${liga.acronym}`}
+                    loading="lazy"
+                    style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'contain' }}
+                  />
+                </div>
+              ) : (
+                <ExpressiveShapeFrame
+                  shape={liga.shape}
+                  maxWidth="7.5rem"
+                  hoverRotateDeg={idx % 2 === 0 ? 6 : -6}
+                >
                   <div
                     style={{
                       inlineSize: '100%',
@@ -117,13 +135,11 @@ export function LigasPage() {
                   >
                     <strong style={{ fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{liga.acronym}</strong>
                   </div>
-                )}
-              </ExpressiveShapeFrame>
+                </ExpressiveShapeFrame>
+              )}
 
-              <div>
-                <span className="m3-badge" style={{ marginBlockEnd: '0.35rem' }}>
-                  {liga.area}
-                </span>
+              <div style={{ display: 'grid', gap: '0.25rem' }}>
+                <span className="m3-label-small text-muted">{liga.area}</span>
                 <h2>{liga.acronym}</h2>
                 <p className="text-muted">{liga.name}</p>
               </div>

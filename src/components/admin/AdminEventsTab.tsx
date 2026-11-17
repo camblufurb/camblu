@@ -422,7 +422,7 @@ export function AdminEventsTab() {
               <input id="lot-name" className="m3-input" value={lotName} onChange={(e) => setLotName(e.target.value)} />
             </div>
             <div className="m3-field">
-              <label htmlFor="lot-price">Valor (R$, taxas inclusas)</label>
+              <label htmlFor="lot-price">Valor do lote (R$)</label>
               <input id="lot-price" className="m3-input" value={lotPriceReais} onChange={(e) => setLotPriceReais(e.target.value)} />
             </div>
             <div className="m3-field">

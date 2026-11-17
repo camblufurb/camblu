@@ -70,10 +70,6 @@ export function TransparencyPage() {
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
         <div style={{ maxInlineSize: '46rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="monitoring" size={16} />
-            Prestação de Contas Pública
-          </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>Transparência & Atas de Reunião</h1>
           <p style={{ color: '#dceddf' }}>
             Acompanhe mensalmente todas as receitas, investimentos em projetos, gastos por categoria e mapa de calor das

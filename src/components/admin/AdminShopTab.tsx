@@ -306,7 +306,7 @@ export function AdminShopTab() {
         </div>
         <div className="grid-two">
           <div className="m3-field">
-            <label htmlFor="p-price">Valor (R$, taxas Stripe inclusas)</label>
+            <label htmlFor="p-price">Valor de venda (R$)</label>
             <input id="p-price" className="m3-input" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} />
           </div>
           <div className="m3-field">

@@ -26,12 +26,12 @@ export function AboutSpacesPage() {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span className="m3-badge m3-badge--gold">
-            <Icon name={space.icon} size={16} />
+          <span className="m3-label-large" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#edd16e' }}>
+            <Icon name={space.icon} size={18} />
             {space.location}
           </span>
-          <span className="m3-badge" style={{ background: 'rgb(255 255 255 / 0.16)', color: '#ffffff' }}>
-            Placeholder foto real · {space.status}
+          <span className="m3-label-small" style={{ color: '#e8f1eb' }}>
+            {space.status}
           </span>
         </div>
 
@@ -72,10 +72,6 @@ export function AboutSpacesPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2.5rem' }}>
       <div className="m3-card m3-card--forest">
-        <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.75rem' }}>
-          <Icon name="apartment" size={16} />
-          Institucional & Patrimônio
-        </span>
         <h1 style={{ marginBlockEnd: '0.6rem' }}>Sobre o CAMBLU e Nossos Espaços</h1>
         <p style={{ color: '#dceddf' }}>
           Fundado em 1990, o Centro Acadêmico de Medicina de Blumenau atua como ponte direta entre alunos,

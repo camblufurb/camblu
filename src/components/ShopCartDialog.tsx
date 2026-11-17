@@ -97,7 +97,7 @@ export function ShopCartDialog() {
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem' }}>
-              <strong>Total (taxas inclusas)</strong>
+              <strong>Total</strong>
               <strong>{formatBrlFromCents(totalCents)}</strong>
             </div>
           </div>
@@ -110,7 +110,7 @@ export function ShopCartDialog() {
               onClick={() => setPaymentMethod('stripe_pix')}
             >
               <Icon name="qr_code" size={17} />
-              <span>PIX (Stripe)</span>
+              <span>PIX</span>
             </button>
             <button
               type="button"

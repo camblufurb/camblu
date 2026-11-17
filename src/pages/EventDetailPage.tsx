@@ -96,7 +96,7 @@ export function EventDetailPage() {
             paymentMethod,
           }),
         });
-        if (!res.ok) throw new Error('Falha ao iniciar checkout Stripe.');
+        if (!res.ok) throw new Error('Falha ao iniciar pagamento.');
         const data = (await res.json()) as { checkoutUrl?: string; freeIssued?: boolean };
         if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
@@ -196,12 +196,18 @@ export function EventDetailPage() {
           </div>
 
           <div className="m3-card" style={{ display: 'grid', gap: '0.9rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <span className="m3-badge m3-badge--blue">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1rem', fontSize: '0.86rem', color: 'var(--md-sys-color-on-surface-variant)' }}>
+              <strong style={{ color: 'var(--camblu-action-blue)' }}>
                 {event.mode === 'virtual' ? 'Evento Virtual' : 'Evento Presencial'}
-              </span>
-              <span className="m3-badge">Capacidade máxima: {event.maxCapacity} pessoas</span>
-              {event.hasCoffee && <span className="m3-badge m3-badge--gold">Inclui Coffee</span>}
+              </strong>
+              <span>·</span>
+              <span>Capacidade máxima: {event.maxCapacity} pessoas</span>
+              {event.hasCoffee && (
+                <>
+                  <span>·</span>
+                  <span>Inclui Coffee</span>
+                </>
+              )}
             </div>
 
             <h1>{event.title}</h1>
@@ -319,13 +325,13 @@ export function EventDetailPage() {
 
               <div className="m3-card m3-card--gold" style={{ display: 'grid', gap: '0.4rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Valor final (taxas Stripe inclusas)</span>
+                  <span>Valor do ingresso</span>
                   <strong style={{ fontSize: '1.35rem' }}>
                     {pricing.finalCents === 0 ? 'Gratuito' : formatBrlFromCents(pricing.finalCents)}
                   </strong>
                 </div>
                 {pricing.reason && (
-                  <span className="m3-badge m3-badge--success" style={{ justifySelf: 'start' }}>
+                  <span className="m3-label-large" style={{ color: 'var(--md-sys-color-success)' }}>
                     {pricing.reason}
                   </span>
                 )}
@@ -340,7 +346,7 @@ export function EventDetailPage() {
                     onClick={() => setPaymentMethod('stripe_pix')}
                   >
                     <Icon name="qr_code" size={17} />
-                    <span>PIX (Stripe)</span>
+                    <span>PIX</span>
                   </button>
                   <button
                     type="button"

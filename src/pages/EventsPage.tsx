@@ -27,14 +27,10 @@ export function EventsPage() {
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
         <div style={{ maxInlineSize: '46rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="confirmation_number" size={16} />
-            Ingressos, QR Codes & Certificados AACCs
-          </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>Eventos CAMBLU</h1>
           <p style={{ color: '#dceddf' }}>
-            Garanta sua vaga com pagamento via Stripe (PIX, Cartão, Google Pay e Apple Pay — todas as taxas já
-            inclusas). Assinantes do Clube CAMBLU recebem descontos ou gratuidade automáticos!
+            Confira os simpósios, jornadas científicas e encontros da Medicina FURB, garanta seu ingresso com QR Code e
+            acompanhe suas horas complementares (AACCs).
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -114,18 +110,12 @@ export function EventsPage() {
                   ) : (
                     <Icon name={ev.mode === 'virtual' ? 'videocam' : 'event_available'} size={48} />
                   )}
-                  <span
-                    className="m3-badge m3-badge--gold"
-                    style={{ position: 'absolute', insetBlockStart: '0.65rem', insetInlineStart: '0.65rem' }}
-                  >
-                    {ev.mode === 'virtual' ? 'Evento Virtual' : 'Presencial'}
-                  </span>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  <span className="m3-badge m3-badge--blue">Até {maxHours}h de certificado</span>
-                  <span className="m3-badge">{totalAvailable} vagas restantes</span>
-                </div>
+                <span className="m3-label-small text-muted">
+                  {ev.mode === 'virtual' ? 'Evento Virtual' : 'Presencial'} · Até {maxHours}h de certificado ·{' '}
+                  {totalAvailable} vagas restantes
+                </span>
 
                 <h2>{ev.title}</h2>
                 <p className="text-muted">{ev.locationShort}</p>

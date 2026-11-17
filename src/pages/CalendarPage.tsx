@@ -61,10 +61,6 @@ export function CalendarPage() {
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
         <div style={{ maxInlineSize: '46rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="calendar_month" size={16} />
-            CAMBLU · Ligas Acadêmicas · Editais
-          </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>Calendário Acadêmico</h1>
           <p style={{ color: '#dceddf' }}>
             Agenda integrada oficial do CAMBLU (`camblufurb@gmail.com`) reunindo atividades das 35 ligas
@@ -105,7 +101,9 @@ export function CalendarPage() {
                 style={{ textDecoration: 'none', color: 'inherit', padding: '0.9rem 1rem', display: 'grid', gap: '0.25rem' }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center' }}>
-                  <span className="m3-badge m3-badge--blue">{item.kind}</span>
+                  <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
+                    {item.kind}
+                  </span>
                   <strong style={{ fontSize: '0.85rem' }}>{item.date}</strong>
                 </div>
                 <strong>{item.title}</strong>

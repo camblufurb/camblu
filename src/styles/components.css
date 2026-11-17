@@ -481,7 +481,7 @@
     display: inline-flex;
   }
 
-  /* M3 Carousel */
+  /* M3 Carousel (Hero & Multi-browse segundo diretrizes M3) */
   .m3-carousel {
     position: relative;
     display: grid;
@@ -494,7 +494,7 @@
 
   .m3-carousel-track {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
@@ -520,10 +520,46 @@
     overflow: hidden;
     background: var(--md-sys-color-surface-container);
     border: 1px solid var(--md-sys-color-outline-variant);
+    transition:
+      flex-basis 340ms var(--m3-spring-spatial-fast),
+      box-shadow 240ms ease,
+      border-color 220ms ease;
   }
 
-  .m3-carousel-track[data-peek='true'] .m3-carousel-slide {
-    flex: 0 0 min(88%, 34rem);
+  .m3-carousel-slide[data-active='true'] {
+    border-color: color-mix(in oklab, var(--camblu-gold-500) 45%, var(--md-sys-color-outline-variant));
+    box-shadow: var(--elevation-2);
+  }
+
+  /* Hero Peek: item em foco grande (~80% desktop) + vizinho visível à direita */
+  .m3-carousel-track[data-variant='hero'][data-peek='true'] .m3-carousel-slide {
+    flex: 0 0 86%;
+  }
+
+  @media (min-width: 52rem) {
+    .m3-carousel-track[data-variant='hero'][data-peek='true'] .m3-carousel-slide {
+      flex: 0 0 min(78%, 52rem);
+    }
+
+    .m3-carousel-track[data-variant='hero'][data-peek='true'] .m3-carousel-slide[data-active='false'] {
+      flex-basis: min(62%, 40rem);
+    }
+  }
+
+  /* Multi-browse: múltiplos cards lado a lado que alternam largura ao focar */
+  .m3-carousel-track[data-variant='multi-browse'] .m3-carousel-slide {
+    flex: 0 0 80%;
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 48rem) {
+    .m3-carousel-track[data-variant='multi-browse'] .m3-carousel-slide {
+      flex: 0 0 clamp(17rem, 32%, 23rem);
+    }
+
+    .m3-carousel-track[data-variant='multi-browse'] .m3-carousel-slide[data-active='true'] {
+      flex-basis: clamp(19rem, 38%, 27rem);
+    }
   }
 
   .m3-carousel-controls {

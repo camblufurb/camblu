@@ -25,15 +25,9 @@ export function AnaisSecimedPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'grid', gap: '0.85rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span className="m3-badge m3-badge--gold">ISSN {SECIMED_INFO.issn}</span>
-          <span className="m3-badge" style={{ background: 'rgb(255 255 255 / 0.14)', color: '#ffffff' }}>
-            Acesso Aberto · CC BY-NC 4.0
-          </span>
-          <span className="m3-badge" style={{ background: 'rgb(255 255 255 / 0.14)', color: '#ffffff' }}>
-            Zero APCs (Gratuito)
-          </span>
-        </div>
+        <span className="m3-label-large" style={{ color: '#f1de97' }}>
+          ISSN {SECIMED_INFO.issn} · Acesso Aberto CC BY-NC 4.0 · Publicação Gratuita
+        </span>
 
         <h1>Anais da Semana Científica de Medicina (SECIMED)</h1>
         <p style={{ color: '#dceddf' }}>
@@ -75,10 +69,9 @@ export function AnaisSecimedPage() {
           {filtered.map((ed) => (
             <article key={ed.id} className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.75rem', alignContent: 'space-between' }}>
               <div>
-                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap', marginBlockEnd: '0.4rem' }}>
-                  <span className="m3-badge m3-badge--blue">{ed.year}</span>
-                  <span className="m3-badge">ISSN {ed.issn}</span>
-                </div>
+                <span className="m3-label-small text-muted" style={{ display: 'block', marginBlockEnd: '0.35rem' }}>
+                  Edição {ed.year} · ISSN {ed.issn}
+                </span>
                 <h3 style={{ marginBlockEnd: '0.35rem' }}>
                   {ed.editionTitle}
                 </h3>

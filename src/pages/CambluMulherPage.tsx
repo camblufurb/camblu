@@ -6,8 +6,7 @@ export function CambluMulherPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'grid', gap: '0.85rem' }}>
-        <span className="m3-badge m3-badge--gold" style={{ justifySelf: 'start' }}>
-          <Icon name="shield_with_heart" size={16} />
+        <span className="m3-label-large" style={{ color: '#f1de97' }}>
           Acolhimento, Escuta e Sigilo
         </span>
         <h1>CAMBLU Mulher</h1>

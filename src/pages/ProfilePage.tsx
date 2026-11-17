@@ -108,10 +108,6 @@ export function ProfilePage() {
     <section className="page-section container m3-reveal">
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '1rem', marginBlockEnd: '1.5rem' }}>
         <div>
-          <span className="m3-badge m3-badge--blue" style={{ marginBlockEnd: '0.5rem' }}>
-            <Icon name="badge" size={16} />
-            Conta Google conectada
-          </span>
           <h1>Meu Perfil & Cadastro Acadêmico</h1>
           <p className="text-muted">
             Seus dados garantem emissão correta de certificados, transferência de ingressos via CPF e entrega na Lojinha.
@@ -306,8 +302,7 @@ export function ProfilePage() {
 
         <aside style={{ display: 'grid', gap: '1rem', alignContent: 'start' }}>
           <div className="m3-card m3-card--forest">
-            <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-              <Icon name="workspace_premium" size={16} />
+            <span className="m3-label-small" style={{ display: 'block', marginBlockEnd: '0.35rem', color: '#f1de97' }}>
               Clube CAMBLU
             </span>
             <h2 style={{ marginBlockEnd: '0.4rem' }}>

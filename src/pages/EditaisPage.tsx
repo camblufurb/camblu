@@ -21,10 +21,6 @@ export function EditaisPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest">
-        <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-          <Icon name="description" size={16} />
-          Fomento Científico & Institucional
-        </span>
         <h1 style={{ marginBlockEnd: '0.5rem' }}>Editais do CAMBLU</h1>
         <p style={{ color: '#dceddf' }}>
           Programas de apoio acadêmico e financeiro (E-PAF, E-PAATC, E-PAFLIEC), eleições estudantis e chamadas da
@@ -57,10 +53,12 @@ export function EditaisPage() {
           return (
             <article key={ed.id} className="m3-card" style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between' }}>
               <div style={{ display: 'grid', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', alignItems: 'center' }}>
-                  <span className="m3-badge m3-badge--gold">{ed.program}</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
+                  <span className="m3-label-small" style={{ color: 'var(--md-sys-color-primary)' }}>
+                    {ed.program}
+                  </span>
                   <span className={`m3-badge ${st.cls}`}>{st.text}</span>
-                  <span className="m3-body-medium" style={{ fontSize: '0.84rem' }}>
+                  <span className="text-muted" style={{ fontSize: '0.84rem' }}>
                     Prazo: {ed.deadline}
                   </span>
                 </div>

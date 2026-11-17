@@ -10,12 +10,10 @@ import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
 import type { MembershipCycle, MembershipTier } from '../types/domain';
 
 export function ClubPage() {
-  const { profile, signInWithGoogle, updateMembershipLocal, isDemoMode, allDemoUsers } = useAuth();
+  const { profile, signInWithGoogle, updateMembershipLocal, isDemoMode } = useAuth();
   const { notify } = useToast();
   const [cycle, setCycle] = useState<MembershipCycle>('mensal');
   const [submittingTier, setSubmittingTier] = useState<string | null>(null);
-  const [apiQuery, setApiQuery] = useState('52998224725');
-  const [apiResult, setApiResult] = useState<string>('');
 
   const handleSubscribe = async (tier: Exclude<MembershipTier, 'none'>) => {
     if (!profile) {
@@ -34,7 +32,7 @@ export function ClubPage() {
             cycle,
           }),
         });
-        if (!res.ok) throw new Error('Falha ao iniciar assinatura Stripe.');
+        if (!res.ok) throw new Error('Falha ao iniciar assinatura.');
         const data = (await res.json()) as { checkoutUrl?: string };
         if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
@@ -51,46 +49,14 @@ export function ClubPage() {
     }
   };
 
-  const testClubApi = async () => {
-    const clean = apiQuery.trim();
-    if (!clean) return;
-    const param = clean.includes('@') ? `email=${encodeURIComponent(clean)}` : `cpf=${encodeURIComponent(clean.replace(/\D+/g, ''))}`;
-    if (!isDemoMode) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/clube/status?${param}`);
-        const data = await res.json();
-        setApiResult(JSON.stringify(data, null, 2));
-        return;
-      } catch {
-        // fall through to demo simulation
-      }
-    }
-
-    const found = allDemoUsers.find(
-      (u) => u.email.toLowerCase() === clean.toLowerCase() || u.cpf === clean.replace(/\D+/g, ''),
-    );
-    const payload = found
-      ? {
-          active: found.membershipActive,
-          tier: found.membershipActive ? found.membershipTier : 'none',
-          validUntil: found.membershipValidUntil || null,
-        }
-      : { active: false, tier: 'none', validUntil: null };
-    setApiResult(JSON.stringify(payload, null, 2));
-  };
-
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
         <div style={{ maxInlineSize: '46rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="workspace_premium" size={16} />
-            Apoie o Centro Acadêmico & Ganhe Vantagens
-          </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>Clube CAMBLU</h1>
           <p style={{ color: '#dceddf' }}>
-            Planos flexíveis com cobrança recorrente mensal (Cartão / Google & Apple Pay) ou semestral única (Cartão,
-            Google/Apple Pay ou PIX). Toda taxa Stripe já está inclusa.
+            Planos mensais no cartão ou carteiras digitais e semestrais via PIX ou Cartão, com benefícios em eventos,
+            lojinha e parceiros da Medicina FURB.
           </p>
         </div>
         <Link to="/clube/cartao" className="m3-btn m3-btn--gold">
@@ -205,73 +171,16 @@ export function ClubPage() {
         })}
       </div>
 
-      {/* Integração Spaiq & Gorit PRO + API Pública */}
-      <div className="grid-two">
-        <div className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.75rem', alignContent: 'start' }}>
-          <span className="m3-badge m3-badge--blue" style={{ justifySelf: 'start' }}>
-            Em breve · Integração final
-          </span>
-          <h2>Parceria Spaiq & Gorit PRO</h2>
-          <p className="text-muted">
-            Todos os planos ativos do Clube CAMBLU (a partir do Comum) dão acesso aos benefícios integrados do Spaiq e
-            Gorit PRO. O módulo de vinculação automática será conectado na etapa final junto com os parceiros usando a
-            API aberta abaixo.
-          </p>
-        </div>
-
-        <div className="m3-card" style={{ display: 'grid', gap: '0.85rem' }}>
-          <span className="m3-badge" style={{ justifySelf: 'start' }}>
-            API Aberta para Desenvolvedores (Item 4.2)
-          </span>
-          <h2>Consultar Nível do Membro</h2>
-          <p className="text-muted">
-            Endpoint REST aberto retornando exclusivamente status não sensível (<code>active</code>,{' '}
-            <code>tier</code> e <code>validUntil</code>) via CPF ou e-mail:
-          </p>
-          <code
-            style={{
-              padding: '0.65rem 0.85rem',
-              borderRadius: 'var(--md-sys-shape-corner-sm)',
-              background: 'var(--md-sys-color-surface-container)',
-              fontSize: '0.82rem',
-              overflowX: 'auto',
-            }}
-          >
-            GET /api/clube/status?cpf=00000000000
-          </code>
-
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              className="m3-input"
-              style={{ flex: '1 1 13rem' }}
-              aria-label="CPF ou e-mail para testar API do Clube"
-              value={apiQuery}
-              onChange={(e) => setApiQuery(e.target.value)}
-              placeholder="CPF (ex.: 52998224725) ou e-mail"
-            />
-            <button type="button" className="m3-btn m3-btn--blue" onClick={testClubApi}>
-              <Icon name="api" size={18} />
-              <span>Testar Resposta</span>
-            </button>
-          </div>
-
-          {apiResult && (
-            <pre
-              style={{
-                margin: 0,
-                padding: '0.75rem',
-                borderRadius: 'var(--md-sys-shape-corner-sm)',
-                background: '#071b13',
-                color: '#edd16e',
-                fontSize: '0.82rem',
-                overflowX: 'auto',
-              }}
-            >
-              {apiResult}
-            </pre>
-          )}
-        </div>
+      {/* Benefícios de Parceiros */}
+      <div className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.65rem' }}>
+        <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
+          Parcerias Acadêmicas
+        </span>
+        <h2>Benefícios Spaiq & Gorit PRO</h2>
+        <p className="text-muted">
+          Assinantes ativos do Clube CAMBLU (a partir do plano Comum) contam com condições e benefícios de estudo nas
+          plataformas parceiras Spaiq e Gorit PRO vinculadas ao nosso programa estudantil.
+        </p>
       </div>
 
       <SponsorsStrip />

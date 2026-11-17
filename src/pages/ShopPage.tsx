@@ -44,16 +44,10 @@ export function ShopPage() {
         }}
       >
         <div style={{ maxInlineSize: '46rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="shopping_bag" size={16} />
-            Produtos Oficiais MEDFURB
-          </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>Lojinha do CAMBLU</h1>
           <p style={{ color: '#dceddf' }}>
-            Pagamento via Stripe com PIX, Cartão, Google Pay e Apple Pay (taxas já inclusas no preço).{' '}
-            {profile?.membershipActive
-              ? 'Seu desconto de 10% do Clube CAMBLU está ativo automaticamente!'
-              : 'Membros do Clube CAMBLU ganham 10% de desconto em toda a loja.'}
+            Vestuário, acessórios e itens oficiais da Medicina FURB com pagamento online por PIX ou Cartão e retirada
+            presencial no campus.
           </p>
         </div>
 
@@ -141,12 +135,12 @@ export function ShopPage() {
                   )}
                 </Link>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  <span className="m3-badge">{prod.category}</span>
-                  <span className={`m3-badge ${totalStock > 0 ? 'm3-badge--blue' : 'm3-badge--error'}`}>
-                    {totalStock > 0 ? `${totalStock} em estoque` : 'Esgotado'}
-                  </span>
-                </div>
+                <span
+                  className="m3-label-small"
+                  style={{ color: totalStock > 0 ? 'var(--md-sys-color-on-surface-variant)' : 'var(--md-sys-color-error)' }}
+                >
+                  {prod.category} · {totalStock > 0 ? `${totalStock} em estoque` : 'Esgotado'}
+                </span>
 
                 <h2>
                   <Link to={productUrl} style={{ color: 'inherit', textDecoration: 'none' }}>

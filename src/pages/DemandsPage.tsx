@@ -88,10 +88,6 @@ export function DemandsPage() {
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
         <div style={{ maxInlineSize: '46rem' }}>
-          <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.65rem' }}>
-            <Icon name="support_agent" size={16} />
-            Canal Direto com o CAMBLU
-          </span>
           <h1 style={{ marginBlockEnd: '0.5rem' }}>Enviar Demanda e Pedir Ajuda</h1>
           <p style={{ color: '#dceddf' }}>
             Selecione o tópico abaixo para direcionar sua mensagem diretamente para{' '}

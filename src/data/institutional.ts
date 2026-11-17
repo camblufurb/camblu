@@ -1,48 +1,58 @@
-export interface PlaceholderSlide {
+export interface CarouselHighlightSlide {
   id: string;
   title: string;
   subtitle: string;
   badge: string;
   accent: string;
   icon: string;
+  to: string;
+  ctaLabel: string;
 }
 
-export const HOME_CAROUSEL_SLIDES: PlaceholderSlide[] = [
+export const HOME_CAROUSEL_SLIDES: CarouselHighlightSlide[] = [
   {
     id: 'slide-camblu',
-    title: 'A voz dos estudantes de Medicina da FURB desde 1990',
+    title: 'Sobre o CAMBLU & Espaços no Edifício Cristina',
     subtitle:
-      'Representação democrática, reuniões abertas semanais, projetos científicos, filantropia e defesa permanente da qualidade do ensino médico em Blumenau.',
-    badge: 'CAMBLU · 36 anos de história',
+      'Representação discente desde 1990 e salas exclusivas de convivência, coworking e descanso para os acadêmicos.',
+    badge: 'Institucional & Patrimônio',
     accent: '#0f3325',
-    icon: 'medical_services',
+    icon: 'apartment',
+    to: '/sobre',
+    ctaLabel: 'Saiba mais',
   },
   {
-    id: 'slide-espacos',
-    title: 'Espaços de convivência, estudo e descanso no Edifício Cristina',
+    id: 'slide-instituicoes',
+    title: 'Ecossistema Estudantil: CAMBLU, AAARIH, DCE e IFMSA',
     subtitle:
-      'Salinha de convivência equipada, coworking com acervo doado e impressora estudantil, além da sala de descanso para recarregar entre os blocos.',
-    badge: 'Patrimônio Estudantil',
+      'Conheça o papel de cada entidade acadêmica, esportiva, humanitária e representativa da Medicina FURB.',
+    badge: 'Instituições MEDFURB',
     accent: '#174936',
-    icon: 'weekend',
+    icon: 'groups',
+    to: '/medfurb/instituicoes',
+    ctaLabel: 'Conhecer instituições',
   },
   {
     id: 'slide-secimed',
-    title: 'SECIMED — Semana Científica de Medicina desde 2002',
+    title: 'SECIMED & Publicações Científicas Anuais',
     subtitle:
-      'Cinco dias de palestras, workshops das ligas acadêmicas, submissão de trabalhos científicos e publicação nos Anais ISSN 3086-612X.',
+      'Palestras magnas, workshops das ligas acadêmicas e Anais indexados em acesso aberto (ISSN 3086-612X).',
     badge: 'Produção Científica',
     accent: '#1d3f5e',
     icon: 'science',
+    to: '/secimed',
+    ctaLabel: 'Saiba mais',
   },
   {
     id: 'slide-clube',
-    title: 'Clube CAMBLU — Benefícios reais e apoio às nossas ações',
+    title: 'Clube CAMBLU & Lojinha Oficial MEDFURB',
     subtitle:
-      'Planos Comum, Raro, Épico e Lendário com descontos na Lojinha, ingressos gratuitos em eventos e cartão digital interativo.',
-    badge: 'Clube de Vantagens',
+      'Assinaturas com cartão digital, descontos em produtos oficiais e condições especiais nos eventos do curso.',
+    badge: 'Benefícios & Produtos',
     accent: '#2b2100',
     icon: 'workspace_premium',
+    to: '/clube',
+    ctaLabel: 'Explorar Clube',
   },
 ];
 

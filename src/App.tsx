@@ -11,6 +11,7 @@ import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AboutSpacesPage } from './pages/AboutSpacesPage';
 import { MedfurbPage } from './pages/MedfurbPage';
+import { InstituicoesPage } from './pages/InstituicoesPage';
 import { LigasPage } from './pages/LigasPage';
 import { GestoesPage } from './pages/GestoesPage';
 import { ManualCalouroPage } from './pages/ManualCalouroPage';
@@ -99,6 +100,8 @@ export function App() {
                     <Route path="/sobre" element={<AboutSpacesPage />} />
                     <Route path="/espacos" element={<AboutSpacesPage />} />
                     <Route path="/medfurb" element={<MedfurbPage />} />
+                    <Route path="/medfurb/instituicoes" element={<InstituicoesPage />} />
+                    <Route path="/instituicoes" element={<Navigate to="/medfurb/instituicoes" replace />} />
                     <Route path="/ligas" element={<LigasPage />} />
                     <Route path="/gestoes" element={<GestoesPage />} />
                     <Route path="/manual-do-calouro" element={<ManualCalouroPage />} />

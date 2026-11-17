@@ -148,7 +148,7 @@ export function ProductDetailPage() {
           >
             <Icon name="arrow_back" size={20} />
           </button>
-          <span className="m3-badge">{product.category}</span>
+          <span className="m3-label-large text-muted">{product.category}</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -236,9 +236,11 @@ export function ProductDetailPage() {
               <span style={{ color: 'var(--md-sys-color-on-surface)', fontWeight: 650 }}>Detalhes</span>
             </nav>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               {clubPricing.discountCents > 0 && (
-                <span className="m3-badge m3-badge--success">Clube -10%</span>
+                <span className="m3-label-small" style={{ color: 'var(--md-sys-color-success)' }}>
+                  Clube -10%
+                </span>
               )}
               {renderPriceBlock()}
             </div>
@@ -383,13 +385,11 @@ export function ProductDetailPage() {
               </summary>
               <div className="product-accordion-body">
                 <p className="text-muted">
-                  Após a confirmação do pagamento via Stripe (PIX, Cartão, Apple Pay ou Google Pay), a Diretoria de
-                  Patrimônio combina pelo WhatsApp a entrega presencial na sala do CAMBLU (Campus 1 — Bloco C) sem
-                  custo de frete.
+                  Após a confirmação do pagamento (PIX ou Cartão), a Diretoria de Patrimônio combina pelo WhatsApp a
+                  retirada presencial na sala do CAMBLU (Campus 1 — Bloco C), sem custo de frete.
                 </p>
                 <p className="text-muted">
-                  Taxas da plataforma de pagamento já incluídas no valor exibido. Trocas de tamanho podem ser feitas em
-                  até 7 dias mediante disponibilidade em estoque.
+                  Trocas de tamanho podem ser solicitadas em até 7 dias corridos, mediante disponibilidade em estoque.
                 </p>
               </div>
             </details>
@@ -446,7 +446,7 @@ export function ProductDetailPage() {
                         />
                       )}
                     </Link>
-                    <span className="m3-badge" style={{ justifySelf: 'start' }}>
+                    <span className="m3-label-small text-muted" style={{ justifySelf: 'start' }}>
                       {item.category}
                     </span>
                     <h3>{item.name}</h3>

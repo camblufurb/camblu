@@ -2,6 +2,24 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.8.0] - 2026-11-17
+### Adicionado
+- Importação local e otimização em WebP das 31 fotos oficiais de integrantes das gestões em `public/gestoes/2024/*.webp` (`22` membros) e `public/gestoes/2026/*.webp` (`9` membros), vinculadas em `src/data/gestoes.ts` com enquadramento facial superior no `ExpressiveShapeFrame`.
+- **Página Dedicada de Instituições Estudantis (`/medfurb/instituicoes`)** (`src/pages/InstituicoesPage.tsx`) com conteúdo completo sobre **CAMBLU**, **DCE FURB**, **AAARIH** e os 7 núcleos da **IFMSA Brazil FURB**, utilizando as logos oficiais (`assets/logos/`).
+- **Documentação técnica da API do Clube CAMBLU** transferida exclusivamente para o repositório em [docs/CLUBE_API.md](docs/CLUBE_API.md).
+
+### Alterado
+- **Redesign do Index (`/` — `src/pages/HomePage.tsx`):** transformado em portal de apresentação resumida com hero editorial, pilares principais, carrossel Hero + Multi-browse, seletor interativo por momento acadêmico e acordeões de dúvidas frequentes com links diretos para todas as páginas.
+- **Sistema de Animações M3 Expressive (`src/styles/motion.css`) e Carrosséis (`src/components/M3Carousel.tsx`):** adoção de curvas Spatial vs Effects, animações distintas por contexto (hero assimétrico com contra-rotação do brasão, entradas laterais *scroll-driven* via `animation-timeline: view()`, cascata em cards e setas direcionais), além de variantes `hero` e `multi-browse` com escala dinâmica inline no carrossel.
+- Removido o bloco técnico de API de desenvolvedores de `ClubPage.tsx`, movidos checklists de deploy do proprietário para fora do Git e ajustados imports para `assets/logos/`.
+
+## [0.7.1] - 2026-11-17
+### Adicionado
+- Importação local e otimização em WebP das 35 logos oficiais das **Ligas Acadêmicas** (`public/ligas/*.webp`) extraídas de `https://www.camblu.org/ligas-acadêmicas`, vinculadas em `src/data/ligas.ts` e exibidas com recorte limpo em `src/pages/LigasPage.tsx`.
+
+### Alterado
+- Limpeza editorial da interface pública em todo o portal (`HomePage`, `ShopPage`, `ProductDetailPage`, `LigasPage`, `EventsPage`, `ClubPage`, `AboutSpacesPage`, `SecimedPage` e demais páginas): removidos textos com termos técnicos/internos de implementação e reduzidas pills decorativas excessivas dentro dos blocos e cartões.
+
 ## [0.7.0] - 2026-11-17
 ### Adicionado
 - **Páginas Individuais de Produto (`/lojinha/:slug`)** seguindo a referência Material Design 3 Expressive:

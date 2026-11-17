@@ -143,7 +143,36 @@ function loadState(): AppDataState {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return INITIAL_STATE;
     const parsed = JSON.parse(raw) as Partial<AppDataState>;
-    return { ...INITIAL_STATE, ...parsed };
+    const ligas = (parsed.ligas || LIGAS_SEED).map((l) => {
+      if (l.logoUrl) return l;
+      const seed = LIGAS_SEED.find((s) => s.id === l.id);
+      return seed ? { ...l, logoUrl: seed.logoUrl } : l;
+    });
+    const products = (parsed.products || PRODUCTS_SEED).map((p) => {
+      const seed = PRODUCTS_SEED.find((s) => s.id === p.id);
+      if (!seed) return p;
+      return {
+        ...seed,
+        ...p,
+        slug: p.slug || seed.slug,
+        colors: p.colors?.length ? p.colors : seed.colors,
+        details: p.details?.length ? p.details : seed.details,
+        careNotes: p.careNotes || seed.careNotes,
+      };
+    });
+    const gestoes = (parsed.gestoes || GESTOES_SEED).map((g) => {
+      const seedTerm = GESTOES_SEED.find((s) => s.id === g.id);
+      if (!seedTerm) return g;
+      return {
+        ...g,
+        members: g.members.map((m) => {
+          if (m.photoUrl && !m.photoUrl.startsWith('data:image/svg+xml')) return m;
+          const seedMember = seedTerm.members.find((sm) => sm.id === m.id);
+          return seedMember ? { ...m, photoUrl: seedMember.photoUrl } : m;
+        }),
+      };
+    });
+    return { ...INITIAL_STATE, ...parsed, ligas, products, gestoes };
   } catch {
     return INITIAL_STATE;
   }

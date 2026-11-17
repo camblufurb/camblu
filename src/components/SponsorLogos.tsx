@@ -1,9 +1,9 @@
 import { useI18n } from '../i18n/i18n';
-import logoColorUrl from '../../assets/img/logo_color.png';
-import logoCleanUrl from '../../assets/img/logo_clean.png';
-import unicredUrl from '../../assets/img/unicred.png';
-import frukiUrl from '../../assets/img/fruki.png';
-import balsanelliUrl from '../../assets/img/balsanelli.png';
+import logoColorUrl from '../../assets/logos/logo_color.png';
+import logoCleanUrl from '../../assets/logos/logo_clean.png';
+import unicredUrl from '../../assets/logos/unicred.png';
+import frukiUrl from '../../assets/logos/fruki.png';
+import balsanelliUrl from '../../assets/logos/balsanelli.png';
 
 interface SponsorsStripProps {
   variant?: 'surface' | 'dark';

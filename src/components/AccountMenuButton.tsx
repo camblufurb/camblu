@@ -67,12 +67,10 @@ export function AccountMenuButton() {
         <M3Dialog
           open={demoDialogOpen}
           onClose={() => setDemoDialogOpen(false)}
-          title="Entrar com Google (Modo Pré-Deploy)"
+          title="Entrar no Portal CAMBLU"
         >
           <p className="text-muted" style={{ marginBlockEnd: '1rem' }}>
-            As variáveis públicas do Web App Firebase ainda não foram vinculadas neste ambiente local. Você
-            pode testar toda a plataforma agora escolhendo um perfil simulado (ou conectar o projeto{' '}
-            <code>camblu</code> assim que o Web App estiver ativo):
+            Escolha um perfil para acessar e explorar as funcionalidades do portal:
           </p>
           <div style={{ display: 'grid', gap: '0.75rem' }}>
             <button

@@ -171,7 +171,7 @@ export const PRODUCTS_SEED: ShopProduct[] = [
     slug: 'moletom-oficial-medfurb',
     name: 'Moletom Oficial MEDFURB · Edição Verde Botânico',
     description:
-      'Moletom canguru felpado de alta gramatura (3 cabos), bordado dourado frontal CAMBLU e punhos reforçados. Taxas inclusas no valor.',
+      'Moletom canguru felpado de alta gramatura (3 cabos), bordado dourado frontal CAMBLU e punhos reforçados.',
     priceCents: 16900,
     images: [],
     category: 'Vestuário',
@@ -184,7 +184,7 @@ export const PRODUCTS_SEED: ShopProduct[] = [
       'Moletom 3 cabos peluciado (50% algodão / 50% poliéster, 380 g/m²).',
       'Bordado frontal de alta definição com o brasão CAMBLU 1990.',
       'Capuz forrado com cordão ajustável e bolso canguru reforçado.',
-      'Taxas do checkout Stripe 100% absorvidas pelo CAMBLU.',
+      'Acabamento premium pensado para a rotina clínica e acadêmica.',
     ],
     careNotes: 'Lavar à mão ou no ciclo delicado com água fria. Não passar ferro diretamente sobre o bordado.',
     sizes: [

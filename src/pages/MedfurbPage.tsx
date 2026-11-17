@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { SponsorsStrip } from '../components/SponsorLogos';
 import { MEDFURB_DATA } from '../data/institutional';
@@ -20,8 +21,7 @@ export function MedfurbPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
       <div className="m3-card m3-card--forest">
-        <span className="m3-badge m3-badge--gold" style={{ marginBlockEnd: '0.7rem' }}>
-          <Icon name="medical_services" size={16} />
+        <span className="m3-label-large" style={{ display: 'block', marginBlockEnd: '0.45rem', color: '#f1de97' }}>
           Curso de Medicina FURB · Desde {MEDFURB_DATA.foundedDate}
         </span>
         <h1 style={{ marginBlockEnd: '0.55rem' }}>Sobre a MEDFURB</h1>
@@ -36,6 +36,12 @@ export function MedfurbPage() {
           <span>Telefone: {MEDFURB_DATA.departmentPhone}</span>
           <span>·</span>
           <span>Vestibular ACAFE (junho e novembro)</span>
+        </div>
+        <div style={{ marginBlockStart: '1.15rem' }}>
+          <Link to="/medfurb/instituicoes" className="m3-btn m3-btn--gold">
+            <Icon name="handshake" size={18} />
+            <span>Conhecer Instituições Estudantis</span>
+          </Link>
         </div>
       </div>
 
@@ -57,11 +63,10 @@ export function MedfurbPage() {
 
       {tab === 'saeme' && (
         <div className="m3-card m3-card--gold" style={{ display: 'grid', gap: '1rem' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-            <span className="m3-badge m3-badge--success">Acreditado desde {MEDFURB_DATA.saeme.accreditedSince}</span>
-            <span className="m3-badge">Válido até {MEDFURB_DATA.saeme.validUntil}</span>
-            <span className="m3-badge">{MEDFURB_DATA.saeme.criteriaCount} critérios avaliados</span>
-          </div>
+          <span className="m3-label-large" style={{ color: '#2b2100' }}>
+            Acreditado desde {MEDFURB_DATA.saeme.accreditedSince} · Válido até {MEDFURB_DATA.saeme.validUntil} ·{' '}
+            {MEDFURB_DATA.saeme.criteriaCount} critérios avaliados
+          </span>
           <h2>Acreditação Internacional SAEME (CFM / WFME)</h2>
           <ul style={{ margin: 0, paddingInlineStart: '1.2rem', display: 'grid', gap: '0.5rem' }}>
             {MEDFURB_DATA.saeme.highlights.map((h) => (
