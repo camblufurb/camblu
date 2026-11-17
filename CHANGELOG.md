@@ -2,6 +2,10 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.6.2] - 2026-11-17
+### Adicionado
+- Integração das logos oficiais reais em `assets/img/`: brasões do CAMBLU (`logo_color.png` e `logo_clean.png` como favicon, OpenGraph, cabeçalho, hero e rodapé) e logotipos oficiais dos patrocinadores (**Unicred**, **Fruki Bebidas** e **Balsaneli Contabilidade**) no `SponsorsStrip`.
+
 ## [0.6.1] - 2026-11-17
 ### Alterado
 - Removido o alternador de idioma (mantendo o portal 100% em Português Brasileiro `pt-BR`).

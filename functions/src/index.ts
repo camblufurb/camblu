@@ -782,7 +782,7 @@ export const eventSocialPreview = onRequest({ region: 'southamerica-east1' }, as
   let title = 'CAMBLU — Eventos Medicina FURB';
   let description =
     'Confira programação, lotes, ingressos e certificação oficial no portal do CAMBLU.';
-  let image = `${SITE_ORIGIN}/favicon.svg`;
+  let image = `${SITE_ORIGIN}/logo-camblu.png`;
 
   if (slug) {
     const snap = await db.collection('events').where('slug', '==', slug).limit(1).get();

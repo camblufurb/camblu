@@ -4,7 +4,7 @@ import { FURB_INSTITUTIONS, HOME_CAROUSEL_SLIDES } from '../data/institutional';
 import { M3Carousel } from '../components/M3Carousel';
 import { ExpressiveShapeFrame, M3_SHAPE_ROTATION } from '../components/ExpressiveShapeFrame';
 import { Icon } from '../components/Icon';
-import { SponsorsStrip } from '../components/SponsorLogos';
+import { CambluCrest, SponsorsStrip } from '../components/SponsorLogos';
 import { formatBrlFromCents } from '../lib/validators';
 
 export function HomePage() {
@@ -76,11 +76,16 @@ export function HomePage() {
             borderRadius: 'var(--md-sys-shape-corner-xl)',
             position: 'relative',
             overflow: 'hidden',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '2rem',
             background:
               'radial-gradient(circle at 92% 14%, rgb(237 209 110 / 0.25), transparent 40%), linear-gradient(140deg, #071b13 0%, #0f3325 56%, #184b37 100%)',
           }}
         >
-          <div style={{ display: 'grid', gap: '1.35rem', maxInlineSize: '50rem' }}>
+          <div style={{ display: 'grid', gap: '1.35rem', maxInlineSize: '46rem', flex: '1 1 22rem' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               <span className="m3-badge m3-badge--gold">
                 <Icon name="verified" size={15} />
@@ -121,6 +126,19 @@ export function HomePage() {
                 <span>Manual do Calouro</span>
               </Link>
             </div>
+          </div>
+
+          <div
+            style={{
+              flex: '0 0 auto',
+              marginInline: 'auto',
+              padding: '1rem',
+              borderRadius: '9999px',
+              background: 'rgb(255 255 255 / 0.06)',
+              border: '1px solid rgb(237 209 110 / 0.28)',
+            }}
+          >
+            <CambluCrest size={156} variant="clean" />
           </div>
         </div>
       </section>

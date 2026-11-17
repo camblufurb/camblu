@@ -221,7 +221,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBlockEnd: '0.6rem' }}>
-                <CambluCrest size={34} />
+                <CambluCrest size={42} variant="clean" />
                 <div>
                   <strong style={{ display: 'block', fontSize: '1.05rem', color: '#ffffff' }}>CAMBLU — FURB</strong>
                   <span style={{ fontSize: '0.8rem', color: '#c4d8cc' }}>
