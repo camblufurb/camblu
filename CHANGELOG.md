@@ -2,6 +2,13 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.4.0] - 2026-11-16 (Etapa 4)
+### Adicionado
+- **Lojinha (`/lojinha`)**: catálogo com tamanhos e controle de estoque, sacola interativa, 10% automático do Clube e checkout Stripe (PIX, Cartão, Apple/Google Pay).
+- **Clube CAMBLU (`/clube` e `/clube/cartao`)**: planos Comum, Raro, Épico e Lendário (com shimmer), cartão digital reativo ao giroscópio (`DeviceOrientation`) e API aberta `/api/clube/status` com testador integrado.
+- **Transparência (`/transparencia`)**: gráficos de entradas × saídas por mês, despesas por categoria, heatmap anual, listagem auditável (mantendo o saldo atual restrito ao `/back`) e botão das Atas de Reunião no Drive.
+- **Calendário (`/calendario`)**, **Editais (`/editais`)**, **Demandas (`/demandas`)** com seleção de assunto para `camblufurb@gmail.com` e **CAMBLU Mulher (`/camblu-mulher`)**.
+
 ## [0.3.0] - 2026-11-16 (Etapa 3)
 ### Adicionado
 - Catálogo e páginas individuais de Eventos (`/eventos`, `/eventos/:slug`) com múltiplos lotes, modo presencial/virtual, cálculo automático de descontos/isenções do Clube CAMBLU e preparo para Social Preview dinâmico.

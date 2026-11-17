@@ -19,6 +19,14 @@ import { MyTicketsPage } from './pages/MyTicketsPage';
 import { CertificatesPage } from './pages/CertificatesPage';
 import { SecimedPage } from './pages/SecimedPage';
 import { AnaisSecimedPage } from './pages/AnaisSecimedPage';
+import { ShopPage } from './pages/ShopPage';
+import { ClubPage } from './pages/ClubPage';
+import { MemberCardPage } from './pages/MemberCardPage';
+import { TransparencyPage } from './pages/TransparencyPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { EditaisPage } from './pages/EditaisPage';
+import { DemandsPage } from './pages/DemandsPage';
+import { CambluMulherPage } from './pages/CambluMulherPage';
 import { Icon } from './components/Icon';
 import { Link } from 'react-router-dom';
 
@@ -104,14 +112,14 @@ export function App() {
                     <Route path="/certificados/validar/:codigo" element={<CertificatesPage />} />
                     <Route path="/secimed" element={<SecimedPage />} />
                     <Route path="/secimed/anais-secimed" element={<AnaisSecimedPage />} />
-                    <Route path="/lojinha" element={<UpcomingRoute title="Lojinha CAMBLU" />} />
-                    <Route path="/clube" element={<UpcomingRoute title="Clube CAMBLU" />} />
-                    <Route path="/clube/cartao" element={<UpcomingRoute title="Cartão Digital do Clube" />} />
-                    <Route path="/transparencia" element={<UpcomingRoute title="Transparência & Atas" />} />
-                    <Route path="/calendario" element={<UpcomingRoute title="Calendário Acadêmico" />} />
-                    <Route path="/editais" element={<UpcomingRoute title="Editais" />} />
-                    <Route path="/demandas" element={<UpcomingRoute title="Enviar Demanda e Pedir Ajuda" />} />
-                    <Route path="/camblu-mulher" element={<UpcomingRoute title="CAMBLU Mulher" />} />
+                    <Route path="/lojinha" element={<ShopPage />} />
+                    <Route path="/clube" element={<ClubPage />} />
+                    <Route path="/clube/cartao" element={<MemberCardPage />} />
+                    <Route path="/transparencia" element={<TransparencyPage />} />
+                    <Route path="/calendario" element={<CalendarPage />} />
+                    <Route path="/editais" element={<EditaisPage />} />
+                    <Route path="/demandas" element={<DemandsPage />} />
+                    <Route path="/camblu-mulher" element={<CambluMulherPage />} />
                     <Route path="/back" element={<UpcomingRoute title="Painel Administrativo (/back)" />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
