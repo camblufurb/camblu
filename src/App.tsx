@@ -1,4 +1,5 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { I18nProvider } from './i18n/i18n';
 import { ToastProvider } from './components/ToastProvider';
@@ -16,7 +17,6 @@ import { ManualCalouroPage } from './pages/ManualCalouroPage';
 import { EventsPage } from './pages/EventsPage';
 import { EventDetailPage } from './pages/EventDetailPage';
 import { MyTicketsPage } from './pages/MyTicketsPage';
-import { CertificatesPage } from './pages/CertificatesPage';
 import { SecimedPage } from './pages/SecimedPage';
 import { AnaisSecimedPage } from './pages/AnaisSecimedPage';
 import { ShopPage } from './pages/ShopPage';
@@ -28,7 +28,13 @@ import { EditaisPage } from './pages/EditaisPage';
 import { DemandsPage } from './pages/DemandsPage';
 import { CambluMulherPage } from './pages/CambluMulherPage';
 import { Icon } from './components/Icon';
-import { Link } from 'react-router-dom';
+
+const CertificatesPage = lazy(() =>
+  import('./pages/CertificatesPage').then((m) => ({ default: m.CertificatesPage })),
+);
+const AdminBackPage = lazy(() =>
+  import('./pages/AdminBackPage').then((m) => ({ default: m.AdminBackPage })),
+);
 
 function ProfileIncompleteBanner() {
   const { profile } = useAuth();
@@ -67,24 +73,6 @@ function ProfileIncompleteBanner() {
   );
 }
 
-function UpcomingRoute({ title }: { title: string }) {
-  return (
-    <section className="page-section container m3-reveal">
-      <div className="m3-card" style={{ maxInlineSize: '42rem', marginInline: 'auto' }}>
-        <span className="m3-badge m3-badge--blue" style={{ marginBlockEnd: '0.65rem' }}>
-          Próxima etapa do plano
-        </span>
-        <h1 className="m3-headline-medium" style={{ marginBlockEnd: '0.45rem' }}>
-          {title}
-        </h1>
-        <p className="m3-body-medium">
-          Módulo em implementação sequencial nas próximas etapas de desenvolvimento.
-        </p>
-      </div>
-    </section>
-  );
-}
-
 export function App() {
   return (
     <ThemeProvider>
@@ -95,34 +83,44 @@ export function App() {
               <BrowserRouter>
                 <Layout userSlot={<AccountMenuButton />}>
                   <ProfileIncompleteBanner />
-                  <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/perfil" element={<ProfilePage />} />
-                    <Route path="/sobre" element={<AboutSpacesPage />} />
-                    <Route path="/espacos" element={<AboutSpacesPage />} />
-                    <Route path="/medfurb" element={<MedfurbPage />} />
-                    <Route path="/ligas" element={<LigasPage />} />
-                    <Route path="/gestoes" element={<GestoesPage />} />
-                    <Route path="/manual-do-calouro" element={<ManualCalouroPage />} />
-                    <Route path="/eventos" element={<EventsPage />} />
-                    <Route path="/eventos/:slug" element={<EventDetailPage />} />
-                    <Route path="/meus-ingressos" element={<MyTicketsPage />} />
-                    <Route path="/certificados" element={<CertificatesPage />} />
-                    <Route path="/certificados/validar" element={<CertificatesPage />} />
-                    <Route path="/certificados/validar/:codigo" element={<CertificatesPage />} />
-                    <Route path="/secimed" element={<SecimedPage />} />
-                    <Route path="/secimed/anais-secimed" element={<AnaisSecimedPage />} />
-                    <Route path="/lojinha" element={<ShopPage />} />
-                    <Route path="/clube" element={<ClubPage />} />
-                    <Route path="/clube/cartao" element={<MemberCardPage />} />
-                    <Route path="/transparencia" element={<TransparencyPage />} />
-                    <Route path="/calendario" element={<CalendarPage />} />
-                    <Route path="/editais" element={<EditaisPage />} />
-                    <Route path="/demandas" element={<DemandsPage />} />
-                    <Route path="/camblu-mulher" element={<CambluMulherPage />} />
-                    <Route path="/back" element={<UpcomingRoute title="Painel Administrativo (/back)" />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
+                  <Suspense
+                    fallback={
+                      <section className="page-section container">
+                        <div className="m3-card" aria-busy="true">
+                          Carregando módulo...
+                        </div>
+                      </section>
+                    }
+                  >
+                    <Routes>
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/perfil" element={<ProfilePage />} />
+                      <Route path="/sobre" element={<AboutSpacesPage />} />
+                      <Route path="/espacos" element={<AboutSpacesPage />} />
+                      <Route path="/medfurb" element={<MedfurbPage />} />
+                      <Route path="/ligas" element={<LigasPage />} />
+                      <Route path="/gestoes" element={<GestoesPage />} />
+                      <Route path="/manual-do-calouro" element={<ManualCalouroPage />} />
+                      <Route path="/eventos" element={<EventsPage />} />
+                      <Route path="/eventos/:slug" element={<EventDetailPage />} />
+                      <Route path="/meus-ingressos" element={<MyTicketsPage />} />
+                      <Route path="/certificados" element={<CertificatesPage />} />
+                      <Route path="/certificados/validar" element={<CertificatesPage />} />
+                      <Route path="/certificados/validar/:codigo" element={<CertificatesPage />} />
+                      <Route path="/secimed" element={<SecimedPage />} />
+                      <Route path="/secimed/anais-secimed" element={<AnaisSecimedPage />} />
+                      <Route path="/lojinha" element={<ShopPage />} />
+                      <Route path="/clube" element={<ClubPage />} />
+                      <Route path="/clube/cartao" element={<MemberCardPage />} />
+                      <Route path="/transparencia" element={<TransparencyPage />} />
+                      <Route path="/calendario" element={<CalendarPage />} />
+                      <Route path="/editais" element={<EditaisPage />} />
+                      <Route path="/demandas" element={<DemandsPage />} />
+                      <Route path="/camblu-mulher" element={<CambluMulherPage />} />
+                      <Route path="/back" element={<AdminBackPage />} />
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Suspense>
                 </Layout>
               </BrowserRouter>
             </AppDataProvider>

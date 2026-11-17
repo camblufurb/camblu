@@ -2,6 +2,14 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.5.0] - 2026-11-16 (Etapa 5)
+### Adicionado
+- **Painel Administrativo (`/back`)** exclusivo para `camblufurb@gmail.com`:
+  - Gestão de eventos (presencial/virtual, lotes, múltiplos QR codes e carga horária), **leitor QR via câmera (`html5-qrcode`)** com emissão automática de certificados e **editor visual de template PNG (Canva)**.
+  - Gestão da **Lojinha**, lançamento de doações/vendas externas no estoque e **checklist de entregas com link `wa.me/55...`**.
+  - **Planilha de Transparência** com autocomplete de categorias, **Saldo Atual/Projetado/Investido restrito ao `/back`**, edição do link Drive das atas e **exportador das 4 imagens 1080×1350 PNG** para o post mensal de transparência.
+  - Gestão do histórico de gestões com **cortador 1:1 integrado** e dropdown de cargos, além de CRUD de Editais, Anais SECIMED, Ligas Acadêmicas e log de Demandas.
+
 ## [0.4.0] - 2026-11-16 (Etapa 4)
 ### Adicionado
 - **Lojinha (`/lojinha`)**: catálogo com tamanhos e controle de estoque, sacola interativa, 10% automático do Clube e checkout Stripe (PIX, Cartão, Apple/Google Pay).
