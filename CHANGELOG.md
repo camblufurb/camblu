@@ -2,6 +2,11 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.8.1] - 2026-11-17
+### Corrigido & Aprimorado
+- Restaurada herança global `box-sizing: inherit` em `src/styles/reset.css` e aplicados `min-inline-size: 0` / `max-inline-size: 100%` / `overflow-wrap: anywhere` em `.m3-btn`, `.m3-card` e grades responsivas, corrigindo o overflow horizontal nos botões de Instagram das Ligas e formulários.
+- Aplicadas molduras M3 Expressive variáveis (`ExpressiveShapeFrame` com `fit="logo"` e recorte seguro em `#ffffff` sem cortar letras das bordas, além de morphing no hover conforme `m3.material.io/styles/shape/overview-principles`) em todas as 35 ligas acadêmicas em `src/pages/LigasPage.tsx`.
+
 ## [0.8.0] - 2026-11-17
 ### Adicionado
 - Importação local e otimização em WebP das 31 fotos oficiais de integrantes das gestões em `public/gestoes/2024/*.webp` (`22` membros) e `public/gestoes/2026/*.webp` (`9` membros), vinculadas em `src/data/gestoes.ts` com enquadramento facial superior no `ExpressiveShapeFrame`.

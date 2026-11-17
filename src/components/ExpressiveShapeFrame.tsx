@@ -43,6 +43,7 @@ interface ExpressiveShapeFrameProps {
   shape: M3ShapeVariant;
   hoverRotateDeg?: number;
   maxWidth?: string;
+  fit?: 'photo' | 'logo';
   children: React.ReactNode;
 }
 
@@ -50,11 +51,12 @@ export function ExpressiveShapeFrame({
   shape,
   hoverRotateDeg = 4,
   maxWidth = '11rem',
+  fit = 'photo',
   children,
 }: ExpressiveShapeFrameProps) {
   return (
     <div
-      className={`m3-shape-frame m3-shape--${shape}`}
+      className={`m3-shape-frame m3-shape--${shape} ${fit === 'logo' ? 'm3-shape-frame--logo' : ''}`}
       style={
         {
           maxInlineSize: maxWidth,

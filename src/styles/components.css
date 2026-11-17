@@ -182,6 +182,8 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    min-inline-size: 0;
+    max-inline-size: 100%;
     min-block-size: 44px;
     padding: 0.625rem 1.35rem;
     border-radius: var(--md-sys-shape-corner-full);
@@ -189,6 +191,8 @@
     font-size: 0.9375rem;
     font-weight: 680;
     letter-spacing: 0.01em;
+    text-align: center;
+    overflow-wrap: anywhere;
     text-decoration: none;
     cursor: pointer;
     touch-action: manipulation;
@@ -308,6 +312,8 @@
 
   /* M3 Cards */
   .m3-card {
+    min-inline-size: 0;
+    max-inline-size: 100%;
     background: var(--md-sys-color-surface-container-lowest);
     border: 1px solid var(--md-sys-color-outline-variant);
     border-radius: var(--md-sys-shape-corner-lg);
@@ -765,6 +771,11 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
+  }
+
+  .grid-cards > *,
+  .grid-two > * {
+    min-inline-size: 0;
   }
 
   @media (min-width: 56rem) {

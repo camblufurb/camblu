@@ -89,34 +89,15 @@ export function LigasPage() {
             style={{ display: 'grid', gap: '0.9rem', alignContent: 'space-between', textAlign: 'center' }}
           >
             <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem' }}>
-              {liga.logoUrl ? (
-                <div
-                  style={{
-                    inlineSize: '7.5rem',
-                    blockSize: '7.5rem',
-                    borderRadius: '9999px',
-                    background: '#ffffff',
-                    border: '1px solid var(--md-sys-color-outline-variant)',
-                    boxShadow: 'var(--elevation-1)',
-                    padding: '0.45rem',
-                    display: 'grid',
-                    placeItems: 'center',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <img
-                    src={liga.logoUrl}
-                    alt={`Logo ${liga.acronym}`}
-                    loading="lazy"
-                    style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'contain' }}
-                  />
-                </div>
-              ) : (
-                <ExpressiveShapeFrame
-                  shape={liga.shape}
-                  maxWidth="7.5rem"
-                  hoverRotateDeg={idx % 2 === 0 ? 6 : -6}
-                >
+              <ExpressiveShapeFrame
+                shape={liga.shape}
+                maxWidth="8rem"
+                hoverRotateDeg={idx % 2 === 0 ? 6 : -6}
+                fit={liga.logoUrl ? 'logo' : 'photo'}
+              >
+                {liga.logoUrl ? (
+                  <img src={liga.logoUrl} alt={`Logo ${liga.acronym}`} loading="lazy" />
+                ) : (
                   <div
                     style={{
                       inlineSize: '100%',
@@ -135,8 +116,8 @@ export function LigasPage() {
                   >
                     <strong style={{ fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{liga.acronym}</strong>
                   </div>
-                </ExpressiveShapeFrame>
-              )}
+                )}
+              </ExpressiveShapeFrame>
 
               <div style={{ display: 'grid', gap: '0.25rem' }}>
                 <span className="m3-label-small text-muted">{liga.area}</span>

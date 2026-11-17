@@ -5,6 +5,12 @@
     scroll-behavior: smooth;
   }
 
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;

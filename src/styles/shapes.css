@@ -28,7 +28,9 @@
     block-size: 100%;
     overflow: hidden;
     background: var(--md-sys-color-surface-container-high);
-    transition: transform 320ms ease-out;
+    transition:
+      transform 320ms ease-out,
+      border-radius 360ms var(--m3-spring-spatial-fast, ease-out);
   }
 
   .m3-shape-clip > img,
@@ -37,6 +39,34 @@
     block-size: 100%;
     object-fit: cover;
     object-position: center 20%;
+  }
+
+  /* Modo Logo/Brasão em forma M3 Expressive: preserva bordas circulares e destaca silhueta */
+  .m3-shape-frame--logo {
+    filter: drop-shadow(0 0 1px rgb(15 51 37 / 0.34)) drop-shadow(0 5px 14px rgb(15 51 37 / 0.1));
+  }
+
+  .m3-shape-frame--logo .m3-shape-clip {
+    background: radial-gradient(circle at 50% 40%, #ffffff 68%, #f1f6f3 100%);
+    padding: 13%;
+  }
+
+  .m3-shape-frame--logo .m3-shape-clip > img {
+    object-fit: contain;
+    object-position: center;
+  }
+
+  /* Morphing suave de formas baseadas em border-radius no hover (M3 Shape Overview) */
+  .m3-shape-card:is(:hover, :focus-within) .m3-shape--squircle .m3-shape-clip {
+    border-radius: 50%;
+  }
+
+  .m3-shape-card:is(:hover, :focus-within) .m3-shape--pill .m3-shape-clip {
+    border-radius: 30% 30% 50% 50% / 30% 30% 50% 50%;
+  }
+
+  .m3-shape-card:is(:hover, :focus-within) .m3-shape--arch .m3-shape-clip {
+    border-radius: 28%;
   }
 
   /* Shape variants mapped to inline SVG clipPath IDs or native border-radius */
