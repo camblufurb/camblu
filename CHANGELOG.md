@@ -2,6 +2,13 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.2.0] - 2026-11-16 (Etapa 2)
+### Adicionado
+- `AuthContext` com autenticação Google + modo demonstração local e onboarding completo (Nome, CPF validado, celular, vínculo FURB/turma numérica ou Externo, calouro + tamanho de camiseta).
+- `AppDataContext` com sincronização Firestore + fallback local e geração integral de dados reais (`transparencySeed.ts` com 112 lançamentos da planilha, 35 ligas acadêmicas, gestões 2024/2026 e Manual do Calouro 2026).
+- Páginas públicas institucionais completas: Home (`/`), Perfil (`/perfil`), Sobre & Espaços (`/sobre`, `/espacos`), MEDFURB (`/medfurb`), Catálogo de Ligas (`/ligas`), Histórico de Gestões (`/gestoes` com formas M3 animadas) e Manual do Calouro (`/manual-do-calouro`).
+- Suíte de testes unitários para cálculo de descontos/isenções do Clube CAMBLU (`clubPricing.test.ts`).
+
 ## [0.1.0] - 2026-11-16 (Etapa 1)
 ### Adicionado
 - Estrutura inicial do repositório com Vite + React 19 + TypeScript.
