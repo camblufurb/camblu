@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/i18n';
-import { useTheme } from '../context/ThemeContext';
 import { Icon } from './Icon';
 import { CambluCrest, SponsorsStrip } from './SponsorLogos';
 import { M3ShapeDefs } from './ExpressiveShapeFrame';
@@ -12,8 +11,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children, userSlot }: LayoutProps) {
-  const { t, locale, toggleLocale } = useI18n();
-  const { theme, resolvedTheme, cycleTheme } = useTheme();
+  const { t } = useI18n();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<'academic' | 'institucional' | null>(null);
@@ -33,13 +31,6 @@ export function Layout({ children, userSlot }: LayoutProps) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-
-  const themeIcon =
-    theme === 'auto'
-      ? 'brightness_auto'
-      : resolvedTheme === 'dark'
-        ? 'dark_mode'
-        : 'light_mode';
 
   const academicLinks = [
     { to: '/calendario', label: t('nav.calendar'), icon: 'calendar_month' },
@@ -141,29 +132,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
             </div>
           </nav>
 
-          <div className="header-actions">
-            <button
-              type="button"
-              className="m3-icon-btn"
-              onClick={cycleTheme}
-              aria-label={t('theme.toggle')}
-              title={`${t('theme.toggle')} (${theme})`}
-            >
-              <Icon name={themeIcon} size={20} />
-            </button>
-
-            <button
-              type="button"
-              className="m3-icon-btn"
-              onClick={toggleLocale}
-              aria-label={t('lang.toggle')}
-              style={{ paddingInline: '0.6rem', fontSize: '0.78rem', fontWeight: 750 }}
-            >
-              {locale === 'pt-BR' ? 'PT' : 'EN'}
-            </button>
-
-            {userSlot}
-          </div>
+          <div className="header-actions">{userSlot}</div>
         </div>
       </header>
 

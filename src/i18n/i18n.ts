@@ -1,8 +1,6 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 
-export type SupportedLocale = 'pt-BR' | 'en-US';
-
-const STORAGE_KEY = 'camblu.locale';
+export type SupportedLocale = 'pt-BR';
 
 const dictionary = {
   'pt-BR': {
@@ -35,8 +33,6 @@ const dictionary = {
     'auth.signInGoogle': 'Entrar com Google',
     'auth.signOut': 'Sair',
     'auth.completeProfile': 'Completar cadastro',
-    'theme.toggle': 'Alternar tema claro/escuro',
-    'lang.toggle': 'Mudar idioma para inglês',
     'sponsors.label': 'Apoio e Patrocínio Institucional',
     'common.loading': 'Carregando...',
     'common.save': 'Salvar',
@@ -45,89 +41,24 @@ const dictionary = {
     'common.downloadPdf': 'Baixar PDF',
     'common.downloadPng': 'Baixar PNG',
   },
-  'en-US': {
-    'app.title': 'CAMBLU',
-    'app.subtitle': 'FURB Medicine · Since 1990',
-    'skip.toContent': 'Skip to main content',
-    'nav.home': 'Home',
-    'nav.events': 'Events',
-    'nav.shop': 'Store',
-    'nav.club': 'CAMBLU Club',
-    'nav.transparency': 'Transparency',
-    'nav.academic': 'Academic',
-    'nav.more': 'About',
-    'nav.calendar': 'Calendar',
-    'nav.editais': 'Grants & Calls',
-    'nav.demands': 'Support & Requests',
-    'nav.cambluMulher': 'CAMBLU Women',
-    'nav.about': 'About & Spaces',
-    'nav.medfurb': 'MEDFURB',
-    'nav.gestoes': 'Board History',
-    'nav.ligas': 'Academic Leagues',
-    'nav.secimed': 'SECIMED',
-    'nav.anais': 'SECIMED Proceedings',
-    'nav.freshman': 'Freshman Guide',
-    'nav.myTickets': 'My Tickets',
-    'nav.certificates': 'Certificates',
-    'nav.memberCard': 'Member Card',
-    'nav.profile': 'My Profile',
-    'nav.admin': 'Admin Console (/back)',
-    'auth.signInGoogle': 'Sign in with Google',
-    'auth.signOut': 'Sign out',
-    'auth.completeProfile': 'Complete profile',
-    'theme.toggle': 'Toggle light/dark theme',
-    'lang.toggle': 'Switch language to Portuguese',
-    'sponsors.label': 'Institutional Sponsors',
-    'common.loading': 'Loading...',
-    'common.save': 'Save',
-    'common.cancel': 'Cancel',
-    'common.close': 'Close',
-    'common.downloadPdf': 'Download PDF',
-    'common.downloadPng': 'Download PNG',
-  },
 } as const;
 
 export type TranslationKey = keyof (typeof dictionary)['pt-BR'];
 
 interface I18nContextValue {
   locale: SupportedLocale;
-  setLocale: (locale: SupportedLocale) => void;
-  toggleLocale: () => void;
   t: (key: TranslationKey) => string;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-function resolveInitialLocale(): SupportedLocale {
-  if (typeof window === 'undefined') return 'pt-BR';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'en-US' || stored === 'pt-BR') return stored;
-  return 'pt-BR';
-}
-
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<SupportedLocale>(resolveInitialLocale);
-
-  const setLocale = (next: SupportedLocale) => {
-    setLocaleState(next);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, next);
-      document.documentElement.lang = next;
-    }
-  };
-
-  const toggleLocale = () => {
-    setLocale(locale === 'pt-BR' ? 'en-US' : 'pt-BR');
-  };
-
   const value = useMemo<I18nContextValue>(
     () => ({
-      locale,
-      setLocale,
-      toggleLocale,
-      t: (key: TranslationKey) => dictionary[locale][key] ?? dictionary['pt-BR'][key],
+      locale: 'pt-BR',
+      t: (key: TranslationKey) => dictionary['pt-BR'][key],
     }),
-    [locale],
+    [],
   );
 
   return React.createElement(I18nContext.Provider, { value }, children);

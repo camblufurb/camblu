@@ -2,6 +2,11 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.6.1] - 2026-11-17
+### Alterado
+- Removido o alternador de idioma (mantendo o portal 100% em Português Brasileiro `pt-BR`).
+- Removido o alternador e tokens de modo noturno (mantendo o portal exclusivamente no tema claro).
+
 ## [0.6.0] - 2026-11-16 (Etapa 6)
 ### Adicionado
 - Configuração completa do Firebase (`firebase.json`, `.firebaserc`, `firestore.rules`, `firestore.indexes.json`, `storage.rules`).

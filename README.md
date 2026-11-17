@@ -57,7 +57,7 @@ flowchart LR
 ```
 
 - **Frontend:** Vite 6 + React 19 + TypeScript + React Router 7
-- **Design System:** Material Design 3 / Material You Expressive (`Roboto Flex` + `Material Symbols Rounded`), suporte nativo a temas claro/escuro e `prefers-reduced-motion`
+- **Design System:** Material Design 3 / Material You Expressive (`Roboto Flex` + `Material Symbols Rounded`), tema claro exclusivo em Português Brasileiro (`pt-BR`) e respeito a `prefers-reduced-motion`
 - **Backend & Infra:** Firebase Hosting, Firebase Authentication (Google), Cloud Firestore (Standard), Firebase Storage, Cloud Functions v2 (Node.js/TypeScript)
 - **Pagamentos:** Stripe Checkout & Payment Request (Google/Apple Pay, Cartão, PIX)
 - **Documentos & QR:** `pdf-lib`, `qrcode`, `html5-qrcode`

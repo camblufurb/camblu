@@ -13,8 +13,8 @@ Obrigado pelo interesse em contribuir com o portal oficial do **Centro Acadêmic
    - HTML semântico (`<header>`, `<nav>`, `<main>`, `<footer>`, `<dialog>` nativo).
    - Contraste mínimo WCAG AA (4,5:1 para texto normal, 3:1 para elementos gráficos/foco).
    - Foco visível com `:focus-visible` e alvos clicáveis mínimos de `24×24 px` (recomendado `44×44 px`).
-3. **Internacionalização (i18n):**
-   - O arquivo de idiomas (`src/i18n/i18n.ts`) suporta exclusivamente **Português (`pt-BR`)** e **Inglês (`en-US`)**.
+3. **Idioma:**
+   - Toda a interface e mensagens (`src/i18n/i18n.ts`) mantêm exclusivamente o **Português do Brasil (`pt-BR`)**.
 4. **Segurança (Regra Crítica):**
    - **Nunca** faça commit de arquivos `.env*`, chaves secretas do Stripe (`rk_live_*`, `sk_*`, `whsec_*`), senhas SMTP ou credenciais de serviço.
 
@@ -28,4 +28,4 @@ Obrigado pelo interesse em contribuir com o portal oficial do **Centro Acadêmic
    npm run build
    ```
 3. Use mensagens de commit claras em português ou Conventional Commits (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`).
-4. Garanta que não haja regressões visuais em temas claro/escuro e mobile (`360px` a `1440px`).
+4. Garanta que não haja regressões visuais no modo claro em desktop e mobile (`360px` a `1440px`).
