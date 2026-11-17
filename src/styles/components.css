@@ -736,4 +736,443 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
+
+  /* ======================================================================
+     Lojinha CAMBLU — Página Individual do Produto (Material 3 Expressive)
+     ====================================================================== */
+  .product-mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .product-breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.875rem;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .product-breadcrumbs a {
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .product-breadcrumbs a:hover {
+    color: var(--camblu-action-blue);
+    text-decoration: underline;
+  }
+
+  .product-page-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    align-items: start;
+  }
+
+  @media (min-width: 58rem) {
+    .product-page-grid {
+      grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+    }
+
+    .product-mobile-topbar {
+      display: none;
+    }
+  }
+
+  .product-gallery {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-block-end: 0.25rem;
+  }
+
+  .product-gallery::-webkit-scrollbar {
+    display: none;
+  }
+
+  .product-gallery__frame {
+    position: relative;
+    flex: 0 0 82%;
+    scroll-snap-align: start;
+    aspect-ratio: 4 / 3.8;
+    border-radius: var(--md-sys-shape-corner-xl);
+    overflow: hidden;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container);
+    padding: 0;
+    cursor: pointer;
+    text-align: start;
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .product-gallery__frame:hover {
+    border-color: var(--camblu-action-blue);
+    box-shadow: var(--elevation-2);
+  }
+
+  .product-gallery__frame[data-active='true'] {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: var(--elevation-2);
+  }
+
+  @media (min-width: 58rem) {
+    .product-gallery {
+      display: grid;
+      grid-template-columns: 1fr;
+      overflow: visible;
+      gap: 0.9rem;
+    }
+
+    .product-gallery__frame {
+      flex: initial;
+      aspect-ratio: 16 / 8.5;
+    }
+
+    .product-gallery__frame:first-child {
+      aspect-ratio: 4 / 4.2;
+    }
+  }
+
+  .product-gallery__editorial {
+    inline-size: 100%;
+    block-size: 100%;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    display: grid;
+    place-items: center;
+    position: relative;
+    text-align: center;
+  }
+
+  .product-gallery__crest {
+    inline-size: clamp(4.5rem, 11vw, 7.5rem);
+    block-size: clamp(4.5rem, 11vw, 7.5rem);
+    object-fit: contain;
+    opacity: 0.95;
+  }
+
+  .product-gallery__tag {
+    position: absolute;
+    inset-block-end: 0.85rem;
+    inset-inline-start: 0.85rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: rgb(7 27 19 / 0.72);
+    color: #ffffff;
+    backdrop-filter: blur(8px);
+    font-size: 0.78rem;
+    font-weight: 650;
+  }
+
+  .product-info-col {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 58rem) {
+    .product-info-col {
+      position: sticky;
+      inset-block-start: calc(var(--header-block-size) + 1.25rem);
+    }
+  }
+
+  .product-desktop-header {
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  @media (min-width: 58rem) {
+    .product-desktop-header {
+      display: flex;
+    }
+  }
+
+  .product-price-readout {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--md-sys-color-primary);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+
+  .product-option-row {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  @media (min-width: 36rem) {
+    .product-option-row {
+      grid-template-columns: 5.25rem 1fr;
+      align-items: center;
+    }
+  }
+
+  .product-option-label {
+    font-size: 0.9rem;
+    font-weight: 650;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .product-size-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .product-size-chip {
+    min-inline-size: 3.1rem;
+    min-block-size: 2.55rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: var(--md-sys-shape-corner-md);
+    border: 1.5px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container-lowest);
+    color: var(--md-sys-color-on-surface);
+    font-size: 0.875rem;
+    font-weight: 680;
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease,
+      transform 140ms ease;
+  }
+
+  .product-size-chip:hover:not(:disabled) {
+    border-color: var(--camblu-action-blue);
+    background: var(--md-sys-color-surface-container-low);
+  }
+
+  .product-size-chip[aria-pressed='true'] {
+    background: var(--camblu-action-blue-container);
+    color: var(--camblu-on-action-blue-container);
+    border-color: var(--camblu-action-blue);
+    box-shadow: 0 0 0 1px var(--camblu-action-blue);
+  }
+
+  .product-size-chip:disabled {
+    opacity: 0.42;
+    text-decoration: line-through;
+    cursor: not-allowed;
+  }
+
+  .product-size-chip:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .product-color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .product-color-swatch {
+    inline-size: 3.1rem;
+    block-size: 2.15rem;
+    border-radius: var(--md-sys-shape-corner-sm);
+    border: 2px solid var(--md-sys-color-outline-variant);
+    cursor: pointer;
+    transition: transform 140ms ease, box-shadow 160ms ease, border-color 160ms ease;
+  }
+
+  .product-color-swatch[aria-pressed='true'] {
+    border-color: var(--md-sys-color-surface-container-lowest);
+    box-shadow: 0 0 0 2.5px var(--camblu-action-blue);
+    transform: translateY(-1px);
+  }
+
+  .product-cta-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .product-cta-row .product-cta-main {
+    flex: 1;
+    min-block-size: 52px;
+  }
+
+  .product-cta-fav {
+    min-inline-size: 52px;
+    min-block-size: 52px;
+    border-radius: var(--md-sys-shape-corner-lg);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--camblu-action-blue);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background-color 160ms ease, transform 140ms ease, border-color 160ms ease;
+  }
+
+  .product-cta-fav:hover {
+    background: var(--camblu-action-blue-container);
+    border-color: var(--camblu-action-blue);
+  }
+
+  .product-cta-fav[aria-pressed='true'] {
+    background: var(--camblu-action-blue-container);
+    border-color: var(--camblu-action-blue);
+  }
+
+  .product-cta-fav:active {
+    transform: scale(0.95);
+  }
+
+  /* Expandable Disclosure Accordions (Sem headings em summary) */
+  .product-accordion {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .product-accordion-item {
+    border-radius: var(--md-sys-shape-corner-lg);
+    background: var(--md-sys-color-surface-container-low);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    overflow: hidden;
+  }
+
+  .product-accordion-item > summary {
+    list-style: none;
+    min-block-size: 52px;
+    padding: 0.9rem 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-weight: 700;
+    color: var(--md-sys-color-on-surface);
+    cursor: pointer;
+    transition: background-color 150ms ease;
+  }
+
+  .product-accordion-item > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .product-accordion-item > summary:hover {
+    background: var(--md-sys-color-surface-container);
+  }
+
+  .product-accordion-chevron {
+    color: var(--camblu-action-blue);
+    transition: transform 240ms ease;
+  }
+
+  .product-accordion-item[open] .product-accordion-chevron {
+    transform: rotate(180deg);
+  }
+
+  .product-accordion-body {
+    padding: 0 1.15rem 1.1rem;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .product-accordion-list {
+    margin: 0;
+    padding-inline-start: 1.15rem;
+    display: grid;
+    gap: 0.35rem;
+    color: var(--md-sys-color-on-surface-variant);
+    font-size: 0.9375rem;
+  }
+
+  /* Floating Sacola Pill (baseado no guideline M3 Expressive) */
+  .m3-floating-bag-wrap {
+    position: fixed;
+    inset-block-end: 1.25rem;
+    inset-inline: 1rem;
+    z-index: 90;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  @media (min-width: 58rem) {
+    .m3-floating-bag-wrap {
+      inset-inline-start: auto;
+      inset-inline-end: 1.5rem;
+      justify-content: flex-end;
+    }
+  }
+
+  .m3-floating-bag {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-block-size: 52px;
+    padding: 0.45rem 0.95rem 0.45rem 0.65rem;
+    border-radius: var(--md-sys-shape-corner-xl);
+    border: 1px solid color-mix(in oklab, var(--camblu-gold-500) 45%, var(--md-sys-color-outline-variant));
+    background: color-mix(in oklab, var(--md-sys-color-surface-container-lowest) 94%, var(--camblu-forest-050));
+    backdrop-filter: blur(12px);
+    color: var(--md-sys-color-on-surface);
+    box-shadow: var(--elevation-3);
+    cursor: pointer;
+  }
+
+  .m3-floating-bag__icon {
+    inline-size: 2.2rem;
+    block-size: 2.2rem;
+    border-radius: var(--md-sys-shape-corner-full);
+    background: var(--camblu-action-blue);
+    color: var(--camblu-on-action-blue);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .m3-floating-bag__thumbs {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .m3-floating-bag__thumb {
+    inline-size: 2rem;
+    block-size: 2rem;
+    border-radius: var(--md-sys-shape-corner-xs);
+    object-fit: cover;
+    border: 1px solid var(--md-sys-color-outline-variant);
+  }
+
+  .m3-floating-bag__thumb--crest {
+    display: grid;
+    place-items: center;
+    padding: 0.25rem;
+  }
+
+  .m3-floating-bag__thumb--crest img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+  }
+
+  .m3-floating-bag__more {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--md-sys-color-primary);
+    padding-inline: 0.25rem;
+  }
+
+  .m3-floating-bag__meta {
+    display: grid;
+    text-align: start;
+    line-height: 1.15;
+    font-size: 0.84rem;
+  }
 }

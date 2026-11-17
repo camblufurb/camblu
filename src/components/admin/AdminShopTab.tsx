@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppData } from '../../context/AppDataContext';
 import { useToast } from '../ToastProvider';
 import { Icon } from '../Icon';
+import { slugifyProductName } from '../../lib/shopHelpers';
 import { buildWhatsappUrl, formatBrlFromCents } from '../../lib/validators';
 import type { ShopOrder, ShopProduct } from '../../types/domain';
 
@@ -16,6 +17,7 @@ export function AdminShopTab() {
   const [prodCategory, setProdCategory] = useState('Vestuário');
   const [prodImage, setProdImage] = useState('');
   const [prodSizesText, setProdSizesText] = useState('P:10,M:15,G:10,GG:5');
+  const [prodDetailsText, setProdDetailsText] = useState('');
 
   // Venda externa ou Doação
   const [extProductId, setExtProductId] = useState(products[0]?.id || '');
@@ -42,12 +44,24 @@ export function AdminShopTab() {
       })
       .filter((s) => s.size);
 
+    const images = prodImage
+      .split(/[\n,]+/)
+      .map((u) => u.trim())
+      .filter(Boolean);
+    const details = prodDetailsText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const id = `prod-${Date.now().toString(36)}`;
     const product: ShopProduct = {
-      id: `prod-${Date.now().toString(36)}`,
+      id,
+      slug: `${slugifyProductName(prodName.trim())}-${id.slice(-4)}`,
       name: prodName.trim(),
       description: prodDesc.trim() || 'Produto oficial CAMBLU.',
       priceCents,
-      images: prodImage.trim() ? [prodImage.trim()] : [],
+      images,
+      details: details.length ? details : undefined,
       category: prodCategory,
       sizes,
       active: true,
@@ -56,7 +70,9 @@ export function AdminShopTab() {
     await saveProduct(product);
     setProdName('');
     setProdDesc('');
-    notify('Produto salvo no catálogo da Lojinha!');
+    setProdImage('');
+    setProdDetailsText('');
+    notify('Produto salvo no catálogo e página individual publicada na Lojinha!');
   };
 
   const handleRegisterExternalOrDonation = async (e: React.FormEvent) => {
@@ -299,12 +315,16 @@ export function AdminShopTab() {
           </div>
         </div>
         <div className="m3-field">
-          <label htmlFor="p-img">URL da foto principal (opcional)</label>
-          <input id="p-img" type="url" className="m3-input" value={prodImage} onChange={(e) => setProdImage(e.target.value)} />
+          <label htmlFor="p-img">URLs das fotos da galeria (separe por vírgula ou quebra de linha, opcional)</label>
+          <input id="p-img" className="m3-input" placeholder="https://.../foto1.jpg, https://.../foto2.jpg" value={prodImage} onChange={(e) => setProdImage(e.target.value)} />
         </div>
         <div className="m3-field">
           <label htmlFor="p-desc">Descrição</label>
           <textarea id="p-desc" className="m3-textarea" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} />
+        </div>
+        <div className="m3-field">
+          <label htmlFor="p-details">Especificações para "Mais detalhes" (uma por linha, opcional)</label>
+          <textarea id="p-details" className="m3-textarea" style={{ minBlockSize: '5rem' }} value={prodDetailsText} onChange={(e) => setProdDetailsText(e.target.value)} />
         </div>
         <button type="submit" className="m3-btn m3-btn--filled" style={{ justifySelf: 'start' }}>
           <Icon name="add_business" size={18} />

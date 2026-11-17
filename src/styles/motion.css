@@ -162,13 +162,55 @@
     scale: 0.96;
   }
 
+  /* Acordeão de Produto (::details-content + interpolate-size) */
+  .product-accordion-item::details-content {
+    block-size: 0;
+    opacity: 0;
+    overflow: clip;
+    transition:
+      block-size 260ms ease,
+      opacity 220ms ease,
+      content-visibility 260ms allow-discrete;
+  }
+
+  .product-accordion-item[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+
+  /* Barra Flutuante da Sacola (entrada e saída suaves GPU-composited) */
+  .m3-floating-bag-wrap .m3-floating-bag {
+    opacity: 0;
+    translate: 0 22px;
+    scale: 0.92;
+    pointer-events: none;
+    transition:
+      opacity 200ms ease-out,
+      translate 280ms ease-out,
+      scale 280ms ease-out;
+    transition:
+      opacity 200ms ease-out,
+      translate 340ms linear(0, 0.36 14%, 0.94 34%, 1.03 52%, 0.995 72%, 1),
+      scale 340ms linear(0, 0.36 14%, 0.94 34%, 1.03 52%, 0.995 72%, 1);
+  }
+
+  .m3-floating-bag-wrap[data-visible='true'] .m3-floating-bag {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+    pointer-events: auto;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     dialog.m3-dialog,
     dialog.m3-dialog::backdrop,
     .m3-dropdown-panel,
     .m3-drawer-backdrop,
     .m3-drawer-panel,
-    .m3-toast {
+    .m3-toast,
+    .product-accordion-item::details-content,
+    .product-accordion-chevron,
+    .m3-floating-bag-wrap .m3-floating-bag {
       transition-duration: 120ms;
       scale: 1 !important;
       translate: 0 0 !important;

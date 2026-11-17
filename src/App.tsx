@@ -4,6 +4,7 @@ import { I18nProvider } from './i18n/i18n';
 import { ToastProvider } from './components/ToastProvider';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppDataProvider } from './context/AppDataContext';
+import { ShopCartProvider } from './context/ShopCartContext';
 import { Layout } from './components/Layout';
 import { AccountMenuButton } from './components/AccountMenuButton';
 import { HomePage } from './pages/HomePage';
@@ -19,6 +20,7 @@ import { MyTicketsPage } from './pages/MyTicketsPage';
 import { SecimedPage } from './pages/SecimedPage';
 import { AnaisSecimedPage } from './pages/AnaisSecimedPage';
 import { ShopPage } from './pages/ShopPage';
+import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ClubPage } from './pages/ClubPage';
 import { MemberCardPage } from './pages/MemberCardPage';
 import { TransparencyPage } from './pages/TransparencyPage';
@@ -78,7 +80,8 @@ export function App() {
       <ToastProvider>
         <AuthProvider>
           <AppDataProvider>
-            <BrowserRouter>
+            <ShopCartProvider>
+              <BrowserRouter>
               <Layout userSlot={<AccountMenuButton />}>
                 <ProfileIncompleteBanner />
                 <Suspense
@@ -108,6 +111,7 @@ export function App() {
                     <Route path="/secimed" element={<SecimedPage />} />
                     <Route path="/secimed/anais-secimed" element={<AnaisSecimedPage />} />
                     <Route path="/lojinha" element={<ShopPage />} />
+                    <Route path="/lojinha/:slug" element={<ProductDetailPage />} />
                     <Route path="/clube" element={<ClubPage />} />
                     <Route path="/clube/cartao" element={<MemberCardPage />} />
                     <Route path="/transparencia" element={<TransparencyPage />} />
@@ -121,6 +125,7 @@ export function App() {
                 </Suspense>
               </Layout>
             </BrowserRouter>
+            </ShopCartProvider>
           </AppDataProvider>
         </AuthProvider>
       </ToastProvider>

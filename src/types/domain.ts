@@ -152,13 +152,22 @@ export interface ProductSizeStock {
   stock: number;
 }
 
+export interface ProductColorOption {
+  name: string;
+  hex: string;
+}
+
 export interface ShopProduct {
   id: string;
+  slug?: string;
   name: string;
   description: string;
   priceCents: number; // Stripe fees absorbed by CAMBLU
   images: string[];
   sizes: ProductSizeStock[];
+  colors?: ProductColorOption[];
+  details?: string[];
+  careNotes?: string;
   category: string;
   active: boolean;
 }

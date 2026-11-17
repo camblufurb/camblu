@@ -2,6 +2,15 @@
 
 Todas as alterações relevantes do portal oficial do CAMBLU serão documentadas neste arquivo.
 
+## [0.7.0] - 2026-11-17
+### Adicionado
+- **Páginas Individuais de Produto (`/lojinha/:slug`)** seguindo a referência Material Design 3 Expressive:
+  - Galeria responsiva com empilhamento editorial no desktop e carrossel com swipe/peeking horizontal no mobile (`src/pages/ProductDetailPage.tsx`).
+  - Seletor de tamanhos em chips M3, seletor de cores/edições em swatches arredondados, CTA principal `#3b82f7`, botão de favoritos persistente e compartilhamento.
+  - Acordeões acessíveis (`<details>` + `::details-content` animados) para *Mais detalhes* e *Retirada na FURB, Trocas & Pagamento*.
+  - Sacola compartilhada (`src/context/ShopCartContext.tsx`), barra flutuante da sacola (`src/components/FloatingCartPill.tsx`) com animação GPU de entrada/saída e diálogo de checkout Stripe unificado (`src/components/ShopCartDialog.tsx`).
+  - Suporte administrativo no `/back` (`AdminShopTab.tsx`) para slug automático, múltiplas fotos de galeria e especificações técnicas por linha.
+
 ## [0.6.3] - 2026-11-17
 ### Alterado
 - Padronização tipográfica global em `src/styles/tokens.css`, `src/styles/base.css` e 28 componentes/páginas (`h1`, `h2`, `h3` e `p`), garantindo exatamente o mesmo tamanho de fonte (`--font-size-h1`, `--font-size-h2`, `--font-size-h3`, `--font-size-p`) por tipo semântico em todo o portal, além da adição de `<meta name="text-scale" content="scale" />` no `index.html`.

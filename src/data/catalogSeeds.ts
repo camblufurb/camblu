@@ -168,6 +168,7 @@ export const EVENTS_SEED: CambluEvent[] = [
 export const PRODUCTS_SEED: ShopProduct[] = [
   {
     id: 'prod-moletom-medfurb',
+    slug: 'moletom-oficial-medfurb',
     name: 'Moletom Oficial MEDFURB · Edição Verde Botânico',
     description:
       'Moletom canguru felpado de alta gramatura (3 cabos), bordado dourado frontal CAMBLU e punhos reforçados. Taxas inclusas no valor.',
@@ -175,6 +176,17 @@ export const PRODUCTS_SEED: ShopProduct[] = [
     images: [],
     category: 'Vestuário',
     active: true,
+    colors: [
+      { name: 'Verde Botânico', hex: '#0f3325' },
+      { name: 'Bordado Dourado', hex: '#edd16e' },
+    ],
+    details: [
+      'Moletom 3 cabos peluciado (50% algodão / 50% poliéster, 380 g/m²).',
+      'Bordado frontal de alta definição com o brasão CAMBLU 1990.',
+      'Capuz forrado com cordão ajustável e bolso canguru reforçado.',
+      'Taxas do checkout Stripe 100% absorvidas pelo CAMBLU.',
+    ],
+    careNotes: 'Lavar à mão ou no ciclo delicado com água fria. Não passar ferro diretamente sobre o bordado.',
     sizes: [
       { size: 'PP', stock: 4 },
       { size: 'P', stock: 11 },
@@ -185,6 +197,7 @@ export const PRODUCTS_SEED: ShopProduct[] = [
   },
   {
     id: 'prod-camiseta-camblu',
+    slug: 'camiseta-camblu-1990',
     name: 'Camiseta Algodão Premium CAMBLU 1990',
     description:
       'Malha 100% algodão penteado fio 30.1 na cor verde oficial #0f3325 com estampa dourada em serigrafia de alta durabilidade.',
@@ -192,6 +205,17 @@ export const PRODUCTS_SEED: ShopProduct[] = [
     images: [],
     category: 'Vestuário',
     active: true,
+    colors: [
+      { name: 'Verde CAMBLU', hex: '#0f3325' },
+      { name: 'Off-White Areia', hex: '#fbf3d5' },
+    ],
+    details: [
+      'Algodão penteado 100% fio 30.1 (toque macio e respirável para o dia a dia no campus).',
+      'Gola em ribana canelada com reforço ombro a ombro.',
+      'Serigrafia dourada de alta durabilidade resistente a múltiplas lavagens.',
+      'Membros do Clube CAMBLU recebem 10% de desconto automático na sacola.',
+    ],
+    careNotes: 'Lavar do avesso e secar à sombra. Evite secadora em alta temperatura para preservar a fibra natural.',
     sizes: [
       { size: 'PP', stock: 6 },
       { size: 'P', stock: 18 },
@@ -202,6 +226,7 @@ export const PRODUCTS_SEED: ShopProduct[] = [
   },
   {
     id: 'prod-garrafinha-termica',
+    slug: 'garrafa-termica-camblu-500ml',
     name: 'Garrafa Térmica Inox CAMBLU 500 ml',
     description:
       'Aço inox parede dupla com gravação a laser do brasão CAMBLU. Conserva bebidas geladas por até 24h durante estágios e plantões.',
@@ -209,10 +234,22 @@ export const PRODUCTS_SEED: ShopProduct[] = [
     images: [],
     category: 'Acessórios',
     active: true,
+    colors: [
+      { name: 'Verde Fosco', hex: '#0f3325' },
+      { name: 'Aço Dourado', hex: '#edd16e' },
+    ],
+    details: [
+      'Aço inoxidável 304 com isolamento a vácuo de parede dupla.',
+      'Conserva líquidos gelados por até 24h e quentes por até 12h.',
+      'Tampa hermética antivazamento livre de BPA — segura para levar na mochila com livros e jaleco.',
+      'Gravação permanente a laser com identidade oficial CAMBLU.',
+    ],
+    careNotes: 'Lavar com esponja macia e detergente neutro antes do primeiro uso. Não levar ao freezer ou micro-ondas.',
     sizes: [{ size: 'Único', stock: 23 }],
   },
   {
     id: 'prod-tirante-cracha',
+    slug: 'tirante-porta-cracha-medfurb',
     name: 'Tirante Institucional + Porta-Crachá Rígido MEDFURB',
     description:
       'Tirante acetinado com trava de segurança e mosquetão metálico ideal para crachá hospitalar no HU, Santo Antônio e Santa Isabel.',
@@ -220,6 +257,15 @@ export const PRODUCTS_SEED: ShopProduct[] = [
     images: [],
     category: 'Acessórios',
     active: true,
+    colors: [
+      { name: 'Verde & Ouro CAMBLU', hex: '#0f3325' },
+    ],
+    details: [
+      'Fita de poliéster acetinado 20 mm com impressão frente e verso em alta resolução.',
+      'Trava de segurança anti-sufocamento na nuca exigida em ambientes hospitalares.',
+      'Acompanha case porta-crachá rígido vertical + mosquetão giratório cromado.',
+    ],
+    careNotes: 'Higienizar o porta-crachá com álcool 70% após atividades práticas e internatos.',
     sizes: [{ size: 'Único', stock: 40 }],
   },
 ];
