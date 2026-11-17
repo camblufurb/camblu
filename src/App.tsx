@@ -13,6 +13,12 @@ import { MedfurbPage } from './pages/MedfurbPage';
 import { LigasPage } from './pages/LigasPage';
 import { GestoesPage } from './pages/GestoesPage';
 import { ManualCalouroPage } from './pages/ManualCalouroPage';
+import { EventsPage } from './pages/EventsPage';
+import { EventDetailPage } from './pages/EventDetailPage';
+import { MyTicketsPage } from './pages/MyTicketsPage';
+import { CertificatesPage } from './pages/CertificatesPage';
+import { SecimedPage } from './pages/SecimedPage';
+import { AnaisSecimedPage } from './pages/AnaisSecimedPage';
 import { Icon } from './components/Icon';
 import { Link } from 'react-router-dom';
 
@@ -90,12 +96,14 @@ export function App() {
                     <Route path="/ligas" element={<LigasPage />} />
                     <Route path="/gestoes" element={<GestoesPage />} />
                     <Route path="/manual-do-calouro" element={<ManualCalouroPage />} />
-                    <Route path="/eventos" element={<UpcomingRoute title="Eventos, Ingressos & Certificados" />} />
-                    <Route path="/eventos/:slug" element={<UpcomingRoute title="Detalhe do Evento" />} />
-                    <Route path="/meus-ingressos" element={<UpcomingRoute title="Meus Ingressos & Transferência por CPF" />} />
-                    <Route path="/certificados" element={<UpcomingRoute title="Meus Certificados (PDF/PNG)" />} />
-                    <Route path="/secimed" element={<UpcomingRoute title="SECIMED" />} />
-                    <Route path="/secimed/anais-secimed" element={<UpcomingRoute title="Anais SECIMED" />} />
+                    <Route path="/eventos" element={<EventsPage />} />
+                    <Route path="/eventos/:slug" element={<EventDetailPage />} />
+                    <Route path="/meus-ingressos" element={<MyTicketsPage />} />
+                    <Route path="/certificados" element={<CertificatesPage />} />
+                    <Route path="/certificados/validar" element={<CertificatesPage />} />
+                    <Route path="/certificados/validar/:codigo" element={<CertificatesPage />} />
+                    <Route path="/secimed" element={<SecimedPage />} />
+                    <Route path="/secimed/anais-secimed" element={<AnaisSecimedPage />} />
                     <Route path="/lojinha" element={<UpcomingRoute title="Lojinha CAMBLU" />} />
                     <Route path="/clube" element={<UpcomingRoute title="Clube CAMBLU" />} />
                     <Route path="/clube/cartao" element={<UpcomingRoute title="Cartão Digital do Clube" />} />
