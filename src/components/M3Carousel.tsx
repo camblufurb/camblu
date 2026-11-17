@@ -13,9 +13,17 @@ interface M3CarouselProps {
   }[];
 }
 
+function jumpInstantlyWithoutSnap(track: HTMLDivElement, left: number) {
+  track.style.scrollSnapType = 'none';
+  track.scrollLeft = left;
+  window.requestAnimationFrame(() => {
+    track.style.scrollSnapType = '';
+  });
+}
+
 /**
- * Expressive Material 3 carousel supporting infinite wrapping, single-step arrow navigation,
- * and reliable active-card focus detection on both hero and multi-browse tracks.
+ * Expressive Material 3 carousel supporting infinite seamless looping, single-step arrow navigation,
+ * unobstructed bottom controls inside container bounds, and exact active slide detection.
  */
 export function M3Carousel({
   label,
@@ -63,7 +71,7 @@ export function M3Carousel({
       const slide = track.children[domIdx] as HTMLElement | undefined;
       if (!slide) return 0;
       if (variant === 'multi-browse') {
-        return Math.max(0, slide.offsetLeft - 8);
+        return Math.max(0, slide.offsetLeft);
       }
       return Math.max(0, slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2);
     },
@@ -77,7 +85,7 @@ export function M3Carousel({
 
       const focusX =
         variant === 'multi-browse'
-          ? track.scrollLeft + 16
+          ? track.scrollLeft
           : track.scrollLeft + track.clientWidth / 2;
 
       let bestIdx = 0;
@@ -104,21 +112,20 @@ export function M3Carousel({
       const canonicalDomIdx = cloneCount + realIdx;
       if (domIdx < cloneCount || domIdx >= cloneCount + items.length) {
         const left = computeScrollLeftForDomIndex(track, canonicalDomIdx);
-        track.scrollTo({ left, behavior: 'auto' });
+        jumpInstantlyWithoutSnap(track, left);
       }
       return realIdx;
     },
     [cloneCount, computeScrollLeftForDomIndex, isLoopingEnabled, items.length],
   );
 
-  // Align cleanly onto real item 0 on mount or item count change
+  // Synchronously position onto real slide 0 on initial mount
   useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track || items.length === 0) return;
     pendingTargetDomRef.current = null;
     setActiveIndex(0);
-    const initialLeft = computeScrollLeftForDomIndex(track, cloneCount);
-    track.scrollTo({ left: initialLeft, behavior: 'auto' });
+    jumpInstantlyWithoutSnap(track, computeScrollLeftForDomIndex(track, cloneCount));
   }, [cloneCount, computeScrollLeftForDomIndex, items.length]);
 
   const scrollStep = (delta: -1 | 1) => {
@@ -145,21 +152,25 @@ export function M3Carousel({
 
     const targetLeft = computeScrollLeftForDomIndex(track, nextDom);
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    track.scrollTo({
-      left: targetLeft,
-      behavior: reduced ? 'auto' : 'smooth',
-    });
+
+    if (reduced) {
+      jumpInstantlyWithoutSnap(track, targetLeft);
+      pendingTargetDomRef.current = null;
+      setActiveIndex(normalizeDomIndexIfCloned(track, nextDom));
+    } else {
+      track.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      if (!('onscrollend' in globalThis)) {
+        if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+        settleTimerRef.current = setTimeout(() => {
+          if (!trackRef.current) return;
+          const landed = pendingTargetDomRef.current ?? findNearestDomIndex(trackRef.current);
+          pendingTargetDomRef.current = null;
+          setActiveIndex(normalizeDomIndexIfCloned(trackRef.current, landed));
+        }, 520);
+      }
+    }
 
     setStatusMessage(`Slide ${mappedReal + 1} de ${items.length}: ${items[mappedReal].title}`);
-
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-    settleTimerRef.current = setTimeout(() => {
-      if (!trackRef.current) return;
-      const landed = pendingTargetDomRef.current ?? findNearestDomIndex(trackRef.current);
-      pendingTargetDomRef.current = null;
-      const normalized = normalizeDomIndexIfCloned(trackRef.current, landed);
-      setActiveIndex(normalized);
-    }, reduced ? 20 : 380);
   };
 
   const scrollToRealIndex = (realIdx: number) => {
@@ -167,19 +178,26 @@ export function M3Carousel({
     if (!track || items.length === 0) return;
     const bounded = ((realIdx % items.length) + items.length) % items.length;
     const targetDom = cloneCount + bounded;
+    const targetLeft = computeScrollLeftForDomIndex(track, targetDom);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     pendingTargetDomRef.current = targetDom;
     setActiveIndex(bounded);
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    track.scrollTo({
-      left: computeScrollLeftForDomIndex(track, targetDom),
-      behavior: reduced ? 'auto' : 'smooth',
-    });
-    setStatusMessage(`Slide ${bounded + 1} de ${items.length}: ${items[bounded].title}`);
 
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-    settleTimerRef.current = setTimeout(() => {
+    if (reduced) {
+      jumpInstantlyWithoutSnap(track, targetLeft);
       pendingTargetDomRef.current = null;
-    }, reduced ? 20 : 380);
+    } else {
+      track.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      if (!('onscrollend' in globalThis)) {
+        if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+        settleTimerRef.current = setTimeout(() => {
+          pendingTargetDomRef.current = null;
+        }, 520);
+      }
+    }
+
+    setStatusMessage(`Slide ${bounded + 1} de ${items.length}: ${items[bounded].title}`);
   };
 
   useEffect(() => {
@@ -207,7 +225,7 @@ export function M3Carousel({
       });
       if (!supportsScrollEnd) {
         if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-        settleTimerRef.current = setTimeout(handleSettle, 150);
+        settleTimerRef.current = setTimeout(handleSettle, 160);
       }
     };
 
@@ -226,7 +244,46 @@ export function M3Carousel({
   return (
     <section className="m3-carousel" aria-roledescription="carousel" aria-label={label}>
       <div className="m3-carousel-viewport">
-        {items.length > 1 && (
+        <div
+          ref={trackRef}
+          className="m3-carousel-track"
+          data-variant={variant}
+          data-peek={peek && items.length > 1 ? 'true' : 'false'}
+          tabIndex={0}
+          role="group"
+          aria-label="Slides"
+        >
+          {extendedItems.map((item) => (
+            <div
+              key={item.domKey}
+              className="m3-carousel-slide"
+              data-active={activeIndex === item.realIdx ? 'true' : 'false'}
+              aria-hidden={item.isClone || undefined}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${item.realIdx + 1} de ${items.length}: ${item.title}`}
+            >
+              {item.content}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {items.length > 1 && (
+        <div className="m3-carousel-nav-bar">
+          <div className="m3-carousel-markers" aria-label="Indicadores de slide">
+            {items.map((item, idx) => (
+              <button
+                key={item.id}
+                type="button"
+                className="m3-carousel-marker"
+                aria-current={activeIndex === idx ? 'true' : undefined}
+                aria-label={`Ir para slide ${idx + 1}: ${item.title}`}
+                onClick={() => scrollToRealIndex(idx)}
+              />
+            ))}
+          </div>
+
           <div className="m3-carousel-controls">
             <button
               type="button"
@@ -243,45 +300,6 @@ export function M3Carousel({
               <Icon name="chevron_right" />
             </button>
           </div>
-        )}
-
-        <div
-          ref={trackRef}
-          className="m3-carousel-track"
-          data-variant={variant}
-          data-peek={peek && items.length > 1 ? 'true' : 'false'}
-          tabIndex={0}
-          role="group"
-          aria-label="Slides"
-        >
-          {extendedItems.map((item) => (
-            <div
-              key={item.domKey}
-              className="m3-carousel-slide"
-              data-active={!item.isClone && activeIndex === item.realIdx ? 'true' : activeIndex === item.realIdx ? 'true' : 'false'}
-              aria-hidden={item.isClone || undefined}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${item.realIdx + 1} de ${items.length}: ${item.title}`}
-            >
-              {item.content}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {items.length > 1 && (
-        <div className="m3-carousel-markers" aria-label="Indicadores de slide">
-          {items.map((item, idx) => (
-            <button
-              key={item.id}
-              type="button"
-              className="m3-carousel-marker"
-              aria-current={activeIndex === idx ? 'true' : undefined}
-              aria-label={`Ir para slide ${idx + 1}: ${item.title}`}
-              onClick={() => scrollToRealIndex(idx)}
-            />
-          ))}
         </div>
       )}
 

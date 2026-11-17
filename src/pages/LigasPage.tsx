@@ -118,10 +118,10 @@ export function LigasPage() {
                 )}
               </ExpressiveShapeFrame>
 
-              <div style={{ display: 'grid', gap: '0.25rem' }}>
-                <span className="m3-label-small text-muted">{liga.area}</span>
-                <h2>{liga.acronym}</h2>
-                <p className="text-muted">{liga.name}</p>
+              <div className="liga-card__meta">
+                <span className="m3-label-small text-muted liga-card__area">{liga.area}</span>
+                <strong className="liga-card__acronym">{liga.acronym}</strong>
+                <span className="text-muted liga-card__name">{liga.name}</span>
               </div>
             </div>
 
@@ -129,10 +129,9 @@ export function LigasPage() {
               href={liga.instagramUrl}
               target="_blank"
               rel="noreferrer"
-              className="m3-btn m3-btn--tonal"
-              style={{ inlineSize: '100%' }}
+              className="m3-btn m3-btn--tonal liga-card__btn"
             >
-              <Icon name="open_in_new" size={18} />
+              <Icon name="open_in_new" size={16} />
               <span>{liga.instagramHandle}</span>
             </a>
           </article>

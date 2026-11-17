@@ -66,7 +66,12 @@ export function ShopPage() {
 
         <div className="shop-fivebucks-mosaic" aria-label="Destaques da Lojinha">
           {heroMosaicProducts.map((prod) => (
-            <Link key={prod.id} to={`/lojinha/${getProductSlug(prod)}`} className="shop-mosaic-tile">
+            <Link
+              key={prod.id}
+              to={`/lojinha/${getProductSlug(prod)}`}
+              className="shop-mosaic-tile"
+              aria-label={prod.name}
+            >
               <div
                 style={{
                   aspectRatio: '3 / 4',
@@ -94,9 +99,6 @@ export function ShopPage() {
                   />
                 )}
               </div>
-              <span style={{ fontSize: '0.76rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {prod.name}
-              </span>
             </Link>
           ))}
         </div>
