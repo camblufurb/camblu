@@ -24,6 +24,7 @@ Informe pelo menos um dos parâmetros abaixo:
 {
   "active": true,
   "tier": "raro",
+  "tierCode": 2,
   "validUntil": "2027-05-16T12:00:00.000Z"
 }
 ```
@@ -32,6 +33,12 @@ Informe pelo menos um dos parâmetros abaixo:
 
 - `active` (`boolean`): `true` apenas se `membershipActive` estiver ativo e `validUntil` (quando definido) ainda estiver no futuro.
 - `tier` (`"none" | "comum" | "raro" | "epico" | "lendario"`): nível vigente da assinatura (`"none"` quando `active === false`).
+- `tierCode` (`0 | 1 | 2 | 3 | 4`): código numérico do plano ativo para facilitar regras condicionais por nível:
+  - `0`: nenhum plano ativo (`none`)
+  - `1`: `comum` (Comum)
+  - `2`: `raro` (Raro)
+  - `3`: `epico` (Épico)
+  - `4`: `lendario` (Lendário)
 - `validUntil` (`string | null`): data limite em formato ISO 8601 ou `null`.
 
 Quando nenhum usuário corresponde ao CPF/e-mail informado, o endpoint retorna `200 OK` com:
@@ -40,6 +47,7 @@ Quando nenhum usuário corresponde ao CPF/e-mail informado, o endpoint retorna `
 {
   "active": false,
   "tier": "none",
+  "tierCode": 0,
   "validUntil": null
 }
 ```
@@ -72,6 +80,7 @@ export async function consultarClubeCamblu(cpfOuEmail: string) {
   return (await res.json()) as {
     active: boolean;
     tier: 'none' | 'comum' | 'raro' | 'epico' | 'lendario';
+    tierCode: 0 | 1 | 2 | 3 | 4;
     validUntil: string | null;
   };
 }

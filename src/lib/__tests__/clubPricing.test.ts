@@ -4,6 +4,7 @@ import {
   CLUB_PLANS,
   calculateEventTicketPrice,
   calculateShopPrice,
+  getMembershipTierCode,
 } from '../clubPricing';
 
 describe('clubPricing', () => {
@@ -50,5 +51,33 @@ describe('clubPricing', () => {
       epico: true,
       lendario: true,
     });
+  });
+
+  it('includes digital student ID card benefit starting from Comum tier across all plans', () => {
+    for (const tier of ['comum', 'raro', 'epico', 'lendario'] as const) {
+      const plan = CLUB_PLANS.find((p) => p.tier === tier);
+      expect(plan?.perks.some((p) => /carteirinha de estudante/i.test(p.text))).toBe(true);
+    }
+    const comumPlan = CLUB_PLANS.find((p) => p.tier === 'comum');
+    expect(comumPlan?.perks.find((p) => /carteirinha de estudante/i.test(p.text))?.isNewAtTier).toBe(true);
+
+    const cardRow = CLUB_COMPARISON_ROWS.find((r) => /carteirinha de estudante/i.test(r.feature));
+    expect(cardRow).toEqual({
+      feature: 'Carteirinha de Estudante Digital com QR Code (FURB)',
+      comum: true,
+      raro: true,
+      epico: true,
+      lendario: true,
+    });
+  });
+
+  it('maps active club tiers to deterministic numeric codes 0..4', () => {
+    expect(getMembershipTierCode('none', true)).toBe(0);
+    expect(getMembershipTierCode('comum', false)).toBe(0);
+    expect(getMembershipTierCode('lendario', false)).toBe(0);
+    expect(getMembershipTierCode('comum', true)).toBe(1);
+    expect(getMembershipTierCode('raro', true)).toBe(2);
+    expect(getMembershipTierCode('epico', true)).toBe(3);
+    expect(getMembershipTierCode('lendario', true)).toBe(4);
   });
 });

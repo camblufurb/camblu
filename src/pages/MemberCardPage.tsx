@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { useAuth } from '../context/AuthContext';
-import { CLUB_PLANS } from '../lib/clubPricing';
+import { CLUB_PLANS, getMembershipTierCode } from '../lib/clubPricing';
 import {
+  buildMemberCardValidationUrl,
   getMemberCardAppearance,
   resolveMemberPhotoUrl,
   tiltFromDeviceOrientation,
@@ -12,6 +13,7 @@ import {
 } from '../lib/memberCard';
 import { Icon } from '../components/Icon';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
+import { logError, logInfo } from '../lib/logger';
 
 interface DeviceOrientationConstructorWithPermission {
   requestPermission?: () => Promise<'granted' | 'denied'>;
@@ -58,14 +60,14 @@ export function MemberCardPage() {
 
   useEffect(() => {
     if (!profile) return;
-    const payload = JSON.stringify({
+    const verifyUrl = buildMemberCardValidationUrl(profile.uid);
+    logInfo('Cartao', 'Gerando QR Code de validação da carteirinha', {
       uid: profile.uid,
-      tier: profile.membershipTier,
-      active: profile.membershipActive,
+      verifyUrl,
     });
-    QRCode.toDataURL(payload, { width: 180, margin: 1, color: { dark: '#0f3325', light: '#ffffff' } })
+    QRCode.toDataURL(verifyUrl, { width: 220, margin: 1, color: { dark: '#0f3325', light: '#ffffff' } })
       .then(setQrUrl)
-      .catch(() => {});
+      .catch((err) => logError('Cartao', 'MemberCardPage -> QRCode.toDataURL', err));
   }, [profile]);
 
   const scheduleTilt = useCallback(
@@ -165,13 +167,18 @@ export function MemberCardPage() {
   }
 
   const plan = CLUB_PLANS.find((p) => p.tier === profile.membershipTier);
+  const tierCode = getMembershipTierCode(profile.membershipTier, profile.membershipActive);
+  const isCardActive = tierCode >= 1 && Boolean(plan);
   const appearance = getMemberCardAppearance(plan?.tier, profile.membershipActive);
   const avatarInitial = profile.name.trim().charAt(0).toUpperCase() || 'C';
+  const validationPath = `/clube/cartao/validar/${encodeURIComponent(profile.uid)}`;
+  const missingAcademicFields =
+    profile.affiliation === 'FURB' && (!profile.cpf?.trim() || !profile.turma?.trim());
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '1.75rem', placeItems: 'center' }}>
       <div style={{ textAlign: 'center', maxInlineSize: '46rem', inlineSize: '100%' }}>
-        <AnimatedClimateTitle tone="primary" align="center" accessibleHeading="Cartão Digital do Membro">
+        <AnimatedClimateTitle tone="primary" align="center" accessibleHeading="Carteirinha de Estudante Digital — Clube CAMBLU">
           CARTEIRINHA
         </AnimatedClimateTitle>
       </div>
@@ -207,10 +214,12 @@ export function MemberCardPage() {
         <div className="member-card__top">
           <div>
             <span style={{ fontSize: '0.72rem', fontWeight: 750, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>
-              Clube CAMBLU · Medicina FURB
+              {isCardActive && profile.affiliation === 'FURB'
+                ? 'Carteirinha de Estudante · Medicina FURB'
+                : 'Clube CAMBLU · Medicina FURB'}
             </span>
             <strong style={{ fontSize: 'clamp(1.05rem, 3.2vw, 1.25rem)' }}>
-              {profile.membershipActive && plan ? `Membro ${plan.name}` : 'Sem Plano Ativo'}
+              {isCardActive && plan ? `Membro ${plan.name}` : 'Sem Plano Ativo'}
             </strong>
           </div>
           <Icon name="workspace_premium" filled size={30} />
@@ -251,32 +260,80 @@ export function MemberCardPage() {
                 {profile.name}
               </strong>
               <span style={{ fontSize: '0.82rem', opacity: 0.92, display: 'block' }}>
-                {profile.affiliation === 'FURB' ? `FURB · Turma ${profile.turma || '—'}` : 'Externo'}
+                {profile.affiliation === 'FURB' ? `FURB · Medicina · Turma ${profile.turma || '—'}` : 'Externo'}
               </span>
               <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>
                 {profile.membershipValidUntil
                   ? `Válido até ${new Date(profile.membershipValidUntil).toLocaleDateString('pt-BR')}`
-                  : 'Assine em /clube para ativar benefícios'}
+                  : 'Assine a partir do Plano Comum para validar'}
               </span>
             </div>
           </div>
 
           {qrUrl && (
-            <img
-              className="member-card__qr"
-              src={qrUrl}
-              alt="QR de validação do Clube CAMBLU"
-              width={72}
-              height={72}
-            />
+            <Link
+              to={validationPath}
+              aria-label="Abrir página de validação pública da carteirinha de estudante"
+              title="Abrir página de validação do QR Code"
+              style={{ display: 'inline-flex', borderRadius: '0.65rem' }}
+            >
+              <img
+                className="member-card__qr"
+                src={qrUrl}
+                alt="QR Code de validação da Carteirinha de Estudante CAMBLU"
+                width={72}
+                height={72}
+              />
+            </Link>
           )}
         </div>
       </article>
 
+      {!isCardActive && (
+        <div
+          className="m3-card m3-card--tonal"
+          style={{ maxInlineSize: '34rem', inlineSize: '100%', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}
+        >
+          <span className="m3-badge m3-badge--blue" aria-hidden="true">
+            <Icon name="badge" size={18} />
+          </span>
+          <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+            A <strong>Carteirinha de Estudante Digital válida</strong> é um benefício liberado a partir do{' '}
+            <strong>Plano Comum</strong> do Clube CAMBLU. Assine em{' '}
+            <Link to="/clube" style={{ fontWeight: 700, color: '#3b82f7' }}>
+              Clube CAMBLU
+            </Link>{' '}
+            para ativar o QR Code de autenticidade.
+          </p>
+        </div>
+      )}
+
+      {isCardActive && missingAcademicFields && (
+        <div
+          className="m3-card m3-card--tonal"
+          style={{ maxInlineSize: '34rem', inlineSize: '100%', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}
+        >
+          <span className="m3-badge m3-badge--gold" aria-hidden="true">
+            <Icon name="warning" size={18} />
+          </span>
+          <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+            Complete seu <strong>CPF e número da turma</strong> em{' '}
+            <Link to="/perfil" style={{ fontWeight: 700, color: '#3b82f7' }}>
+              Meu Perfil
+            </Link>{' '}
+            para que a validação da carteirinha exiba todos os seus dados completos.
+          </p>
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
         <Link to="/clube" className="m3-btn m3-btn--filled">
           <Icon name="upgrade" size={18} />
-          <span>Gerenciar / Fazer Upgrade do Plano</span>
+          <span>{isCardActive ? 'Gerenciar / Fazer Upgrade do Plano' : 'Assinar a partir do Plano Comum'}</span>
+        </Link>
+        <Link to={validationPath} className="m3-btn m3-btn--outlined">
+          <Icon name="qr_code_scanner" size={18} />
+          <span>Validar Carteirinha (Link do QR)</span>
         </Link>
       </div>
     </section>

@@ -1,5 +1,37 @@
 import type { CambluEvent, MembershipCycle, MembershipTier } from '../types/domain';
 
+export type MembershipTierCode = 0 | 1 | 2 | 3 | 4;
+
+export const MEMBERSHIP_TIER_CODE_MAP: Record<MembershipTier, MembershipTierCode> = {
+  none: 0,
+  comum: 1,
+  raro: 2,
+  epico: 3,
+  lendario: 4,
+};
+
+export const MEMBERSHIP_TIER_NAME_MAP: Record<MembershipTier, string> = {
+  none: 'Sem plano ativo',
+  comum: 'Comum',
+  raro: 'Raro',
+  epico: 'Épico',
+  lendario: 'Lendário',
+};
+
+/**
+ * Returns the numeric tier code from 0 (no active plan) to 4 (Lendário).
+ */
+export function getMembershipTierCode(
+  tier: MembershipTier | string | undefined | null,
+  active: boolean,
+): MembershipTierCode {
+  if (!active || !tier || tier === 'none') return 0;
+  if (tier in MEMBERSHIP_TIER_CODE_MAP) {
+    return MEMBERSHIP_TIER_CODE_MAP[tier as MembershipTier];
+  }
+  return 0;
+}
+
 export interface ClubPerkEntry {
   text: string;
   icon: string;
@@ -37,7 +69,7 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
     tier: 'comum',
     name: 'Comum',
     levelLabel: 'Nível 1 · Essencial',
-    tagline: 'Entrada no Clube com descontos fixos na Lojinha, eventos e benefícios de calouro.',
+    tagline: 'Entrada no Clube com Carteirinha de Estudante digital, descontos fixos na Lojinha, eventos e benefícios de calouro.',
     icon: 'verified',
     themeColor: '#22a06b',
     glowColor: 'rgb(34 160 107 / 0.24)',
@@ -47,11 +79,13 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
     semesterCents: 2000,
     shimmer: false,
     benefits: [
+      'Carteirinha de Estudante Digital com QR Code de autenticidade (FURB)',
       '10% de desconto automático na Lojinha Oficial CAMBLU',
       '10% de desconto em todos os eventos pagos e na SECIMED',
       'Camiseta oficial gratuita exclusiva para calouros',
     ],
     perks: [
+      { text: 'Carteirinha de Estudante Digital com QR Code de validação (FURB)', icon: 'badge', isNewAtTier: true },
       { text: '10% de desconto automático na Lojinha Oficial CAMBLU', icon: 'shopping_bag', isNewAtTier: true },
       { text: '10% de desconto em todos os eventos pagos e na SECIMED', icon: 'confirmation_number', isNewAtTier: true },
       { text: 'Camiseta oficial gratuita exclusiva para calouros', icon: 'checkroom', isNewAtTier: true },
@@ -79,6 +113,7 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
     perks: [
       { text: 'Ingresso gratuito em eventos do CAMBLU com Coffee (exceto SECIMED)', icon: 'local_cafe', isNewAtTier: true },
       { text: 'Acesso às parcerias acadêmicas Spaiq e Gorit PRO', icon: 'auto_stories', isNewAtTier: true },
+      { text: 'Carteirinha de Estudante Digital com QR Code de validação (FURB)', icon: 'badge' },
       { text: '10% de desconto automático na Lojinha Oficial CAMBLU', icon: 'shopping_bag' },
       { text: '10% de desconto na inscrição da SECIMED e workshops', icon: 'confirmation_number' },
       { text: 'Camiseta oficial gratuita exclusiva para calouros', icon: 'checkroom' },
@@ -106,6 +141,7 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
       { text: 'Ingresso gratuito na SECIMED — Semana Científica de Medicina FURB', icon: 'science', isNewAtTier: true },
       { text: '1 comida ou bebida grátis em qualquer evento do CAMBLU', icon: 'restaurant', isNewAtTier: true },
       { text: 'Ingresso gratuito em TODOS os demais eventos com ou sem Coffee', icon: 'celebration' },
+      { text: 'Carteirinha de Estudante Digital com QR Code de validação (FURB)', icon: 'badge' },
       { text: '10% de desconto automático na Lojinha Oficial CAMBLU', icon: 'shopping_bag' },
       { text: 'Simpósios e eventos CAMBLU com Coffee 100% gratuitos', icon: 'local_cafe' },
       { text: 'Camiseta oficial gratuita exclusiva para calouros', icon: 'checkroom' },
@@ -135,6 +171,7 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
       { text: 'Ingresso gratuito na SECIMED — Semana Científica de Medicina FURB', icon: 'science' },
       { text: 'Ingresso gratuito em TODOS os eventos e simpósios do CAMBLU', icon: 'celebration' },
       { text: '1 comida ou bebida grátis em qualquer evento do CAMBLU', icon: 'restaurant' },
+      { text: 'Carteirinha de Estudante Digital com QR Code de validação (FURB)', icon: 'badge' },
       { text: 'Eventos com Coffee 100% gratuitos automaticamente', icon: 'local_cafe' },
       { text: '10% de desconto automático na Lojinha Oficial CAMBLU', icon: 'shopping_bag' },
       { text: 'Camiseta oficial gratuita exclusiva para calouros', icon: 'checkroom' },
@@ -144,6 +181,7 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
 ];
 
 export const CLUB_COMPARISON_ROWS: ClubComparisonRow[] = [
+  { feature: 'Carteirinha de Estudante Digital com QR Code (FURB)', comum: true, raro: true, epico: true, lendario: true },
   { feature: '10% de desconto automático na Lojinha', comum: true, raro: true, epico: true, lendario: true },
   { feature: 'Camiseta oficial grátis para calouros', comum: true, raro: true, epico: true, lendario: true },
   { feature: 'Parcerias acadêmicas Spaiq & Gorit PRO', comum: false, raro: true, epico: true, lendario: true },

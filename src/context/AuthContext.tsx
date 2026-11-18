@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as fbSignOut, type User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ADMIN_EMAIL, auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
+import { logError, logInfo, logWarn } from '../lib/logger';
+import { stripUndefinedDeep } from '../lib/objectUtils';
 import { digitsOnly } from '../lib/validators';
 import type { MembershipCycle, MembershipTier, TShirtSize, UserAffiliation, UserProfile } from '../types/domain';
 
@@ -189,22 +191,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured || !auth || !db) {
+      logInfo('Auth', 'Modo demonstração ativo; restaurando sessão do localStorage');
       try {
         const saved = localStorage.getItem(DEMO_USER_STORAGE);
         if (saved) setProfile(withDemoAvatar(JSON.parse(saved) as UserProfile));
-      } catch {
+      } catch (err) {
+        logError('Auth', 'AuthContext.loadDemoStorage', err);
         setProfile(null);
       }
       setLoading(false);
       return;
     }
 
+    logInfo('Auth', 'Registrando listener Firebase onAuthStateChanged');
     const unsub = onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
+        logInfo('Auth', 'Usuário desconectado (onAuthStateChanged: null)');
         setProfile(null);
         setLoading(false);
         return;
       }
+      logInfo('Auth', 'Sessão Firebase detectada', {
+        uid: fbUser.uid,
+        email: fbUser.email,
+        emailVerified: fbUser.emailVerified,
+        hasPhotoURL: Boolean(fbUser.photoURL),
+      });
       try {
         const ref = doc(db!, 'users', fbUser.uid);
         const snap = await getDoc(ref);
@@ -212,6 +224,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = snap.data() as UserProfile;
           const isAdm = (fbUser.email || '').toLowerCase() === ADMIN_EMAIL;
           const freshPhoto = fbUser.photoURL || data.photoURL || undefined;
+          logInfo('Auth', 'Perfil Firestore carregado', {
+            uid: fbUser.uid,
+            role: isAdm ? 'admin' : data.role,
+            profileCompleted: data.profileCompleted,
+            hasPhotoURL: Boolean(freshPhoto),
+          });
           if (
             fbUser.photoURL &&
             fbUser.photoURL !== data.photoURL &&
@@ -219,9 +237,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ) {
             void setDoc(
               ref,
-              { photoURL: fbUser.photoURL, updatedAt: new Date().toISOString() },
+              stripUndefinedDeep({ photoURL: fbUser.photoURL, updatedAt: new Date().toISOString() }),
               { merge: true },
-            ).catch(() => {});
+            ).catch((err) => {
+              logWarn('Auth', 'Falha não-crítica ao sincronizar photoURL do Google no Firestore', err);
+            });
           }
           setProfile({
             ...data,
@@ -230,10 +250,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         } else {
           const fresh = defaultProfileFromFirebase(fbUser);
-          await setDoc(ref, fresh);
+          logInfo('Auth', 'Criando novo documento de perfil no Firestore users/{uid}', {
+            uid: fbUser.uid,
+            email: fresh.email,
+          });
+          await setDoc(ref, stripUndefinedDeep(fresh));
           setProfile(fresh);
         }
-      } catch {
+      } catch (err) {
+        logError('Auth', 'AuthContext.onAuthStateChanged -> getDoc/setDoc users', err, {
+          uid: fbUser.uid,
+          email: fbUser.email,
+        });
         setProfile(defaultProfileFromFirebase(fbUser));
       } finally {
         setLoading(false);
@@ -256,7 +284,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (demoRole: 'student' | 'admin' = 'student') => {
     if (isFirebaseConfigured && auth) {
-      await signInWithPopup(auth, googleProvider);
+      logInfo('Auth', 'Abrindo popup Google Sign-In');
+      try {
+        const cred = await signInWithPopup(auth, googleProvider);
+        logInfo('Auth', 'Google Sign-In autenticado com sucesso', {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          hasPhotoURL: Boolean(cred.user.photoURL),
+        });
+      } catch (err) {
+        logError('Auth', 'AuthContext.signInWithGoogle -> signInWithPopup', err);
+        throw err;
+      }
       return;
     }
 
@@ -316,8 +355,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     if (isFirebaseConfigured && db) {
-      await setDoc(doc(db, 'users', profile.uid), updated, { merge: true });
-      setProfile(updated);
+      logInfo('Auth', 'Salvando perfil do usuário no Firestore users/{uid}', {
+        uid: profile.uid,
+        affiliation: updated.affiliation,
+        isCalouro: updated.isCalouro,
+      });
+      try {
+        await setDoc(doc(db, 'users', profile.uid), stripUndefinedDeep(updated), { merge: true });
+        setProfile(updated);
+      } catch (err) {
+        logError('Auth', 'AuthContext.saveProfile -> setDoc users', err, { uid: profile.uid });
+        throw err;
+      }
       return;
     }
     persistDemoProfile(updated);
@@ -338,8 +387,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     if (isFirebaseConfigured && db) {
-      await setDoc(doc(db, 'users', profile.uid), updated, { merge: true });
-      setProfile(updated);
+      logInfo('Auth', 'Atualizando nível do Clube CAMBLU no Firestore users/{uid}', {
+        uid: profile.uid,
+        tier,
+        cycle,
+      });
+      try {
+        await setDoc(doc(db, 'users', profile.uid), stripUndefinedDeep(updated), { merge: true });
+        setProfile(updated);
+      } catch (err) {
+        logError('Auth', 'AuthContext.updateMembershipLocal -> setDoc users', err, {
+          uid: profile.uid,
+          tier,
+        });
+        throw err;
+      }
       return;
     }
     persistDemoProfile(updated);

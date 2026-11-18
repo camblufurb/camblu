@@ -1,4 +1,5 @@
 import type { TransparencyEntry, TransparencyType } from '../types/domain';
+import { logInfo, logWarn } from './logger';
 
 export interface ParsedSheetTab {
   name: string;
@@ -271,13 +272,16 @@ export async function syncGoogleSheetTransparency(spreadsheetUrl: string): Promi
   }
 
   const base = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+  logInfo('Sheets', 'Consultando estrutura da planilha Google Sheets', { spreadsheetId });
   const htmlResp = await fetch(`${base}/htmlview`, { cache: 'no-store' });
   if (!htmlResp.ok) {
+    logWarn('Sheets', `Falha HTTP ${htmlResp.status} ao carregar /htmlview da planilha`, { spreadsheetId });
     throw new Error(`Não foi possível ler a planilha (HTTP ${htmlResp.status}). Verifique se ela está pública para leitura.`);
   }
   const html = await htmlResp.text();
   const discoveredTabs = parseGoogleSheetTabs(html);
   if (discoveredTabs.length === 0) {
+    logWarn('Sheets', 'Nenhuma aba localizada no HTML da planilha', { spreadsheetId });
     throw new Error('Nenhuma aba encontrada na planilha. Confirme se o compartilhamento público está ativo.');
   }
 
@@ -286,7 +290,10 @@ export async function syncGoogleSheetTransparency(spreadsheetUrl: string): Promi
       const csvResp = await fetch(`${base}/export?format=csv&gid=${encodeURIComponent(tab.gid)}`, {
         cache: 'no-store',
       });
-      if (!csvResp.ok) return { tab, csv: '' };
+      if (!csvResp.ok) {
+        logWarn('Sheets', `Aba "${tab.name}" retornou HTTP ${csvResp.status}`, { gid: tab.gid });
+        return { tab, csv: '' };
+      }
       return { tab, csv: await csvResp.text() };
     }),
   );
@@ -308,6 +315,12 @@ export async function syncGoogleSheetTransparency(spreadsheetUrl: string): Promi
   }
 
   const savedCategories = Array.from(new Set(entries.map((e) => e.category).filter(Boolean))).sort();
+  logInfo('Sheets', 'Planilha processada com sucesso', {
+    spreadsheetId,
+    tabCount: discoveredTabs.length,
+    entriesCount: entries.length,
+    categoriesCount: savedCategories.length,
+  });
 
   return {
     spreadsheetId,

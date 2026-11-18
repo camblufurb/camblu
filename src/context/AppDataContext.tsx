@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import { collection, doc, onSnapshot, query, setDoc, where, type Query } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { db, isFirebaseConfigured } from '../lib/firebase';
+import { logError, logInfo, logWarn } from '../lib/logger';
+import { stripUndefinedDeep } from '../lib/objectUtils';
 import { syncGoogleSheetTransparency } from '../lib/googleSheetsTransparency';
 import { ANAIS_SEED, EDITAIS_SEED, EVENTS_SEED, ORDERS_SEED, PRODUCTS_SEED } from '../data/catalogSeeds';
 import { GESTOES_SEED } from '../data/gestoes';
@@ -254,22 +256,6 @@ function loadState(): AppDataState {
   }
 }
 
-function stripUndefinedDeep<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((item) => stripUndefinedDeep(item)) as T;
-  }
-  if (value && typeof value === 'object') {
-    const clean: Record<string, unknown> = {};
-    for (const [key, val] of Object.entries(value)) {
-      if (val !== undefined) {
-        clean[key] = stripUndefinedDeep(val);
-      }
-    }
-    return clean as T;
-  }
-  return value;
-}
-
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const { isAdmin, allDemoUsers, profile } = useAuth();
   const [state, setState] = useState<AppDataState>(loadState);
@@ -278,7 +264,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const persistDoc = useCallback(async (colName: string, id: string, data: object) => {
     if (isFirebaseConfigured && db) {
-      await setDoc(doc(db, colName, id), stripUndefinedDeep(data), { merge: true });
+      logInfo('Firestore', `Salvando documento ${colName}/${id}`);
+      try {
+        await setDoc(doc(db, colName, id), stripUndefinedDeep(data), { merge: true });
+        logInfo('Firestore', `Documento ${colName}/${id} salvo com sucesso`);
+      } catch (err) {
+        logError('Firestore', `AppDataContext.persistDoc(${colName}/${id})`, err, { colName, id });
+        throw err;
+      }
     }
   }, []);
 
@@ -287,6 +280,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       const targetUrl = (customUrl ?? state.transparencyMeta.spreadsheetUrl ?? '').trim();
       if (!targetUrl) return 0;
 
+      logInfo('Sheets', 'Iniciando sincronização da planilha de transparência', { targetUrl });
       const synced = await syncGoogleSheetTransparency(targetUrl);
       const nextMeta: TransparencyMeta = {
         ...state.transparencyMeta,
@@ -330,8 +324,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const url = state.transparencyMeta.spreadsheetUrl?.trim();
     if (!url || lastAutoSyncUrlRef.current === url) return;
     lastAutoSyncUrlRef.current = url;
-    void syncTransparencySheet(url).catch(() => {
-      // Keeps cached local/Firestore entries gracefully when offline or private
+    void syncTransparencySheet(url).catch((err) => {
+      logWarn('Sheets', 'Sincronização automática da planilha falhou; mantendo dados em cache/Firestore', err);
     });
   }, [state.transparencyMeta.spreadsheetUrl, syncTransparencySheet]);
 
@@ -339,26 +333,28 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     if (!isFirebaseConfigured || !db) {
       try {
         localStorage.setItem(STORE_KEY, JSON.stringify(state));
-      } catch {
-        // ignore storage limit
+      } catch (err) {
+        logWarn('Storage', 'Limite de localStorage atingido ao salvar cache demo', err);
       }
     }
   }, [state]);
 
   useEffect(() => {
     if (!isFirebaseConfigured || !db) return;
+    logInfo('Firestore', 'Assinando coleções públicas em tempo real');
     const unsubs: (() => void)[] = [];
     const bindQuery = <K extends keyof AppDataState>(q: Query, key: K) => {
       const unsub = onSnapshot(
         q,
         (snap) => {
+          logInfo('Firestore', `Snapshot "${String(key)}" recebido`, { size: snap.size, empty: snap.empty });
           if (!snap.empty) {
             const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
             setState((prev) => ({ ...prev, [key]: list as AppDataState[K] }));
           }
         },
-        () => {
-          // keep local seed fallback if permissions restrict unauthenticated reads
+        (err) => {
+          logError('Firestore', `AppDataContext.onSnapshot(${String(key)})`, err, { key: String(key) });
         },
       );
       unsubs.push(unsub);
@@ -379,9 +375,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           ...docs,
           ...GESTOES_SEED.filter((seed) => !docs.some((item) => item.id === seed.id)),
         ].sort((a, b) => b.year - a.year);
+        logInfo('Firestore', 'Snapshot "gestoes" sincronizado com seed oficial', {
+          firestoreCount: docs.length,
+          mergedCount: merged.length,
+        });
         setState((prev) => ({ ...prev, gestoes: merged }));
       },
-      () => {},
+      (err) => {
+        logError('Firestore', 'AppDataContext.onSnapshot(gestoes)', err);
+      },
     );
     unsubs.push(unsubGestoes);
 
@@ -389,6 +391,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       doc(db, 'transparencyMeta', 'public'),
       (snap) => {
         if (snap.exists()) {
+          logInfo('Firestore', 'Documento transparencyMeta/public carregado');
           const d = snap.data() as Partial<TransparencyMeta>;
           setState((prev) => ({
             ...prev,
@@ -402,7 +405,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           }));
         }
       },
-      () => {},
+      (err) => {
+        logError('Firestore', 'AppDataContext.onSnapshot(transparencyMeta/public)', err);
+      },
     );
     unsubs.push(unsubPublicMeta);
 
@@ -410,13 +415,16 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       doc(db, 'transparencyMeta', 'config'),
       (snap) => {
         if (snap.exists()) {
+          logInfo('Firestore', 'Documento transparencyMeta/config carregado');
           setState((prev) => ({
             ...prev,
             transparencyMeta: { ...prev.transparencyMeta, ...(snap.data() as Partial<TransparencyMeta>) },
           }));
         }
       },
-      () => {},
+      (err) => {
+        logError('Firestore', 'AppDataContext.onSnapshot(transparencyMeta/config)', err);
+      },
     );
     unsubs.push(unsubMeta);
 
@@ -425,15 +433,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured || !db || !isAdmin) return;
+    logInfo('Firestore', 'Assinando coleções administrativas em tempo real (/back)');
     const unsubs: (() => void)[] = [];
     const bindAdminCol = <K extends keyof AppDataState>(colName: string, key: K) => {
       const unsub = onSnapshot(
         collection(db!, colName),
         (snap) => {
+          logInfo('Firestore', `Snapshot admin "${colName}" recebido`, { size: snap.size });
           const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
           setState((prev) => ({ ...prev, [key]: list as AppDataState[K] }));
         },
-        () => {},
+        (err) => {
+          logError('Firestore', `AppDataContext.bindAdminCol(${colName})`, err, { colName });
+        },
       );
       unsubs.push(unsub);
     };
@@ -448,9 +460,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const unsubUsers = onSnapshot(
       collection(db, 'users'),
       (snap) => {
+        logInfo('Firestore', 'Snapshot admin "users" recebido', { size: snap.size });
         setFbAdminMembers(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as UserProfile));
       },
-      () => {},
+      (err) => {
+        logError('Firestore', 'AppDataContext.onSnapshot(users admin)', err);
+      },
     );
     unsubs.push(unsubUsers);
 
@@ -459,15 +474,22 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured || !db || !profile?.uid || isAdmin) return;
+    logInfo('Firestore', 'Assinando coleções do estudante autenticado', { uid: profile.uid });
     const unsubs: (() => void)[] = [];
     const bindUserQuery = <K extends keyof AppDataState>(q: Query, key: K) => {
       const unsub = onSnapshot(
         q,
         (snap) => {
+          logInfo('Firestore', `Snapshot usuário "${String(key)}" recebido`, { size: snap.size });
           const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
           setState((prev) => ({ ...prev, [key]: list as AppDataState[K] }));
         },
-        () => {},
+        (err) => {
+          logError('Firestore', `AppDataContext.bindUserQuery(${String(key)})`, err, {
+            key: String(key),
+            uid: profile.uid,
+          });
+        },
       );
       unsubs.push(unsub);
     };

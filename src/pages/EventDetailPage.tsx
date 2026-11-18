@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon';
 import { calculateEventTicketPrice } from '../lib/clubPricing';
 import { formatBrlFromCents } from '../lib/validators';
 import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
+import { logError, logInfo } from '../lib/logger';
 import type { EventLot, Ticket } from '../types/domain';
 
 export function EventDetailPage() {
@@ -98,6 +99,10 @@ export function EventDetailPage() {
     try {
       // Se pagamento for maior que zero e não estivermos em modo demo local, chama Cloud Function Stripe
       if (!isDemoMode) {
+        logInfo('Eventos', 'Iniciando checkout de ingresso via /api/checkout/event', {
+          eventId: event.id,
+          lotId: activeLot.id,
+        });
         const res = await fetch(`${API_BASE_URL}/checkout/event`, {
           method: 'POST',
           headers: await getAuthHeaders(),
@@ -106,13 +111,18 @@ export function EventDetailPage() {
             lotId: activeLot.id,
           }),
         });
-        if (!res.ok) throw new Error('Falha ao iniciar pagamento.');
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error((payload as { error?: string }).error || `Falha HTTP ${res.status} ao iniciar pagamento.`);
+        }
         const data = (await res.json()) as { checkoutUrl?: string; freeIssued?: boolean };
         if (data.checkoutUrl) {
+          logInfo('Eventos', 'Sessão Stripe Evento criada; redirecionando');
           window.location.href = data.checkoutUrl;
           return;
         }
         if (data.freeIssued) {
+          logInfo('Eventos', 'Ingresso gratuito emitido pelo Clube CAMBLU');
           notify('Ingresso gratuito emitido pelo Clube CAMBLU!');
           navigate('/meus-ingressos');
           return;
@@ -158,7 +168,11 @@ export function EventDetailPage() {
 
       notify('Ingresso emitido! Seus QR Codes já estão disponíveis em Meus Ingressos.');
       navigate('/meus-ingressos');
-    } catch {
+    } catch (err) {
+      logError('Eventos', 'EventDetailPage -> handlePurchase', err, {
+        eventId: event.id,
+        lotId: activeLot.id,
+      });
       notify('Não foi possível concluir a compra do ingresso.', 'error');
     } finally {
       setSubmitting(false);

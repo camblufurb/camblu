@@ -9,6 +9,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { GESTAO_CARGO_OPTIONS, GESTOES_SEED } from '../../data/gestoes';
 import { db, isFirebaseConfigured } from '../../lib/firebase';
+import { logError, logInfo } from '../../lib/logger';
 import type { GestaoCargo, GestaoMember, GestaoTerm, M3ShapeVariant } from '../../types/domain';
 
 function buildInitialAvatarSvg(name: string): string {
@@ -48,11 +49,16 @@ export function AdminGestoesPage() {
         const snap = await getDocs(collection(db, 'gestoes'));
         const existingIds = new Set(snap.docs.map((d) => d.id));
         const missing = GESTOES_SEED.filter((seed) => !existingIds.has(seed.id));
+        if (missing.length > 0) {
+          logInfo('AdminGestoes', 'Backfill de gestões oficiais faltantes no Firestore', {
+            missingIds: missing.map((m) => m.id),
+          });
+        }
         for (const term of missing) {
           await saveGestao(term);
         }
-      } catch {
-        // fallback local permanece visível via AppDataContext
+      } catch (err) {
+        logError('AdminGestoes', 'AdminGestoesPage.useEffect -> backfill gestoes', err);
       }
     })();
   }, [isAdmin, saveGestao]);

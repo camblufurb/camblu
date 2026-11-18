@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { calculateShopPrice } from '../lib/clubPricing';
 import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
+import { logError, logInfo } from '../lib/logger';
 import { useAppData } from './AppDataContext';
 import { useAuth } from './AuthContext';
 import { useToast } from '../components/ToastProvider';
@@ -155,6 +156,10 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
         .join(' | ');
 
       if (!isDemoMode) {
+        logInfo('Checkout', 'Iniciando checkout da Lojinha via /api/checkout/shop', {
+          itemsCount: orderItems.length,
+          paymentMethod,
+        });
         const res = await fetch(`${API_BASE_URL}/checkout/shop`, {
           method: 'POST',
           headers: await getAuthHeaders(),
@@ -163,9 +168,13 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
             paymentMethod,
           }),
         });
-        if (!res.ok) throw new Error('Falha ao criar sessão de checkout.');
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error((payload as { error?: string }).error || `Falha HTTP ${res.status} ao criar sessão de checkout.`);
+        }
         const data = (await res.json()) as { checkoutUrl?: string };
         if (data.checkoutUrl) {
+          logInfo('Checkout', 'Sessão Stripe Lojinha criada; redirecionando para pagamento');
           window.location.href = data.checkoutUrl;
           return;
         }
@@ -191,7 +200,8 @@ export function ShopCartProvider({ children }: { children: React.ReactNode }) {
       setCart([]);
       setCartOpen(false);
       notify('Pedido confirmado! A equipe do CAMBLU combinará a entrega pelo WhatsApp.');
-    } catch {
+    } catch (err) {
+      logError('Checkout', 'ShopCartContext.checkout -> POST /api/checkout/shop', err, { paymentMethod });
       notify('Erro ao processar pedido da Lojinha.', 'error');
     } finally {
       setSubmitting(false);

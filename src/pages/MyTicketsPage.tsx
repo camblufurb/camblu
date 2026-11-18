@@ -9,6 +9,7 @@ import { Icon } from '../components/Icon';
 import { digitsOnly, formatCpf, isValidCpf } from '../lib/validators';
 import type { Ticket, TicketQrInstance } from '../types/domain';
 import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
+import { logError, logInfo } from '../lib/logger';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -135,6 +136,9 @@ export function MyTicketsPage() {
     setTransferring(true);
     try {
       if (!isDemoMode) {
+        logInfo('Ingressos', 'Transferindo ingresso via POST /api/tickets/transfer', {
+          ticketId: transferTargetTicket.id,
+        });
         const res = await fetch(`${API_BASE_URL}/tickets/transfer`, {
           method: 'POST',
           headers: await getAuthHeaders(),
@@ -180,6 +184,7 @@ export function MyTicketsPage() {
       setTransferTargetTicket(null);
       setRecipientCpf('');
     } catch (err) {
+      logError('Ingressos', 'MyTicketsPage.handleTransfer -> POST /api/tickets/transfer', err);
       setCpfError(err instanceof Error ? err.message : 'Erro ao transferir ingresso.');
     } finally {
       setTransferring(false);

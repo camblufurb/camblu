@@ -11,6 +11,8 @@ import {
   CLUB_PRICE_MAP,
   computeEventPricing,
   computeShopPricing,
+  getMembershipTierCode,
+  MEMBERSHIP_TIER_NAME_MAP,
   type MembershipCycle,
   type MembershipTier,
 } from './pricing.js';
@@ -74,18 +76,39 @@ async function verifyBearerToken(req: Request): Promise<DecodedIdToken | null> {
   if (!token) return null;
   try {
     return await authAdmin.verifyIdToken(token);
-  } catch {
+  } catch (err) {
+    console.warn('[CAMBLU-API] Falha ao verificar token Bearer', {
+      origin: 'functions -> verifyBearerToken',
+      path: req.path,
+      code: (err as { code?: string })?.code,
+      message: (err as Error)?.message,
+    });
     return null;
   }
 }
 
 const app = express();
 app.use(cors({ origin: true }));
+app.use((req: Request, res: Response, next) => {
+  const startedAt = Date.now();
+  console.info(`[CAMBLU-API] -> ${req.method} ${req.path}`);
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    const logFn = res.statusCode >= 500 ? console.error : res.statusCode >= 400 ? console.warn : console.info;
+    logFn(`[CAMBLU-API] <- ${req.method} ${req.path} status=${res.statusCode} (${durationMs}ms)`);
+  });
+  next();
+});
 
 // Stripe Webhook MUST receive unparsed rawBody before express.json()
 app.post('/api/stripe/webhook', async (req: Request & { rawBody?: Buffer }, res: Response) => {
   const sig = req.headers['stripe-signature'];
   if (!sig || !req.rawBody) {
+    console.warn('[CAMBLU-API] Webhook Stripe sem assinatura ou rawBody', {
+      origin: 'functions -> /api/stripe/webhook',
+      hasSig: Boolean(sig),
+      hasRawBody: Boolean(req.rawBody),
+    });
     res.status(400).send('Missing Stripe signature or raw body');
     return;
   }
@@ -95,6 +118,11 @@ app.post('/api/stripe/webhook', async (req: Request & { rawBody?: Buffer }, res:
     const stripe = getStripeClient();
     event = stripe.webhooks.constructEvent(req.rawBody, sig, stripeWebhookSecret.value());
   } catch (err) {
+    console.error('[CAMBLU-API] Erro ao validar assinatura webhook Stripe', {
+      origin: 'functions -> /api/stripe/webhook -> constructEvent',
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
     res.status(400).send(`Webhook verification failed: ${(err as Error).message}`);
     return;
   }
@@ -265,7 +293,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'camblu-api' });
 });
 
-// Item 4.2 — API aberta do Clube CAMBLU (retorna apenas status não sensível)
+// Item 4.2 — API aberta do Clube CAMBLU (retorna status não sensível e tierCode 0..4)
 app.get('/api/clube/status', async (req, res) => {
   const rawCpf = typeof req.query.cpf === 'string' ? digitsOnly(req.query.cpf) : '';
   const rawEmail = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
@@ -275,29 +303,139 @@ app.get('/api/clube/status', async (req, res) => {
     return;
   }
 
-  let snap;
-  if (rawCpf) {
-    snap = await db.collection('users').where('cpf', '==', rawCpf).limit(1).get();
-  } else {
-    snap = await db.collection('users').where('email', '==', rawEmail).limit(1).get();
-  }
+  try {
+    let snap;
+    if (rawCpf) {
+      snap = await db.collection('users').where('cpf', '==', rawCpf).limit(1).get();
+    } else {
+      snap = await db.collection('users').where('email', '==', rawEmail).limit(1).get();
+    }
 
-  if (snap.empty) {
-    res.json({ active: false, tier: 'none', validUntil: null });
+    res.set('Cache-Control', 'no-store');
+
+    if (snap.empty) {
+      res.json({ active: false, tier: 'none', tierCode: 0, validUntil: null });
+      return;
+    }
+
+    const u = snap.docs[0].data();
+    const validUntil = u.membershipValidUntil || null;
+    const stillValid = Boolean(
+      u.membershipActive && (!validUntil || new Date(validUntil).getTime() > Date.now()),
+    );
+    const activeTier = (stillValid ? u.membershipTier || 'none' : 'none') as MembershipTier;
+    const tierCode = getMembershipTierCode(activeTier, stillValid);
+
+    res.json({
+      active: tierCode > 0,
+      tier: tierCode > 0 ? activeTier : 'none',
+      tierCode,
+      validUntil,
+    });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro ao consultar status do Clube', {
+      origin: 'functions -> /api/clube/status',
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(500).json({ error: 'Não foi possível consultar o status da assinatura.' });
+  }
+});
+
+// Validação pública de Carteirinha de Estudante via UID (QR Code)
+app.get('/api/clube/cartao/verify', async (req, res) => {
+  const uid = typeof req.query.uid === 'string' ? req.query.uid.trim() : '';
+  if (!uid || uid.length > 128) {
+    res.status(400).json({ valid: false, error: 'Informe o identificador da carteirinha.' });
     return;
   }
 
-  const u = snap.docs[0].data();
-  const validUntil = u.membershipValidUntil || null;
-  const stillValid = Boolean(
-    u.membershipActive && (!validUntil || new Date(validUntil).getTime() > Date.now()),
-  );
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    res.set('Cache-Control', 'no-store');
 
-  res.json({
-    active: stillValid,
-    tier: stillValid ? u.membershipTier || 'none' : 'none',
-    validUntil,
-  });
+    if (!snap.exists) {
+      res.status(404).json({
+        found: false,
+        valid: false,
+        active: false,
+        tier: 'none',
+        tierCode: 0,
+        tierName: MEMBERSHIP_TIER_NAME_MAP.none,
+        reason: 'Carteirinha de estudante não encontrada.',
+        verifiedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const u = snap.data() || {};
+    const validUntil = u.membershipValidUntil || null;
+    const stillValid = Boolean(
+      u.membershipActive && (!validUntil || new Date(validUntil).getTime() > Date.now()),
+    );
+    const rawTier = (u.membershipTier || 'none') as MembershipTier;
+    const tierCode = getMembershipTierCode(rawTier, stillValid);
+    const active = tierCode > 0;
+    const activeTier: MembershipTier = active ? rawTier : 'none';
+    const affiliation = u.affiliation === 'externo' ? 'externo' : 'FURB';
+    const isFurbStudent = affiliation === 'FURB';
+    const tierName = MEMBERSHIP_TIER_NAME_MAP[activeTier] || MEMBERSHIP_TIER_NAME_MAP.none;
+
+    if (!active) {
+      res.json({
+        found: true,
+        valid: false,
+        active: false,
+        tier: 'none',
+        tierCode: 0,
+        tierName: MEMBERSHIP_TIER_NAME_MAP.none,
+        validUntil,
+        uid,
+        name: '',
+        cpf: '',
+        affiliation,
+        institution: isFurbStudent ? 'FURB' : 'Externo (sem vínculo FURB)',
+        course: isFurbStudent ? 'Medicina' : 'Visitante / Externo',
+        turma: '',
+        profileCompleted: Boolean(u.profileCompleted),
+        reason:
+          'Assinatura do Clube CAMBLU inativa ou expirada. A Carteirinha de Estudante é liberada a partir do Plano Comum.',
+        verifiedAt: new Date().toISOString(),
+      });
+      return;
+    }
+
+    res.json({
+      found: true,
+      valid: isFurbStudent,
+      active: true,
+      tier: activeTier,
+      tierCode,
+      tierName,
+      validUntil,
+      uid,
+      name: String(u.name || ''),
+      cpf: digitsOnly(u.cpf || ''),
+      photoURL: typeof u.photoURL === 'string' && u.photoURL.trim() ? u.photoURL.trim() : undefined,
+      affiliation,
+      institution: isFurbStudent ? 'FURB' : 'Externo (sem vínculo FURB)',
+      course: isFurbStudent ? 'Medicina' : 'Visitante / Externo',
+      turma: isFurbStudent && u.turma ? String(u.turma).trim() : '',
+      profileCompleted: Boolean(u.profileCompleted),
+      reason: isFurbStudent
+        ? undefined
+        : 'Plano ativo no Clube CAMBLU, porém este cadastro possui vínculo Externo (não vinculado ao curso de Medicina FURB).',
+      verifiedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro ao validar carteirinha de estudante', {
+      origin: 'functions -> /api/clube/cartao/verify',
+      uid,
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(500).json({ valid: false, error: 'Erro ao validar autenticidade da carteirinha.' });
+  }
 });
 
 // Verificação pública de certificado sem vazamento de CPF completo
@@ -772,7 +910,13 @@ app.post('/api/demands/send', async (req, res) => {
       });
       dispatchedEmail = true;
     }
-  } catch {
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro SMTP em /api/demands/send', {
+      origin: 'functions -> /api/demands/send -> nodemailer.sendMail',
+      message: (err as Error)?.message,
+      code: (err as { code?: string })?.code,
+      stack: (err as Error)?.stack,
+    });
     dispatchedEmail = false;
   }
 
@@ -822,7 +966,12 @@ export const eventSocialPreview = onRequest({ region: 'southamerica-east1' }, as
   try {
     const upstream = await fetch(`${siteOrigin}/index.html`);
     if (upstream.ok) indexHtml = await upstream.text();
-  } catch {
+  } catch (err) {
+    console.warn('[CAMBLU-API] Falha ao buscar index.html para OpenGraph', {
+      origin: 'functions -> eventSocialPreview -> fetch',
+      siteOrigin,
+      message: (err as Error)?.message,
+    });
     indexHtml = '';
   }
 

@@ -26,6 +26,7 @@ import { ShopPage } from './pages/ShopPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ClubPage } from './pages/ClubPage';
 import { MemberCardPage } from './pages/MemberCardPage';
+import { MemberCardValidationPage } from './pages/MemberCardValidationPage';
 import { TransparencyPage } from './pages/TransparencyPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { EditaisPage } from './pages/EditaisPage';
@@ -124,6 +125,8 @@ export function App() {
                     <Route path="/lojinha/:slug" element={<ProductDetailPage />} />
                     <Route path="/clube" element={<ClubPage />} />
                     <Route path="/clube/cartao" element={<MemberCardPage />} />
+                    <Route path="/clube/cartao/validar" element={<MemberCardValidationPage />} />
+                    <Route path="/clube/cartao/validar/:uid" element={<MemberCardValidationPage />} />
                     <Route path="/transparencia" element={<TransparencyPage />} />
                     <Route path="/calendario" element={<CalendarPage />} />
                     <Route path="/editais" element={<EditaisPage />} />

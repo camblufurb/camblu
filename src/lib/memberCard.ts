@@ -1,4 +1,6 @@
-import type { MembershipTier, UserProfile } from '../types/domain';
+import { getMembershipTierCode, MEMBERSHIP_TIER_NAME_MAP, type MembershipTierCode } from './clubPricing';
+import { digitsOnly } from './validators';
+import type { MembershipTier, UserAffiliation, UserProfile } from '../types/domain';
 
 export interface CardTilt {
   x: number;
@@ -108,4 +110,154 @@ export function tiltFromPointer(
 export function resolveMemberPhotoUrl(profile: Pick<UserProfile, 'photoURL'> | null | undefined): string | undefined {
   const url = profile?.photoURL?.trim();
   return url ? url : undefined;
+}
+
+export interface MemberCardVerificationResult {
+  found: boolean;
+  valid: boolean;
+  active: boolean;
+  tier: MembershipTier;
+  tierCode: MembershipTierCode;
+  tierName: string;
+  validUntil: string | null;
+  uid: string;
+  name: string;
+  cpf: string;
+  photoURL?: string;
+  affiliation: UserAffiliation;
+  institution: string;
+  course: string;
+  turma?: string;
+  profileCompleted: boolean;
+  reason?: string;
+  verifiedAt: string;
+}
+
+/**
+ * Builds the canonical URL encoded into the student's digital ID QR Code.
+ */
+export function buildMemberCardValidationUrl(uid: string, origin?: string): string {
+  const normalizedUid = uid.trim();
+  const baseOrigin =
+    origin !== undefined
+      ? origin.replace(/\/+$/, '')
+      : typeof window !== 'undefined'
+        ? window.location.origin
+        : '';
+  const path = normalizedUid
+    ? `/clube/cartao/validar/${encodeURIComponent(normalizedUid)}`
+    : '/clube/cartao/validar';
+  return baseOrigin ? `${baseOrigin}${path}` : path;
+}
+
+/**
+ * Resolves institutional and course labels from a user's affiliation.
+ */
+export function resolveStudentAcademicMetadata(affiliation: UserAffiliation | string | undefined): {
+  affiliation: UserAffiliation;
+  institution: string;
+  course: string;
+  isFurbStudent: boolean;
+} {
+  if (affiliation === 'externo') {
+    return {
+      affiliation: 'externo',
+      institution: 'Externo (sem vínculo FURB)',
+      course: 'Visitante / Externo',
+      isFurbStudent: false,
+    };
+  }
+  return {
+    affiliation: 'FURB',
+    institution: 'FURB',
+    course: 'Medicina',
+    isFurbStudent: true,
+  };
+}
+
+/**
+ * Builds a deterministic student-card validation payload from a local/demo UserProfile.
+ */
+export function buildMemberCardVerificationFromProfile(
+  user: UserProfile | null | undefined,
+  nowMs = Date.now(),
+): MemberCardVerificationResult {
+  const verifiedAt = new Date(nowMs).toISOString();
+  if (!user) {
+    return {
+      found: false,
+      valid: false,
+      active: false,
+      tier: 'none',
+      tierCode: 0,
+      tierName: MEMBERSHIP_TIER_NAME_MAP.none,
+      validUntil: null,
+      uid: '',
+      name: '',
+      cpf: '',
+      affiliation: 'FURB',
+      institution: 'FURB',
+      course: 'Medicina',
+      turma: '',
+      profileCompleted: false,
+      reason: 'Carteirinha de estudante não encontrada.',
+      verifiedAt,
+    };
+  }
+
+  const validUntil = user.membershipValidUntil || null;
+  const stillValid = Boolean(
+    user.membershipActive && (!validUntil || new Date(validUntil).getTime() > nowMs),
+  );
+  const tierCode = getMembershipTierCode(user.membershipTier, stillValid);
+  const active = tierCode > 0;
+  const activeTier: MembershipTier = active ? user.membershipTier : 'none';
+  const tierName = MEMBERSHIP_TIER_NAME_MAP[activeTier] || MEMBERSHIP_TIER_NAME_MAP.none;
+  const academic = resolveStudentAcademicMetadata(user.affiliation);
+
+  if (!active) {
+    return {
+      found: true,
+      valid: false,
+      active: false,
+      tier: 'none',
+      tierCode: 0,
+      tierName: MEMBERSHIP_TIER_NAME_MAP.none,
+      validUntil,
+      uid: user.uid,
+      name: '',
+      cpf: '',
+      affiliation: academic.affiliation,
+      institution: academic.institution,
+      course: academic.course,
+      turma: '',
+      profileCompleted: Boolean(user.profileCompleted),
+      reason:
+        'Assinatura do Clube CAMBLU inativa ou expirada. A Carteirinha de Estudante é liberada a partir do Plano Comum.',
+      verifiedAt,
+    };
+  }
+
+  return {
+    found: true,
+    valid: academic.isFurbStudent,
+    active: true,
+    tier: activeTier,
+    tierCode,
+    tierName,
+    validUntil,
+    uid: user.uid,
+    name: user.name,
+    cpf: digitsOnly(user.cpf),
+    photoURL: resolveMemberPhotoUrl(user),
+    affiliation: academic.affiliation,
+    institution: academic.institution,
+    course: academic.course,
+    turma: academic.isFurbStudent && user.turma ? user.turma.trim() : '',
+    profileCompleted: Boolean(user.profileCompleted),
+    reason: academic.isFurbStudent
+      ? undefined
+      : 'Plano ativo no Clube CAMBLU, porém este cadastro possui vínculo Externo (não vinculado ao curso de Medicina FURB).',
+    verifiedAt,
+  };
 }

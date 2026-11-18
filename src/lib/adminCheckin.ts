@@ -1,4 +1,5 @@
 import { API_BASE_URL, getAuthHeaders, isFirebaseConfigured } from './firebase';
+import { logError, logInfo, logWarn } from './logger';
 import type { CambluEvent, CertificateRecord, Ticket } from '../types/domain';
 
 export interface CheckinValidationInput {
@@ -42,6 +43,7 @@ export async function validateTicketQrCheckin({
   }
 
   if (isFirebaseConfigured && (!expectedEventId || !localMatch || localMatch.eventId === expectedEventId)) {
+    logInfo('Checkin', 'Validando QR Code no backend /api/tickets/checkin', { code, expectedEventId });
     try {
       const res = await fetch(`${API_BASE_URL}/tickets/checkin`, {
         method: 'POST',
@@ -50,6 +52,7 @@ export async function validateTicketQrCheckin({
       });
       if (res.ok) {
         const data = (await res.json()) as { ownerName: string; totalHours: number };
+        logInfo('Checkin', 'Presença confirmada pelo backend', { code, ownerName: data.ownerName });
         return {
           status: 'ok',
           ownerName: data.ownerName,
@@ -57,8 +60,11 @@ export async function validateTicketQrCheckin({
           message: `Presença confirmada: ${data.ownerName} (Total ${data.totalHours}h)!`,
         };
       }
-    } catch {
-      // Fallback para o store sincronizado quando Cloud Functions não estiver ativa
+      logWarn('Checkin', `Backend /api/tickets/checkin retornou HTTP ${res.status}; usando fallback local`, {
+        status: res.status,
+      });
+    } catch (err) {
+      logError('Checkin', 'adminCheckin.confirmTicketCheckin -> POST /api/tickets/checkin', err, { code });
     }
   }
 

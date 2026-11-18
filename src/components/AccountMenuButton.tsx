@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/i18n';
+import { logError, logInfo, logWarn } from '../lib/logger';
 import { Icon } from './Icon';
 import { M3Dialog } from './M3Dialog';
 import { useToast } from './ToastProvider';
@@ -12,7 +13,12 @@ export function AccountMenuButton() {
   const { notify } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [demoDialogOpen, setDemoDialogOpen] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [profile?.photoURL]);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -34,26 +40,34 @@ export function AccountMenuButton() {
 
   const handleLoginClick = async () => {
     if (isDemoMode) {
+      logInfo('Auth', 'Abrindo seletor de perfil no modo demonstração');
       setDemoDialogOpen(true);
       return;
     }
+    logInfo('Auth', 'Iniciando fluxo de login com Google no cabeçalho');
     try {
       await signInWithGoogle('student');
       notify('Login realizado com Google!');
-    } catch {
+    } catch (err) {
+      logError('Auth', 'AccountMenuButton.handleLoginClick -> signInWithGoogle', err);
       notify('Não foi possível concluir o login Google.', 'error');
     }
   };
 
   const handleDemoLogin = async (role: 'student' | 'admin') => {
-    await signInWithGoogle(role);
-    setDemoDialogOpen(false);
-    notify(
-      role === 'admin'
-        ? 'Conectado como Gestão CAMBLU (camblufurb@gmail.com) no modo demonstração.'
-        : 'Conectado como Acadêmica Demo MEDFURB.',
-      'info',
-    );
+    try {
+      await signInWithGoogle(role);
+      setDemoDialogOpen(false);
+      notify(
+        role === 'admin'
+          ? 'Conectado como Gestão CAMBLU (camblufurb@gmail.com) no modo demonstração.'
+          : 'Conectado como Acadêmica Demo MEDFURB.',
+        'info',
+      );
+    } catch (err) {
+      logError('Auth', 'AccountMenuButton.handleDemoLogin', err, { role });
+      notify('Erro ao entrar no perfil selecionado.', 'error');
+    }
   };
 
   if (!profile) {
@@ -101,6 +115,7 @@ export function AccountMenuButton() {
   }
 
   const avatarInitial = profile.name.trim().charAt(0).toUpperCase() || 'C';
+  const showPhoto = Boolean(profile.photoURL && !avatarFailed);
 
   return (
     <div ref={wrapRef} className="nav-dropdown">
@@ -113,7 +128,24 @@ export function AccountMenuButton() {
         onClick={() => setMenuOpen((o) => !o)}
       >
         <span className="header-avatar-badge">
-          {isAdmin ? <Icon name="verified_user" filled size={18} /> : avatarInitial}
+          {showPhoto ? (
+            <img
+              src={profile.photoURL}
+              alt={profile.name}
+              referrerPolicy="no-referrer"
+              onError={() => {
+                logWarn('Auth', 'Não foi possível carregar photoURL do usuário no cabeçalho; exibindo fallback.', {
+                  uid: profile.uid,
+                  photoURL: profile.photoURL,
+                });
+                setAvatarFailed(true);
+              }}
+            />
+          ) : isAdmin ? (
+            <Icon name="verified_user" filled size={18} />
+          ) : (
+            avatarInitial
+          )}
         </span>
         {!profile.profileCompleted && (
           <span className="header-icon-dot" aria-label="Cadastro incompleto" />
@@ -123,15 +155,43 @@ export function AccountMenuButton() {
       <div className="m3-dropdown-panel" data-open={menuOpen}>
         <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
             padding: '0.65rem 0.85rem',
             borderBlockEnd: '1px solid var(--md-sys-color-outline-variant)',
             marginBlockEnd: '0.25rem',
           }}
         >
-          <strong style={{ display: 'block', fontSize: '0.92rem' }}>{profile.name}</strong>
-          <span style={{ fontSize: '0.78rem', color: 'var(--md-sys-color-on-surface-variant)' }}>
-            {profile.email}
-          </span>
+          {showPhoto && (
+            <img
+              src={profile.photoURL}
+              alt=""
+              aria-hidden="true"
+              referrerPolicy="no-referrer"
+              style={{
+                inlineSize: '34px',
+                blockSize: '34px',
+                borderRadius: '9999px',
+                objectFit: 'cover',
+                flexShrink: 0,
+              }}
+            />
+          )}
+          <div style={{ minInlineSize: 0 }}>
+            <strong style={{ display: 'block', fontSize: '0.92rem' }}>{profile.name}</strong>
+            <span
+              style={{
+                display: 'block',
+                fontSize: '0.78rem',
+                color: 'var(--md-sys-color-on-surface-variant)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {profile.email}
+            </span>
+          </div>
         </div>
 
         <Link to="/perfil" className="dropdown-item" onClick={() => setMenuOpen(false)}>
@@ -169,8 +229,13 @@ export function AccountMenuButton() {
           className="dropdown-item"
           onClick={async () => {
             setMenuOpen(false);
-            await signOut();
-            notify('Sessão encerrada.', 'info');
+            try {
+              await signOut();
+              notify('Sessão encerrada.', 'info');
+            } catch (err) {
+              logError('Auth', 'AccountMenuButton.signOut', err);
+              notify('Erro ao sair da sessão.', 'error');
+            }
           }}
         >
           <Icon name="logout" size={20} />

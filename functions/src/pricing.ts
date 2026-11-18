@@ -1,5 +1,33 @@
 export type MembershipTier = 'none' | 'comum' | 'raro' | 'epico' | 'lendario';
 export type MembershipCycle = 'mensal' | 'semestral';
+export type MembershipTierCode = 0 | 1 | 2 | 3 | 4;
+
+export const MEMBERSHIP_TIER_CODE_MAP: Record<MembershipTier, MembershipTierCode> = {
+  none: 0,
+  comum: 1,
+  raro: 2,
+  epico: 3,
+  lendario: 4,
+};
+
+export const MEMBERSHIP_TIER_NAME_MAP: Record<MembershipTier, string> = {
+  none: 'Sem plano ativo',
+  comum: 'Comum',
+  raro: 'Raro',
+  epico: 'Épico',
+  lendario: 'Lendário',
+};
+
+export function getMembershipTierCode(
+  tier: MembershipTier | string | undefined | null,
+  active: boolean,
+): MembershipTierCode {
+  if (!active || !tier || tier === 'none') return 0;
+  if (tier in MEMBERSHIP_TIER_CODE_MAP) {
+    return MEMBERSHIP_TIER_CODE_MAP[tier as MembershipTier];
+  }
+  return 0;
+}
 
 export const CLUB_PRICE_MAP: Record<Exclude<MembershipTier, 'none'>, Record<MembershipCycle, number>> = {
   comum: { mensal: 350, semestral: 2000 },

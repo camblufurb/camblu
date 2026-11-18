@@ -6,6 +6,7 @@ import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { API_BASE_URL, ADMIN_EMAIL } from '../lib/firebase';
+import { logError, logInfo, logWarn } from '../lib/logger';
 import type { DemandTopic } from '../types/domain';
 
 const TOPICS: { topic: DemandTopic; hint: string; icon: string }[] = [
@@ -45,6 +46,7 @@ export function DemandsPage() {
     let dispatchedEmail = false;
     try {
       if (!isDemoMode) {
+        logInfo('Demandas', 'Enviando demanda via backend /api/demands/send', { topic, anonymous });
         const res = await fetch(`${API_BASE_URL}/demands/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -58,6 +60,9 @@ export function DemandsPage() {
           }),
         });
         dispatchedEmail = res.ok;
+        if (!res.ok) {
+          logWarn('Demandas', `Endpoint /api/demands/send respondeu HTTP ${res.status}`, { status: res.status });
+        }
       }
 
       await addDemand({
@@ -74,7 +79,8 @@ export function DemandsPage() {
 
       setMessage('');
       notify(`Mensagem registrada com assunto "${topic}" para ${ADMIN_EMAIL}!`);
-    } catch {
+    } catch (err) {
+      logError('Demandas', 'DemandsPage.handleSubmit -> /api/demands/send / addDemand', err, { topic });
       notify('Falha ao enviar demanda.', 'error');
     } finally {
       setSending(false);

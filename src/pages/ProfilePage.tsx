@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
 import { formatCpf, formatPhoneBr, isDigitsOnlyString, isValidCpf } from '../lib/validators';
+import { logError, logInfo } from '../lib/logger';
 import type { TShirtSize, UserAffiliation } from '../types/domain';
 
 const TSHIRT_SIZES: TShirtSize[] = [
@@ -87,6 +88,7 @@ export function ProfilePage() {
 
     setSaving(true);
     try {
+      logInfo('Perfil', 'Salvando cadastro acadêmico do usuário');
       await saveProfile({
         name,
         cpf,
@@ -97,7 +99,8 @@ export function ProfilePage() {
         tshirtSize: isCalouro ? tshirtSize : undefined,
       });
       notify('Cadastro acadêmico atualizado com sucesso!');
-    } catch {
+    } catch (err) {
+      logError('Perfil', 'ProfilePage.handleSubmit -> saveProfile', err, { affiliation, isCalouro });
       notify('Erro ao salvar seu perfil.', 'error');
     } finally {
       setSaving(false);

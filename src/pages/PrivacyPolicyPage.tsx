@@ -27,6 +27,7 @@ const PRIVACY_SECTIONS = [
       'Infraestrutura Firebase (Google Cloud): autenticação de sessão, armazenamento cadastral, ingressos, certificados e registros públicos acadêmicos utilizam Firebase Authentication, Cloud Firestore e Cloud Storage.',
       'Pagamentos via Stripe: ao finalizar compras de ingressos, produtos da Lojinha ou assinaturas do Clube CAMBLU, você é redirecionado ao ambiente seguro do Stripe (Cartão de Crédito ou PIX). O portal do CAMBLU não coleta, processa nem armazena números de cartão de crédito.',
       'Validação pública de certificados (/certificados/validar): ao consultar a autenticidade de um certificado por código, apenas o nome do titular e o CPF parcialmente mascarado são exibidos publicamente para proteção de privacidade.',
+      'Validação pública da carteirinha de estudante (/clube/cartao/validar): exclusiva para membros com assinatura ativa a partir do Plano Comum, apresentando foto, nome completo, CPF, instituição (FURB), curso e turma estritamente mediante leitura do QR Code ou código identificador da carteirinha.',
     ],
   },
   {

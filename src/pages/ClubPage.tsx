@@ -7,6 +7,7 @@ import { useToast } from '../components/ToastProvider';
 import { useAuth } from '../context/AuthContext';
 import { CLUB_COMPARISON_ROWS, CLUB_PLANS, getPlanPriceCents } from '../lib/clubPricing';
 import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
+import { logError, logInfo } from '../lib/logger';
 import { formatBrlFromCents } from '../lib/validators';
 import type { MembershipCycle, MembershipTier } from '../types/domain';
 
@@ -25,6 +26,10 @@ export function ClubPage() {
     setSubmittingTier(tier);
     try {
       if (!isDemoMode) {
+        logInfo('Clube', 'Iniciando assinatura Stripe Clube CAMBLU via /api/checkout/membership', {
+          tier,
+          cycle,
+        });
         const res = await fetch(`${API_BASE_URL}/checkout/membership`, {
           method: 'POST',
           headers: await getAuthHeaders(),
@@ -33,9 +38,13 @@ export function ClubPage() {
             cycle,
           }),
         });
-        if (!res.ok) throw new Error('Falha ao iniciar assinatura.');
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          throw new Error((payload as { error?: string }).error || `Falha HTTP ${res.status} ao iniciar assinatura.`);
+        }
         const data = (await res.json()) as { checkoutUrl?: string };
         if (data.checkoutUrl) {
+          logInfo('Clube', 'Sessão Stripe Clube criada; redirecionando');
           window.location.href = data.checkoutUrl;
           return;
         }
@@ -43,7 +52,8 @@ export function ClubPage() {
 
       await updateMembershipLocal(tier, cycle);
       notify(`Assinatura Clube CAMBLU ${tier.toUpperCase()} (${cycle}) ativada!`);
-    } catch {
+    } catch (err) {
+      logError('Clube', 'ClubPage.handleSubscribe -> POST /api/checkout/membership', err, { tier, cycle });
       notify('Não foi possível iniciar a assinatura.', 'error');
     } finally {
       setSubmittingTier(null);
@@ -59,7 +69,7 @@ export function ClubPage() {
             Clube CAMBLU
           </AnimatedClimateTitle>
           <p className="page-hero-desc">
-            Suba de nível na Medicina FURB: escolha o passe que mais combina com a sua rotina acadêmica e acumule descontos na Lojinha, eventos gratuitos com Coffee, entrada na SECIMED e cartão digital exclusivo.
+            Suba de nível na Medicina FURB: escolha o passe que mais combina com a sua rotina acadêmica e garanta Carteirinha de Estudante digital a partir do Plano Comum, descontos na Lojinha, eventos gratuitos com Coffee e entrada na SECIMED.
           </p>
 
           <div className="page-hero-actions">
@@ -307,14 +317,14 @@ export function ClubPage() {
       <div className="grid-two">
         <article className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
           <div style={{ display: 'grid', gap: '0.55rem', flex: '1 1 16rem' }}>
-            <h2>Cartão Digital de Membro</h2>
+            <h2>Carteirinha de Estudante Digital</h2>
             <p style={{ color: '#dceddf' }}>
-              Seu cartão muda de cor e textura de acordo com a raridade da assinatura e conta com validação imediata na portaria dos eventos.
+              Disponível a partir do Plano Comum: sua carteirinha muda de cor conforme seu nível e gera QR Code com validação pública de autenticidade, foto, curso, instituição (FURB), turma e CPF.
             </p>
             <div style={{ paddingBlockStart: '0.25rem' }}>
               <Link to="/clube/cartao" className="m3-btn m3-btn--gold">
                 <Icon name="badge" size={18} />
-                <span>Visualizar Meu Cartão</span>
+                <span>Visualizar Minha Carteirinha</span>
               </Link>
             </div>
           </div>

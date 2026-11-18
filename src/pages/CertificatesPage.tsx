@@ -13,6 +13,7 @@ import {
 } from '../lib/certificateRenderer';
 import { digitsOnly, formatCpf } from '../lib/validators';
 import { API_BASE_URL, isFirebaseConfigured } from '../lib/firebase';
+import { logError, logInfo } from '../lib/logger';
 import type { CertificateRecord, CertificateTemplateConfig } from '../types/domain';
 
 function CertificateLiveCanvas({
@@ -66,10 +67,14 @@ export function CertificatesPage() {
       setRemoteVerified(null);
       return;
     }
+    logInfo('Certificados', 'Validando código de certificado no backend', { code: target });
     fetch(`${API_BASE_URL}/certificates/verify?code=${encodeURIComponent(target)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setRemoteVerified(d))
-      .catch(() => setRemoteVerified(null));
+      .catch((err) => {
+        logError('Certificados', 'CertificatesPage.useEffect -> GET /api/certificates/verify', err, { target });
+        setRemoteVerified(null);
+      });
   }, [codigo, searchCode]);
 
   const handleDownloadPdf = async (cert: CertificateRecord) => {
@@ -80,7 +85,8 @@ export function CertificatesPage() {
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
       triggerBlobDownload(blob, `certificado-${cert.code}.pdf`);
       notify('Certificado exportado em PDF!');
-    } catch {
+    } catch (err) {
+      logError('Certificados', 'CertificatesPage.handleDownloadPdf', err, { code: cert.code });
       notify('Erro ao gerar PDF do certificado.', 'error');
     } finally {
       setBusyId(null);

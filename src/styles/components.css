@@ -248,6 +248,15 @@
     place-items: center;
     font-size: 0.82rem;
     font-weight: 750;
+    overflow: hidden;
+    border: 1px solid rgb(59 130 247 / 0.25);
+  }
+
+  .header-avatar-badge img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   .header-icon-dot {
@@ -2296,10 +2305,124 @@
 
   @media (prefers-reduced-motion: reduce) {
     .member-card,
-    .member-card__shimmer {
+    .member-card__shimmer,
+    .member-verify-card {
       transition: none;
+      animation: none;
       transform: none !important;
       will-change: auto;
+    }
+  }
+
+  /* ======================================================================
+     Validacao Publica da Carteirinha (/clube/cartao/validar/:uid)
+     ====================================================================== */
+  .member-verify-card {
+    container-type: inline-size;
+    display: grid;
+    gap: 1.35rem;
+    animation: m3CardEnter 260ms cubic-bezier(0.2, 0, 0, 1) both;
+  }
+
+  @keyframes m3CardEnter {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  .member-verify-card__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding-block-end: 0.85rem;
+    border-block-end: 1px solid var(--md-sys-color-outline-variant);
+  }
+
+  .member-verify-card__body {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .member-verify-card__photo {
+    inline-size: clamp(6.75rem, 28vw, 8.75rem);
+    block-size: clamp(6.75rem, 28vw, 8.75rem);
+    aspect-ratio: 1 / 1;
+    border-radius: var(--md-sys-shape-corner-lg);
+    object-fit: cover;
+    display: block;
+    border: 2px solid rgb(59 130 247 / 0.28);
+    box-shadow: var(--elevation-1);
+    margin-inline: auto;
+  }
+
+  .member-verify-card__photo--fallback {
+    display: grid;
+    place-items: center;
+    background: var(--camblu-action-blue-container);
+    color: var(--camblu-on-action-blue-container);
+    font-size: 2.25rem;
+    font-weight: 800;
+  }
+
+  .member-verify-card__facts {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+    gap: 0.85rem 1.25rem;
+  }
+
+  .member-verify-card__facts > div {
+    padding: 0.7rem 0.85rem;
+    border-radius: var(--md-sys-shape-corner-md);
+    background: var(--md-sys-color-surface-container-low);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    display: grid;
+    gap: 0.2rem;
+    min-inline-size: 0;
+  }
+
+  .member-verify-card__facts dt {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .member-verify-card__facts dd {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--md-sys-color-on-surface);
+    overflow-wrap: anywhere;
+  }
+
+  .member-verify-card__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    padding-block-start: 0.9rem;
+    border-block-start: 1px solid var(--md-sys-color-outline-variant);
+  }
+
+  @container (min-width: 36rem) {
+    .member-verify-card__body {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+    }
+
+    .member-verify-card__photo {
+      margin-inline: 0;
     }
   }
 
