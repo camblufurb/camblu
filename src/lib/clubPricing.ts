@@ -50,13 +50,11 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
       '10% de desconto automático na Lojinha Oficial CAMBLU',
       '10% de desconto em todos os eventos pagos e na SECIMED',
       'Camiseta oficial gratuita exclusiva para calouros',
-      'Acesso às parcerias Spaiq e Gorit PRO',
     ],
     perks: [
       { text: '10% de desconto automático na Lojinha Oficial CAMBLU', icon: 'shopping_bag', isNewAtTier: true },
       { text: '10% de desconto em todos os eventos pagos e na SECIMED', icon: 'confirmation_number', isNewAtTier: true },
       { text: 'Camiseta oficial gratuita exclusiva para calouros', icon: 'checkroom', isNewAtTier: true },
-      { text: 'Acesso às parcerias acadêmicas Spaiq e Gorit PRO', icon: 'auto_stories', isNewAtTier: true },
     ],
   },
   {
@@ -76,13 +74,14 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
     benefits: [
       'Todos os benefícios do plano Comum',
       'Ingresso gratuito em eventos do CAMBLU com Coffee (exceto SECIMED)',
+      'Acesso às parcerias Spaiq e Gorit PRO',
     ],
     perks: [
       { text: 'Ingresso gratuito em eventos do CAMBLU com Coffee (exceto SECIMED)', icon: 'local_cafe', isNewAtTier: true },
+      { text: 'Acesso às parcerias acadêmicas Spaiq e Gorit PRO', icon: 'auto_stories', isNewAtTier: true },
       { text: '10% de desconto automático na Lojinha Oficial CAMBLU', icon: 'shopping_bag' },
       { text: '10% de desconto na inscrição da SECIMED e workshops', icon: 'confirmation_number' },
       { text: 'Camiseta oficial gratuita exclusiva para calouros', icon: 'checkroom' },
-      { text: 'Acesso às parcerias acadêmicas Spaiq e Gorit PRO', icon: 'auto_stories' },
     ],
   },
   {
@@ -147,7 +146,7 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
 export const CLUB_COMPARISON_ROWS: ClubComparisonRow[] = [
   { feature: '10% de desconto automático na Lojinha', comum: true, raro: true, epico: true, lendario: true },
   { feature: 'Camiseta oficial grátis para calouros', comum: true, raro: true, epico: true, lendario: true },
-  { feature: 'Parcerias acadêmicas Spaiq & Gorit PRO', comum: true, raro: true, epico: true, lendario: true },
+  { feature: 'Parcerias acadêmicas Spaiq & Gorit PRO', comum: false, raro: true, epico: true, lendario: true },
   { feature: 'Desconto nos eventos pagos e SECIMED', comum: '10% off', raro: '10% SECIMED', epico: '100% Grátis', lendario: '100% Grátis' },
   { feature: 'Entrada gratuita em eventos com Coffee', comum: false, raro: true, epico: true, lendario: true },
   { feature: 'Ingresso gratuito na SECIMED', comum: false, raro: false, epico: true, lendario: true },

@@ -11,6 +11,7 @@ import {
   type CardTilt,
 } from '../lib/memberCard';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 
 interface DeviceOrientationConstructorWithPermission {
   requestPermission?: () => Promise<'granted' | 'denied'>;
@@ -143,11 +144,11 @@ export function MemberCardPage() {
   if (!profile) {
     return (
       <section className="page-section container m3-reveal">
-        <div className="m3-card" style={{ maxInlineSize: '36rem', marginInline: 'auto', textAlign: 'center' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>
-            Cartão de Membro Clube CAMBLU
-          </h1>
-          <p className="text-muted" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
+        <div className="m3-card page-hero-card" style={{ maxInlineSize: '42rem', marginInline: 'auto', textAlign: 'center', display: 'grid', gap: '1.1rem', justifyItems: 'center' }}>
+          <AnimatedClimateTitle tone="primary" align="center" accessibleHeading="Carteirinha Digital — Clube CAMBLU">
+            CARTEIRINHA
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc page-hero-desc--on-light" style={{ marginInline: 'auto' }}>
             Entre com sua conta Google para exibir seu cartão interativo na cor do seu plano.
           </p>
           <button
@@ -169,8 +170,10 @@ export function MemberCardPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '1.75rem', placeItems: 'center' }}>
-      <div style={{ textAlign: 'center', maxInlineSize: '40rem' }}>
-        <h1>Cartão Digital do Membro</h1>
+      <div style={{ textAlign: 'center', maxInlineSize: '46rem', inlineSize: '100%' }}>
+        <AnimatedClimateTitle tone="primary" align="center" accessibleHeading="Cartão Digital do Membro">
+          CARTEIRINHA
+        </AnimatedClimateTitle>
       </div>
 
       <article

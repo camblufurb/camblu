@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { formatBrlFromCents } from '../lib/validators';
 
 const MONTH_ORDER = [
@@ -74,24 +75,28 @@ export function TransparencyPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ maxInlineSize: '46rem' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>Transparência & Atas de Reunião</h1>
-          <p style={{ color: '#dceddf' }}>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle tone="light" accessibleHeading="Transparência & Atas de Reunião">
+            TRANSPARÊNCIA
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Acompanhe mensalmente todas as receitas, investimentos em projetos, gastos por categoria e mapa de calor das
             movimentações do CAMBLU e da SECIMED.
           </p>
-        </div>
 
-        <a
-          href={transparencyMeta.driveMinutesUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="m3-btn m3-btn--gold"
-        >
-          <Icon name="folder_shared" size={19} />
-          <span>Atas de Reunião (Drive)</span>
-        </a>
+          <div className="page-hero-actions">
+            <a
+              href={transparencyMeta.driveMinutesUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="m3-btn m3-btn--gold"
+            >
+              <Icon name="folder_shared" size={19} />
+              <span>Atas de Reunião (Drive)</span>
+            </a>
+          </div>
+        </div>
       </div>
 
       {/* KPIs sem saldo atual (conforme requisito 5.2) */}

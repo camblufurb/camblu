@@ -13,6 +13,7 @@ const dictionary = {
     'nav.transparency': 'Transparência',
     'nav.academic': 'Acadêmico',
     'nav.more': 'Institucional',
+    'nav.apps': 'Apps',
     'nav.calendar': 'Calendário',
     'nav.editais': 'Editais',
     'nav.demands': 'Demandas & Ajuda',

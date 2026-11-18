@@ -5,6 +5,7 @@ import { InstitutionLogo, type InstitutionLogoId } from '../components/Instituti
 import { M3Carousel } from '../components/M3Carousel';
 import { Icon } from '../components/Icon';
 import { CambluCrest } from '../components/SponsorLogos';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 
 type PortalCategoryId = 'graduacao' | 'ciencia' | 'servicos' | 'gestao';
 
@@ -372,25 +373,24 @@ export function HomePage() {
       {/* 1. Hero Editorial — Apresentação Geral do Portal (Estilo Google for Education) */}
       <section className="page-section container m3-motion-hero">
         <div
-          className="m3-card m3-card--forest"
+          className="m3-card m3-card--forest page-hero-card page-hero-card--split"
           style={{
-            padding: 'clamp(1.85rem, 4.5vw, 3.75rem)',
-            borderRadius: 'var(--md-sys-shape-corner-xl)',
             position: 'relative',
             overflow: 'hidden',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '2.25rem',
             background:
               'radial-gradient(circle at 90% 14%, rgb(237 209 110 / 0.22), transparent 42%), linear-gradient(140deg, #071b13 0%, #0f3325 58%, #184b37 100%)',
           }}
         >
-          <div className="m3-hero-copy" style={{ display: 'grid', gap: '1.1rem', maxInlineSize: '44rem', flex: '1 1 18rem' }}>
-            <h1 style={{ color: '#ffffff' }}>Centro Acadêmico de Medicina de Blumenau</h1>
+          <div className="m3-hero-copy page-hero-inner" style={{ maxInlineSize: '46rem', flex: '1 1 18rem' }}>
+            <AnimatedClimateTitle
+              tone="light"
+              accessibleHeading="CAMBLU — Centro Acadêmico de Medicina de Blumenau"
+            >
+              CAMBLU
+            </AnimatedClimateTitle>
+            <div className="home-hero-roboto-subtitle">Centro Acadêmico de Medicina de Blumenau</div>
 
-            <p style={{ color: '#dceddf' }}>
+            <p className="page-hero-desc">
               Um único portal para acessar eventos, certificados, ligas acadêmicas, manual do calouro, transparência
               financeira, lojinha oficial e canais de acolhimento da MEDFURB.
             </p>

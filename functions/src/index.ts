@@ -20,7 +20,27 @@ const db = getFirestore();
 const authAdmin = getAuth();
 
 const ADMIN_EMAIL = 'camblufurb@gmail.com';
-const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://camblu.org';
+const SITE_ORIGIN = process.env.SITE_ORIGIN || 'https://camblu.web.app';
+const ALLOWED_PUBLIC_ORIGINS = new Set([
+  'https://camblu.web.app',
+  'https://camblu.firebaseapp.com',
+  'https://camblu.org',
+  'https://www.camblu.org',
+]);
+
+function resolveSiteOrigin(req: { headers: Record<string, string | string[] | undefined> }): string {
+  const forwardedHost = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
+  if (forwardedHost) {
+    const candidate = `https://${forwardedHost}`;
+    if (ALLOWED_PUBLIC_ORIGINS.has(candidate)) {
+      return candidate;
+    }
+  }
+  return SITE_ORIGIN;
+}
 
 const stripeRestrictedKey = defineSecret('STRIPE_RESTRICTED_KEY');
 const stripeWebhookSecret = defineSecret('STRIPE_WEBHOOK_SECRET');
@@ -399,6 +419,7 @@ app.post('/api/checkout/event', async (req, res) => {
     return;
   }
 
+  const siteOrigin = resolveSiteOrigin(req);
   const stripe = getStripeClient();
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
@@ -424,8 +445,8 @@ app.post('/api/checkout/event', async (req, res) => {
       lotId: lot.id,
       discountReason: pricing.reason || '',
     },
-    success_url: `${SITE_ORIGIN}/meus-ingressos?checkout=success`,
-    cancel_url: `${SITE_ORIGIN}/eventos/${evData.slug}?checkout=cancelled`,
+    success_url: `${siteOrigin}/meus-ingressos?checkout=success`,
+    cancel_url: `${siteOrigin}/eventos/${evData.slug}?checkout=cancelled`,
   });
 
   res.json({ checkoutUrl: session.url });
@@ -491,6 +512,7 @@ app.post('/api/checkout/shop', async (req, res) => {
     Boolean(userData.membershipActive),
   );
 
+  const siteOrigin = resolveSiteOrigin(req);
   const stripe = getStripeClient();
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
@@ -516,8 +538,8 @@ app.post('/api/checkout/shop', async (req, res) => {
       discountCents: String(pricing.discountCents),
       itemsJson: JSON.stringify(resolvedItems),
     },
-    success_url: `${SITE_ORIGIN}/lojinha?checkout=success`,
-    cancel_url: `${SITE_ORIGIN}/lojinha?checkout=cancelled`,
+    success_url: `${siteOrigin}/lojinha?checkout=success`,
+    cancel_url: `${siteOrigin}/lojinha?checkout=cancelled`,
   });
 
   res.json({ checkoutUrl: session.url });
@@ -541,6 +563,7 @@ app.post('/api/checkout/membership', async (req, res) => {
 
   const unitAmount = CLUB_PRICE_MAP[tier][cycle];
   const isMonthly = cycle === 'mensal';
+  const siteOrigin = resolveSiteOrigin(req);
   const stripe = getStripeClient();
 
   const session = await stripe.checkout.sessions.create({
@@ -566,8 +589,8 @@ app.post('/api/checkout/membership', async (req, res) => {
       tier,
       cycle,
     },
-    success_url: `${SITE_ORIGIN}/clube/cartao?assinatura=sucesso`,
-    cancel_url: `${SITE_ORIGIN}/clube?assinatura=cancelada`,
+    success_url: `${siteOrigin}/clube/cartao?assinatura=sucesso`,
+    cancel_url: `${siteOrigin}/clube?assinatura=cancelada`,
   });
 
   res.json({ checkoutUrl: session.url });
@@ -778,11 +801,12 @@ export const api = onRequest(
 
 // Item 1.1 — Social Preview dinâmico (OpenGraph) para links compartilhados /eventos/:slug
 export const eventSocialPreview = onRequest({ region: 'southamerica-east1' }, async (req, res) => {
+  const siteOrigin = resolveSiteOrigin(req);
   const slug = req.path.replace(/^\/eventos\//, '').replace(/\/$/, '');
   let title = 'CAMBLU — Eventos Medicina FURB';
   let description =
     'Confira programação, lotes, ingressos e certificação oficial no portal do CAMBLU.';
-  let image = `${SITE_ORIGIN}/logo-camblu.png`;
+  let image = `${siteOrigin}/logo-camblu.png`;
 
   if (slug) {
     const snap = await db.collection('events').where('slug', '==', slug).limit(1).get();
@@ -796,7 +820,7 @@ export const eventSocialPreview = onRequest({ region: 'southamerica-east1' }, as
 
   let indexHtml = '';
   try {
-    const upstream = await fetch(`${SITE_ORIGIN}/index.html`);
+    const upstream = await fetch(`${siteOrigin}/index.html`);
     if (upstream.ok) indexHtml = await upstream.text();
   } catch {
     indexHtml = '';
@@ -808,7 +832,7 @@ export const eventSocialPreview = onRequest({ region: 'southamerica-east1' }, as
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />
-    <meta property="og:url" content="${escapeHtml(`${SITE_ORIGIN}/eventos/${slug}`)}" />
+    <meta property="og:url" content="${escapeHtml(`${siteOrigin}/eventos/${slug}`)}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />

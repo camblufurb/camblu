@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAppData } from '../context/AppDataContext';
 import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { API_BASE_URL, ADMIN_EMAIL } from '../lib/firebase';
 import type { DemandTopic } from '../types/domain';
 
@@ -86,18 +87,22 @@ export function DemandsPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ maxInlineSize: '46rem' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>Enviar Demanda e Pedir Ajuda</h1>
-          <p style={{ color: '#dceddf' }}>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle tone="light" accessibleHeading="Fale Conosco — Enviar Demanda e Pedir Ajuda">
+            FALE CONOSCO
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Selecione o tópico abaixo para direcionar sua mensagem diretamente para{' '}
             <strong>{ADMIN_EMAIL}</strong> com o assunto exato escolhido por você.
           </p>
+          <div className="page-hero-actions">
+            <Link to="/camblu-mulher" className="m3-btn m3-btn--gold">
+              <Icon name="shield_with_heart" size={19} />
+              <span>Conhecer CAMBLU Mulher</span>
+            </Link>
+          </div>
         </div>
-        <Link to="/camblu-mulher" className="m3-btn m3-btn--gold">
-          <Icon name="shield_with_heart" size={19} />
-          <span>Conhecer CAMBLU Mulher</span>
-        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="m3-card" style={{ display: 'grid', gap: '1.25rem' }}>

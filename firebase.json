@@ -6,6 +6,21 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "CAMBLU Portal",
+        "supportEmail": "camblufurb@gmail.com",
+        "authorizedRedirectUris": [
+          "https://camblu.web.app/__/auth/handler",
+          "https://camblu.firebaseapp.com/__/auth/handler",
+          "https://camblu.org/__/auth/handler",
+          "https://www.camblu.org/__/auth/handler",
+          "http://localhost"
+        ]
+      }
+    }
+  },
   "functions": [
     {
       "source": "functions",
@@ -46,13 +61,6 @@
         "source": "/api/**",
         "function": {
           "functionId": "api",
-          "region": "southamerica-east1"
-        }
-      },
-      {
-        "source": "/eventos/*",
-        "function": {
-          "functionId": "eventSocialPreview",
           "region": "southamerica-east1"
         }
       },

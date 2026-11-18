@@ -1749,7 +1749,7 @@
     position: relative;
     overflow: hidden;
     border-radius: var(--md-sys-shape-corner-xl);
-    padding: clamp(1.75rem, 4vw, 3.25rem);
+    padding: clamp(1.35rem, 4vw, 3.25rem);
     background:
       radial-gradient(circle at 85% 20%, rgb(59 130 247 / 0.36), transparent 45%),
       radial-gradient(circle at 18% 85%, rgb(237 209 110 / 0.24), transparent 48%),
@@ -2071,11 +2071,29 @@
 
   .calouro-chapter-band {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-inline-size: 0;
     gap: 1.5rem;
-    padding: clamp(1.35rem, 3vw, 2.25rem);
+    padding: clamp(1.1rem, 3vw, 2.25rem);
     border-radius: var(--md-sys-shape-corner-xl);
     background: var(--md-sys-color-surface-container-lowest);
     border: 1px solid var(--md-sys-color-outline-variant);
+  }
+
+  .calouro-chapter-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.1rem;
+    min-inline-size: 0;
+  }
+
+  .calouro-block-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: clamp(1rem, 3vw, 1.25rem);
+    min-inline-size: 0;
+    overflow-wrap: break-word;
   }
 
   @media (min-width: 56rem) {
@@ -2107,6 +2125,77 @@
   .calouro-checklist-label[data-done='true'] {
     background: var(--md-sys-color-primary-container);
     border-color: var(--camblu-forest-700);
+  }
+
+  .calouro-photo-placeholder {
+    margin: 0.25rem 0;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    border-radius: var(--md-sys-shape-corner-lg);
+    border: 1.5px dashed color-mix(in srgb, var(--camblu-action-blue) 42%, var(--md-sys-color-outline-variant));
+    background: color-mix(in srgb, var(--camblu-action-blue-container) 26%, var(--md-sys-color-surface-container-low));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    align-items: center;
+    text-align: center;
+    padding: clamp(0.95rem, 2.5vw, 1.25rem);
+    gap: 0.9rem;
+  }
+
+  @media (min-width: 38rem) {
+    .calouro-photo-placeholder:not(.calouro-photo-placeholder--top) {
+      grid-template-columns: auto minmax(0, 1fr);
+      justify-items: stretch;
+      text-align: start;
+      gap: 1.25rem;
+    }
+  }
+
+  .calouro-shaped-frame-wrap {
+    inline-size: clamp(7.5rem, 26vw, 10.5rem);
+    flex-shrink: 0;
+  }
+
+  .calouro-shaped-frame-wrap .m3-shape-frame {
+    filter: drop-shadow(0 0 1.5px rgb(59 130 247 / 0.58)) drop-shadow(0 6px 14px rgb(15 51 37 / 0.1));
+  }
+
+  .calouro-shaped-canvas {
+    inline-size: 100%;
+    block-size: 100%;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 35% 30%, #ffffff 0%, #dbeafe 55%, #bfd8fe 100%);
+    color: var(--camblu-action-blue);
+  }
+
+  .calouro-photo-copy {
+    display: grid;
+    gap: 0.35rem;
+    min-inline-size: 0;
+  }
+
+  .calouro-icon-shape-wrap {
+    inline-size: 2.85rem;
+    flex-shrink: 0;
+  }
+
+  .calouro-icon-shape-wrap .m3-shape-frame {
+    filter: drop-shadow(0 2px 6px rgb(59 130 247 / 0.16));
+  }
+
+  .calouro-icon-shape-inner {
+    inline-size: 100%;
+    block-size: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  .calouro-photo-placeholder--top {
+    margin: 0;
+    align-content: start;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2438,16 +2527,19 @@
 
   .secimed-climate-title {
     font-family: 'Climate Crisis', var(--font-sans);
-    font-size: clamp(3rem, 11.5vw, 8.75rem);
+    font-weight: 400;
+    font-synthesis: none;
+    font-size: clamp(2.15rem, 10.6vw, 8.75rem);
     line-height: 0.95;
     letter-spacing: 0.02em;
     text-align: center;
     color: var(--secimed-primary, #5f2841);
     margin: 0;
+    max-inline-size: 100%;
     animation: secimed-year-morph 1.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     font-variation-settings: 'YEAR' 1979;
     user-select: none;
-    overflow-wrap: normal;
+    overflow-wrap: break-word;
   }
 
   @keyframes secimed-year-morph {
@@ -2463,10 +2555,186 @@
     }
   }
 
+  /* Hero Stage padronizado no padrão visual do Clube CAMBLU no desktop + escala mobile legível */
+  .page-hero-card {
+    padding: clamp(1.35rem, 4vw, 3.25rem);
+    border-radius: var(--md-sys-shape-corner-xl);
+    box-shadow: var(--elevation-3);
+  }
+
+  .page-hero-card--split {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(1.25rem, 3vw, 2.25rem);
+  }
+
+  .page-hero-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.1rem;
+    min-inline-size: 0;
+  }
+
+  .page-hero-desc {
+    color: #e2efe7;
+    max-inline-size: 46rem;
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.48;
+  }
+
+  .page-hero-desc--on-light {
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  @media (min-width: 48rem) {
+    .page-hero-desc {
+      font-size: var(--font-size-p);
+      line-height: 1.55;
+    }
+  }
+
+  .page-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-block-start: 0.25rem;
+  }
+
+  /* Títulos animados compartilhados em Climate Crisis (proporção desktop Clube CAMBLU = 3.68rem) */
+  .climate-hero-title {
+    font-family: 'Climate Crisis', var(--font-sans);
+    font-weight: 400;
+    font-synthesis: none;
+    line-height: 0.96;
+    letter-spacing: 0.015em;
+    margin: 0;
+    max-inline-size: 100%;
+    overflow-wrap: break-word;
+    font-variation-settings: 'YEAR' 1979;
+    animation: secimed-year-morph 1.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    user-select: none;
+  }
+
+  .climate-hero-title--light {
+    color: #ffffff;
+  }
+
+  .climate-hero-title--primary {
+    color: var(--md-sys-color-primary);
+  }
+
+  .climate-hero-title--center {
+    text-align: center;
+  }
+
+  .climate-hero-title--word {
+    font-size: clamp(2.35rem, 9.2vw, 3.68rem);
+  }
+
+  .climate-hero-title--split {
+    font-size: clamp(2.25rem, 8.8vw, 3.45rem);
+  }
+
+  .climate-hero-title--phrase {
+    font-size: clamp(1.92rem, 7.6vw, 3.68rem);
+    line-height: 1.02;
+  }
+
+  .climate-hero-title--lword {
+    font-size: clamp(1.75rem, 6.8vw, 3.68rem);
+  }
+
+  .climate-hero-title--xlword {
+    font-size: clamp(1.56rem, 6.2vw, 3.68rem);
+  }
+
+  .home-hero-roboto-subtitle {
+    font-family: 'Roboto Flex', system-ui, sans-serif;
+    font-size: clamp(1.1rem, 2.3vw, 1.62rem);
+    line-height: 1.25;
+    font-weight: 797;
+    font-stretch: 120.5%;
+    font-style: oblique 10deg;
+    font-synthesis: none;
+    font-variation-settings:
+      'GRAD' -200,
+      'XOPQ' 87,
+      'XTRA' 470,
+      'YOPQ' 49,
+      'YTDE' -203,
+      'YTFI' 738,
+      'YTLC' 514,
+      'YTUC' 672,
+      'slnt' -10,
+      'wdth' 120.5,
+      'wght' 797;
+    color: #f1de97;
+    margin: 0;
+    max-inline-size: 100%;
+    overflow-wrap: break-word;
+  }
+
+  .hero-editorial-subtitle {
+    font-family: var(--font-sans);
+    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+    font-weight: 700;
+    line-height: 1.28;
+    color: #f1de97;
+    margin: 0;
+  }
+
+  .hero-editorial-subtitle--on-light {
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .secimed-hero-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(0.85rem, 2.5vw, 1.15rem);
+    justify-items: center;
+    text-align: center;
+    padding-block: clamp(0.45rem, 2.5vw, 1.5rem);
+    min-inline-size: 0;
+  }
+
+  .secimed-hero-badge {
+    font-size: clamp(0.74rem, 2.1vw, 0.82rem);
+    padding: 0.38rem 0.9rem;
+    max-inline-size: 100%;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .secimed-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: center;
+    inline-size: 100%;
+    padding-block-start: 0.25rem;
+  }
+
+  @media (max-width: 35.99rem) {
+    .secimed-hero-actions .m3-btn {
+      inline-size: 100%;
+    }
+  }
+
   .secimed-expressive-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.95rem;
+    min-inline-size: 0;
+  }
+
+  .secimed-pillar-card {
+    grid-column: 1 / -1;
+    min-inline-size: 0;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   @media (min-width: 48rem) {
@@ -2474,12 +2742,16 @@
       grid-template-columns: repeat(12, minmax(0, 1fr));
       gap: 1.15rem;
     }
+
+    .secimed-pillar-card {
+      grid-column: var(--secimed-span, span 4);
+    }
   }
 
   /* Lojinha Fivebucks Hero + Asymmetric M3 Expressive Catalog */
   .shop-fivebucks-hero {
     border-radius: var(--md-sys-shape-corner-xl);
-    padding: clamp(1.25rem, 3.2vw, 2.25rem);
+    padding: clamp(1.35rem, 4vw, 3.25rem);
     background: linear-gradient(135deg, #071b13 0%, #0f3325 56%, #184b37 100%);
     color: #ffffff;
     border: 1px solid rgb(237 209 110 / 0.3);
@@ -2613,9 +2885,321 @@
     }
   }
 
+  /* ======================================================================
+     Matriz Curricular Horizontal (MedFURB — 1a a 12a Fase)
+     ====================================================================== */
+  .matriz-meta-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .matriz-scroll-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .matriz-stage-card {
+    padding: clamp(0.85rem, 2.2vw, 1.35rem);
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow: hidden;
+  }
+
+  .matriz-scroll-viewport {
+    overflow-x: auto;
+    overflow-y: visible;
+    overscroll-behavior-x: contain;
+    padding-block-end: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--camblu-action-blue) var(--md-sys-color-surface-container-high);
+  }
+
+  .matriz-canvas {
+    min-inline-size: 70rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .matriz-cycles-row,
+  .matriz-phases-header,
+  .matriz-track-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .matriz-cycle-banner {
+    border-radius: var(--md-sys-shape-corner-full);
+    padding: 0.38rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 760;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .matriz-cycle-banner--basico {
+    background: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+  }
+
+  .matriz-cycle-banner--clinico {
+    background: var(--camblu-action-blue-container);
+    color: #0e3570;
+  }
+
+  .matriz-cycle-banner--internato {
+    background: color-mix(in srgb, var(--camblu-gold-500) 42%, #ffffff);
+    color: #2b2100;
+  }
+
+  .matriz-phase-btn {
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-md);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    padding: 0.5rem 0.35rem;
+    display: grid;
+    gap: 0.12rem;
+    place-items: center;
+    cursor: pointer;
+    font: inherit;
+    touch-action: manipulation;
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+
+  .matriz-phase-btn strong {
+    font-size: 0.82rem;
+    line-height: 1.2;
+  }
+
+  .matriz-phase-btn span {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .matriz-phase-btn:hover {
+    border-color: var(--camblu-action-blue);
+    transform: translateY(-2px);
+  }
+
+  .matriz-phase-btn.is-selected {
+    background: var(--camblu-action-blue);
+    border-color: var(--camblu-action-blue);
+    color: #ffffff;
+    box-shadow: var(--elevation-1);
+  }
+
+  .matriz-phase-btn.is-selected span {
+    color: #dbeafe;
+  }
+
+  .matriz-phase-btn.is-seg-active:not(.is-selected) {
+    background: var(--camblu-action-blue-container);
+    border-color: var(--camblu-action-blue);
+  }
+
+  .matriz-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    padding-block-end: 0.75rem;
+    margin-block-end: 0.75rem;
+    border-block-end: 1px solid var(--md-sys-color-outline-variant);
+    font-size: 0.78rem;
+    font-weight: 620;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .matriz-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .matriz-tracks-list {
+    display: grid;
+    gap: 0.34rem;
+  }
+
+  .matriz-dot {
+    inline-size: 0.62rem;
+    block-size: 0.62rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+
+  .matriz-dot--basico {
+    background: #176947;
+  }
+
+  .matriz-dot--integracao {
+    background: var(--camblu-action-blue);
+  }
+
+  .matriz-dot--clinica {
+    background: #613596;
+  }
+
+  .matriz-dot--cirurgia {
+    background: #982446;
+  }
+
+  .matriz-dot--internato {
+    background: #b58d16;
+  }
+
+  .matriz-track-grid {
+    position: relative;
+    align-items: stretch;
+    min-block-size: 1.75rem;
+  }
+
+  .matriz-grid-col {
+    grid-row: 1;
+    z-index: 0;
+    border-radius: var(--md-sys-shape-corner-xs);
+    background: rgb(15 51 37 / 0.03);
+    border: 1px dashed rgb(15 51 37 / 0.08);
+  }
+
+  .matriz-grid-col.is-col-selected {
+    background: rgb(59 130 247 / 0.08);
+    border-color: rgb(59 130 247 / 0.32);
+  }
+
+  .matriz-track-rail {
+    grid-row: 1;
+    z-index: 1;
+    align-self: center;
+    block-size: 2px;
+    margin-inline: 1rem;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgb(59 130 247 / 0.25), rgb(15 51 37 / 0.28), rgb(59 130 247 / 0.25));
+  }
+
+  .matriz-bar {
+    grid-row: 1;
+    z-index: 2;
+    min-block-size: 1.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--md-sys-shape-corner-sm);
+    padding: 0.2rem 0.55rem;
+    display: grid;
+    align-items: center;
+    text-align: center;
+    font: inherit;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: var(--elevation-1);
+    touch-action: manipulation;
+    transition: transform 180ms var(--m3-spring-spatial-fast, ease), box-shadow 180ms ease, filter 160ms ease;
+  }
+
+  .matriz-bar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--elevation-2);
+    filter: brightness(1.06);
+  }
+
+  .matriz-bar.is-selected {
+    outline: 3px solid var(--camblu-action-blue);
+    outline-offset: 2px;
+    box-shadow: var(--elevation-2);
+  }
+
+  .matriz-bar--basico {
+    background: linear-gradient(135deg, #145338, #1d7550);
+  }
+
+  .matriz-bar--integracao {
+    background: linear-gradient(135deg, #1c4fa8, #2f6ee5);
+  }
+
+  .matriz-bar--clinica {
+    background: linear-gradient(135deg, #4c2875, #6d3ca6);
+  }
+
+  .matriz-bar--cirurgia {
+    background: linear-gradient(135deg, #7a1c38, #aa2b4f);
+  }
+
+  .matriz-bar--internato {
+    background: linear-gradient(135deg, #071b13, #174936);
+    border-color: #c29b22;
+    color: #f9efbf;
+  }
+
+  .matriz-bar-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .matriz-bar--single {
+    padding: 0.18rem 0.28rem;
+  }
+
+  .matriz-bar--single .matriz-bar-label {
+    font-size: 0.68rem;
+    font-weight: 680;
+    font-stretch: 86%;
+    font-variation-settings: 'wdth' 86, 'wght' 680;
+  }
+
+  .matriz-inspector {
+    display: grid;
+    gap: 1rem;
+    animation: m3-fade-up 220ms ease-out;
+  }
+
+  .matriz-subjects-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 44rem) {
+    .matriz-subjects-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 68rem) {
+    .matriz-subjects-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  .matriz-subject-card {
+    padding: 0.9rem 1rem;
+    display: grid;
+    gap: 0.3rem;
+    align-content: start;
+  }
+
+  @keyframes m3-fade-up {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 8px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .sobre-marquee-track,
-    .secimed-climate-title {
+    .secimed-climate-title,
+    .climate-hero-title,
+    .matriz-inspector {
       animation: none;
     }
 
@@ -2625,7 +3209,9 @@
     }
 
     .sobre-member-btn:hover,
-    .shop-mosaic-tile:hover {
+    .shop-mosaic-tile:hover,
+    .matriz-bar:hover,
+    .matriz-phase-btn:hover {
       transform: none;
     }
   }

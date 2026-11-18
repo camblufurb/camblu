@@ -4,6 +4,7 @@ import { useAppData } from '../context/AppDataContext';
 import { M3Carousel } from '../components/M3Carousel';
 import { M3Dialog } from '../components/M3Dialog';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { SPACES_DATA } from '../data/institutional';
 import type { GestaoMember } from '../types/domain';
 
@@ -133,28 +134,29 @@ export function AboutSpacesPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2.5rem' }}>
-      <div className="m3-card m3-card--forest sobre-hero">
-        <div style={{ display: 'grid', gap: '0.85rem', maxInlineSize: '48rem' }}>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
           <span className="m3-label-large" style={{ color: '#f1de97' }}>
             Centro Acadêmico de Medicina de Blumenau · Desde 1990
           </span>
-          <h1 style={{ color: '#ffffff' }}>Sobre o CAMBLU e Nossos Espaços</h1>
-          <p style={{ color: '#dceddf' }}>
+          <AnimatedClimateTitle tone="light" accessibleHeading="Sobre o CAMBLU e Nossos Espaços">
+            Sobre nós
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Fundado em 1990, o CAMBLU atua de forma apartidária e sem fins lucrativos como ponte direta entre os
             acadêmicos de Medicina da FURB, a coordenação do curso, os conselhos superiores e a sociedade — além de
             manter três espaços físicos exclusivos no Edifício Cristina.
           </p>
-        </div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
-          <Link to="/gestoes" className="m3-btn m3-btn--gold">
-            <Icon name="groups" size={18} />
-            <span>Ver Gestões Completas</span>
-          </Link>
-          <Link to="/demandas" className="m3-btn m3-btn--blue">
-            <Icon name="support_agent" size={18} />
-            <span>Enviar Demanda</span>
-          </Link>
+          <div className="page-hero-actions">
+            <Link to="/gestoes" className="m3-btn m3-btn--gold">
+              <Icon name="groups" size={18} />
+              <span>Ver Gestões Completas</span>
+            </Link>
+            <Link to="/demandas" className="m3-btn m3-btn--blue">
+              <Icon name="support_agent" size={18} />
+              <span>Enviar Demanda</span>
+            </Link>
+          </div>
         </div>
       </div>
 

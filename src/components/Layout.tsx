@@ -7,6 +7,8 @@ import { PortalSearchDialog } from './PortalSearchDialog';
 import { ShopCartDialog } from './ShopCartDialog';
 import { CambluCrest, SponsorsStrip } from './SponsorLogos';
 import { M3ShapeDefs } from './ExpressiveShapeFrame';
+import goritIconUrl from '../../assets/icons/gorit.svg';
+import spaiqIconUrl from '../../assets/icons/spaiq.svg';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,7 +24,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
   const [scrolled, setScrolled] = useState(() =>
     typeof window !== 'undefined' ? window.scrollY > 12 : false,
   );
-  const [openMenu, setOpenMenu] = useState<'academic' | 'institucional' | null>(null);
+  const [openMenu, setOpenMenu] = useState<'academic' | 'institucional' | 'apps' | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +88,36 @@ export function Layout({ children, userSlot }: LayoutProps) {
     { to: '/demandas', label: t('nav.demands'), icon: 'support_agent' },
     { to: '/camblu-mulher', label: t('nav.cambluMulher'), icon: 'shield_with_heart' },
   ];
+
+  const appLinks = [
+    { href: 'https://flashcards.camblu.org/', label: 'Spaiq — Flashcard', iconSrc: spaiqIconUrl },
+    { href: 'https://gorit.camblu.org/', label: 'Gorit — Planner', iconSrc: goritIconUrl },
+  ];
+
+  const renderAppLinks = (onSelect: () => void) =>
+    appLinks.map((item) => (
+      <a
+        key={item.href}
+        href={item.href}
+        target="_blank"
+        rel="noreferrer"
+        className="dropdown-item"
+        onClick={onSelect}
+      >
+        <img
+          src={item.iconSrc}
+          alt=""
+          aria-hidden="true"
+          width={22}
+          height={22}
+          style={{ inlineSize: '22px', blockSize: '22px', objectFit: 'contain', flexShrink: 0 }}
+        />
+        <span>{item.label}</span>
+        <span style={{ marginInlineStart: 'auto', opacity: 0.72, display: 'inline-flex' }}>
+          <Icon name="open_in_new" size={16} />
+        </span>
+      </a>
+    ));
 
   const isAcademicActive = academicLinks.some(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
@@ -193,6 +225,21 @@ export function Layout({ children, userSlot }: LayoutProps) {
                   ))}
                 </div>
               </div>
+
+              <div className="nav-dropdown">
+                <button
+                  type="button"
+                  className="nav-pill"
+                  aria-expanded={openMenu === 'apps'}
+                  onClick={() => setOpenMenu((m) => (m === 'apps' ? null : 'apps'))}
+                >
+                  <span>{t('nav.apps')}</span>
+                  <Icon name="expand_more" size={18} className="nav-chevron" />
+                </button>
+                <div className="m3-dropdown-panel" data-open={openMenu === 'apps'}>
+                  {renderAppLinks(() => setOpenMenu(null))}
+                </div>
+              </div>
             </nav>
 
             <div className="header-actions">
@@ -293,6 +340,29 @@ export function Layout({ children, userSlot }: LayoutProps) {
               <span>{item.label}</span>
             </NavLink>
           ))}
+          <div
+            style={{
+              borderBlockStart: '1px solid var(--md-sys-color-outline-variant)',
+              marginBlockStart: '0.4rem',
+              paddingBlockStart: '0.55rem',
+              display: 'grid',
+              gap: '0.25rem',
+            }}
+          >
+            <span
+              style={{
+                paddingInline: '0.85rem',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                color: 'var(--md-sys-color-on-surface-variant)',
+              }}
+            >
+              {t('nav.apps')}
+            </span>
+            {renderAppLinks(() => setDrawerOpen(false))}
+          </div>
         </nav>
       </aside>
 

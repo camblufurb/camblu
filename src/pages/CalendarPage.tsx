@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 
 export function CalendarPage() {
   const { events, editais } = useAppData();
@@ -58,24 +59,26 @@ export function CalendarPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ maxInlineSize: '46rem' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>Calendário Acadêmico</h1>
-          <p style={{ color: '#dceddf' }}>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle tone="light" accessibleHeading="Calendário Acadêmico CAMBLU">
+            Calendário
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Agenda integrada oficial do CAMBLU (`camblufurb@gmail.com`) reunindo atividades das 35 ligas
             acadêmicas, eventos do curso e prazos de editais.
           </p>
-        </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
-          <a href={googleCalAddUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--gold">
-            <Icon name="add_to_queue" size={18} />
-            <span>Adicionar ao Google Agenda</span>
-          </a>
-          <button type="button" className="m3-btn m3-btn--blue" onClick={downloadIcs}>
-            <Icon name="download" size={18} />
-            <span>Exportar (.ics)</span>
-          </button>
+          <div className="page-hero-actions">
+            <a href={googleCalAddUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--gold">
+              <Icon name="add_to_queue" size={18} />
+              <span>Adicionar ao Google Agenda</span>
+            </a>
+            <button type="button" className="m3-btn m3-btn--blue" onClick={downloadIcs}>
+              <Icon name="download" size={18} />
+              <span>Exportar (.ics)</span>
+            </button>
+          </div>
         </div>
       </div>
 

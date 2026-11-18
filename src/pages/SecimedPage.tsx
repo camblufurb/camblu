@@ -113,14 +113,12 @@ export function SecimedPage() {
         <h1 className="visually-hidden">SECIMED — Semana Científica de Medicina da FURB</h1>
 
         {/* Título solto centralizado em Climate Crisis YEAR 2050 -> 1979 */}
-        <header style={{ display: 'grid', gap: '1rem', justifyItems: 'center', textAlign: 'center', paddingBlock: 'clamp(0.5rem, 2.5vw, 1.5rem)' }}>
+        <header className="secimed-hero-header">
           <span
-            className="m3-badge"
+            className="m3-badge secimed-hero-badge"
             style={{
               background: palette.secondary2,
               color: '#1b2109',
-              fontSize: '0.82rem',
-              padding: '0.35rem 0.9rem',
             }}
           >
             Desde {SECIMED_INFO.since} · Anais ISSN {SECIMED_INFO.issn} · Medicina FURB
@@ -130,13 +128,13 @@ export function SecimedPage() {
             SECIMED
           </div>
 
-          <p style={{ maxInlineSize: '48rem', color: '#2b2025', fontWeight: 500 }}>
+          <p className="page-hero-desc" style={{ color: '#2b2025', fontWeight: 500, marginInline: 'auto' }}>
             A <strong>Semana Científica de Medicina de Blumenau</strong> é o maior encontro acadêmico anual da MEDFURB.
             Organizada pelo CAMBLU desde 2002, reúne cinco dias intensivos de imersão científica, palestras magnas,
             estações práticas das ligas acadêmicas, mostra de pesquisas avaliadas por banca e integração entre todas as fases.
           </p>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center', paddingBlockStart: '0.25rem' }}>
+          <div className="secimed-hero-actions">
             <Link
               to={secimedEvent ? `/eventos/${secimedEvent.slug}` : '/eventos'}
               className="m3-btn"
@@ -227,10 +225,10 @@ export function SecimedPage() {
               return (
                 <article
                   key={item.id}
-                  className="m3-card m3-card--interactive"
+                  className="m3-card m3-card--interactive secimed-pillar-card"
                   style={
                     {
-                      gridColumn: item.spanDesktop,
+                      '--secimed-span': item.spanDesktop,
                       background: '#ffffff',
                       borderColor: accent,
                       borderWidth: '2px',

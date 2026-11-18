@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { calculateEventTicketPrice, calculateShopPrice } from '../clubPricing';
+import {
+  CLUB_COMPARISON_ROWS,
+  CLUB_PLANS,
+  calculateEventTicketPrice,
+  calculateShopPrice,
+} from '../clubPricing';
 
 describe('clubPricing', () => {
   const secimedEvent = { isSecimed: true, hasCoffee: true, category: 'secimed' as const };
@@ -23,5 +28,27 @@ describe('clubPricing', () => {
     // Épico & Lendário get all events free including SECIMED
     expect(calculateEventTicketPrice(6500, secimedEvent, 'epico', true).finalCents).toBe(0);
     expect(calculateEventTicketPrice(6500, secimedEvent, 'lendario', true).finalCents).toBe(0);
+  });
+
+  it('grants Spaiq and Gorit PRO access starting at Raro tier', () => {
+    const comumPlan = CLUB_PLANS.find((plan) => plan.tier === 'comum');
+    const raroPlan = CLUB_PLANS.find((plan) => plan.tier === 'raro');
+    const epicoPlan = CLUB_PLANS.find((plan) => plan.tier === 'epico');
+    const lendarioPlan = CLUB_PLANS.find((plan) => plan.tier === 'lendario');
+
+    expect(comumPlan?.benefits.join(' ')).not.toMatch(/spaiq|gorit/i);
+    expect(comumPlan?.perks.map((p) => p.text).join(' ')).not.toMatch(/spaiq|gorit/i);
+    expect(raroPlan?.perks.find((p) => /spaiq.*gorit/i.test(p.text))?.isNewAtTier).toBe(true);
+    expect(epicoPlan?.perks.some((p) => /spaiq.*gorit/i.test(p.text))).toBe(true);
+    expect(lendarioPlan?.perks.some((p) => /spaiq.*gorit/i.test(p.text))).toBe(true);
+
+    const row = CLUB_COMPARISON_ROWS.find((r) => /spaiq.*gorit/i.test(r.feature));
+    expect(row).toEqual({
+      feature: 'Parcerias acadêmicas Spaiq & Gorit PRO',
+      comum: false,
+      raro: true,
+      epico: true,
+      lendario: true,
+    });
   });
 });

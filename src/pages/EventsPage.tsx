@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { calculateEventTicketPrice } from '../lib/clubPricing';
 import { formatBrlFromCents } from '../lib/validators';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import type { CambluEvent } from '../types/domain';
 
 function isEventPast(ev: CambluEvent, nowMs: number): boolean {
@@ -51,23 +52,25 @@ export function EventsPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ maxInlineSize: '46rem' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>Eventos CAMBLU</h1>
-          <p style={{ color: '#dceddf' }}>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle tone="light">
+            Eventos
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Confira os simpósios, jornadas científicas e encontros da Medicina FURB, garanta seu ingresso com QR Code e
             emita seus certificados de horas complementares (AACCs).
           </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-          <Link to="/meus-ingressos" className="m3-btn m3-btn--gold">
-            <Icon name="qr_code_2" size={18} />
-            <span>Meus Ingressos</span>
-          </Link>
-          <Link to="/certificados" className="m3-btn m3-btn--blue">
-            <Icon name="workspace_premium" size={18} />
-            <span>Certificados</span>
-          </Link>
+          <div className="page-hero-actions">
+            <Link to="/meus-ingressos" className="m3-btn m3-btn--gold">
+              <Icon name="qr_code_2" size={18} />
+              <span>Meus Ingressos</span>
+            </Link>
+            <Link to="/certificados" className="m3-btn m3-btn--blue">
+              <Icon name="workspace_premium" size={18} />
+              <span>Certificados</span>
+            </Link>
+          </div>
         </div>
       </div>
 

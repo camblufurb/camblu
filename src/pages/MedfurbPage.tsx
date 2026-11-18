@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
+import { CurriculumTimelineSection } from '../components/CurriculumTimelineSection';
 import { MEDFURB_DATA } from '../data/institutional';
 
 const SECTION_ANCHORS = [
@@ -9,6 +11,8 @@ const SECTION_ANCHORS = [
   { id: 'sec-auxilio', label: 'Auxílio Estudantil', icon: 'payments' },
   { id: 'sec-estagios', label: 'Estágios Optativos', icon: 'local_hospital' },
   { id: 'sec-tcc', label: 'TCC', icon: 'science' },
+  { id: 'sec-contatos', label: 'Contatos Oficiais', icon: 'call' },
+  { id: 'sec-matriz', label: 'Matriz Curricular', icon: 'view_timeline' },
 ];
 
 const MEDFURB_KPIS = [
@@ -31,51 +35,32 @@ const MEDFURB_KPIS = [
 
 export function MedfurbPage() {
   return (
-    <div style={{ display: 'grid', gap: '0.5rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '0.5rem', overflowX: 'clip' }}>
       {/* 1. Hero Editorial + Contatos + Navegação por Pills em Âncora */}
       <section className="page-section container m3-motion-hero" style={{ display: 'grid', gap: '1.5rem' }}>
         <div
-          className="m3-card m3-card--forest"
+          className="m3-card m3-card--forest page-hero-card"
           style={{
-            padding: 'clamp(1.75rem, 4vw, 3.25rem)',
-            borderRadius: 'var(--md-sys-shape-corner-xl)',
-            display: 'grid',
-            gap: '1.1rem',
             background:
               'radial-gradient(circle at 88% 18%, rgb(237 209 110 / 0.22), transparent 44%), linear-gradient(140deg, #071b13 0%, #0f3325 60%, #174936 100%)',
           }}
         >
-          <div className="m3-hero-copy" style={{ display: 'grid', gap: '0.85rem', maxInlineSize: '50rem' }}>
+          <div className="m3-hero-copy page-hero-inner">
             <span className="m3-label-large" style={{ color: '#f1de97' }}>
               Medicina FURB · Fundado em {MEDFURB_DATA.foundedDate}
             </span>
-            <h1 style={{ color: '#ffffff' }}>Sobre a MEDFURB</h1>
-            <p style={{ color: '#dceddf' }}>
+            <AnimatedClimateTitle tone="light" accessibleHeading="Sobre a MEDFURB">
+              MedFURB
+            </AnimatedClimateTitle>
+            <p className="page-hero-desc">
               Hospital Universitário próprio, acreditação internacional SAEME e estrutura integrada de ensino, pesquisa e
               extensão em saúde para formação médica generalista em Blumenau.
             </p>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '0.65rem 1.15rem',
-                fontSize: '0.9rem',
-                color: '#f1de97',
-              }}
-            >
-              <span>Departamento: {MEDFURB_DATA.departmentEmail}</span>
-              <span>Telefone: {MEDFURB_DATA.departmentPhone}</span>
-              <span>Vestibular ACAFE (junho e novembro)</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingBlockStart: '0.35rem' }}>
+            <div className="page-hero-actions">
               <Link to="/medfurb/instituicoes" className="m3-btn m3-btn--gold">
                 <Icon name="handshake" size={18} />
                 <span>Instituições Estudantis</span>
               </Link>
-              <a href="#sec-saeme" className="m3-btn m3-btn--blue">
-                <span>Explorar tópicos</span>
-                <Icon name="arrow_downward" size={18} />
-              </a>
             </div>
           </div>
         </div>
@@ -267,7 +252,7 @@ export function MedfurbPage() {
                 className="m3-btn m3-btn--text"
                 style={{ justifySelf: 'start', paddingInlineStart: 0 }}
               >
-                <span>Edital e detalhes na FURB</span>
+                <span>{aid.linkLabel}</span>
                 <Icon name="open_in_new" size={18} />
               </a>
             </article>
@@ -338,6 +323,57 @@ export function MedfurbPage() {
           </div>
         </div>
       </section>
+
+      {/* 9. Seção Contatos Oficiais do Curso */}
+      <section id="sec-contatos" className="page-section" style={{ background: 'var(--md-sys-color-surface-container-low)' }}>
+        <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
+          <div className="m3-motion-from-start" style={{ maxInlineSize: '46rem', display: 'grid', gap: '0.45rem' }}>
+            <span className="m3-label-large" style={{ color: 'var(--camblu-action-blue)' }}>
+              Atendimento & Secretaria
+            </span>
+            <h2>Contatos Oficiais da Medicina FURB</h2>
+            <p className="text-muted">
+              Canais diretos do Departamento de Medicina e informações sobre o ingresso pelo vestibular.
+            </p>
+          </div>
+
+          <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 17rem), 1fr))' }}>
+            <article className="m3-card m3-motion-stagger" style={{ '--stagger-i': 0, display: 'grid', gap: '0.55rem', alignContent: 'start' } as React.CSSProperties}>
+              <span className="m3-label-large" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--camblu-action-blue)' }}>
+                <Icon name="mail" size={19} />
+                Departamento de Medicina
+              </span>
+              <a href={`mailto:${MEDFURB_DATA.departmentEmail}`} style={{ fontSize: '1.05rem', fontWeight: 700, overflowWrap: 'anywhere' }}>
+                {MEDFURB_DATA.departmentEmail}
+              </a>
+              <p className="text-muted">Atendimento institucional e demandas acadêmicas da graduação.</p>
+            </article>
+
+            <article className="m3-card m3-motion-stagger" style={{ '--stagger-i': 1, display: 'grid', gap: '0.55rem', alignContent: 'start' } as React.CSSProperties}>
+              <span className="m3-label-large" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--camblu-action-blue)' }}>
+                <Icon name="call" size={19} />
+                Telefone da Secretaria
+              </span>
+              <a href={`tel:${MEDFURB_DATA.departmentPhone.replace(/\D/g, '')}`} style={{ fontSize: '1.05rem', fontWeight: 700 }}>
+                {MEDFURB_DATA.departmentPhone}
+              </a>
+              <p className="text-muted">Contato telefônico direto com a secretaria do curso na FURB.</p>
+            </article>
+
+            <article className="m3-card m3-motion-stagger" style={{ '--stagger-i': 2, display: 'grid', gap: '0.55rem', alignContent: 'start' } as React.CSSProperties}>
+              <span className="m3-label-large" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--camblu-action-blue)' }}>
+                <Icon name="school" size={19} />
+                Ingresso na Graduação
+              </span>
+              <strong>Vestibular ACAFE (junho e novembro)</strong>
+              <p className="text-muted">Seleções semestrais com ingresso de novas turmas a cada semestre letivo.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {/* 10. Linha do Tempo Horizontal da Matriz Curricular 2025.1 */}
+      <CurriculumTimelineSection />
     </div>
   );
 }

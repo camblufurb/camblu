@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import type { EditalItem } from '../types/domain';
 
 const SECTION_CONFIG: { status: EditalItem['status']; heading: string; badgeClass: string; badgeLabel: string }[] = [
@@ -28,12 +29,16 @@ export function EditaisPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest">
-        <h1 style={{ marginBlockEnd: '0.5rem' }}>Editais do CAMBLU</h1>
-        <p style={{ color: '#dceddf' }}>
-          Programas de apoio acadêmico e financeiro (E-PAF, E-PAATC, E-PAFLIEC), eleições estudantis e chamadas da
-          SECIMED com download direto do edital oficial em PDF.
-        </p>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle tone="light">
+            Editais
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
+            Programas de apoio acadêmico e financeiro (E-PAF, E-PAATC, E-PAFLIEC), eleições estudantis e chamadas da
+            SECIMED com download direto do edital oficial em PDF.
+          </p>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }} role="group" aria-label="Filtrar editais por status">

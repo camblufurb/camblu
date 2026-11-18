@@ -1,3 +1,10 @@
+export interface ManualPhotoPlaceholder {
+  title: string;
+  caption: string;
+  icon: string;
+  afterParagraphIndex?: number;
+}
+
 export interface ManualChapter {
   id: string;
   title: string;
@@ -7,6 +14,7 @@ export interface ManualChapter {
     heading: string;
     paragraphs: string[];
     bullets?: string[];
+    photoSlot?: ManualPhotoPlaceholder;
     links?: { label: string; url: string }[];
   }[];
 }
@@ -36,6 +44,12 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
           'Seja bem-vindo à Medicina da FURB! Aqui você vai rir, estudar muito, construir amizades para a vida toda e descobrir que a jornada médica é tão intensa quanto gratificante.',
           'Seus veteranos, professores e todas as entidades estudantis (CAMBLU, AAARIH e IFMSA Brazil FURB) estão aqui para apoiar você desde o primeiro dia.',
         ],
+        photoSlot: {
+          title: 'Recepção dos Calouros — Turma LXIII',
+          caption: 'Placeholder de foto: encontro de boas-vindas entre calouros, veteranos e entidades da MEDFURB',
+          icon: 'celebration',
+          afterParagraphIndex: 0,
+        },
       },
     ],
   },
@@ -51,6 +65,12 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
           'Fundado em 05/03/1990, o curso de Medicina da FURB completa 36 anos formando médicos com sólida base geral, já somando 51 turmas formadas — e recebendo agora a Turma LXIII.',
           'O coordenador do curso é o Prof. Dr. Leandro José Haas (neurocirurgião e professor da disciplina de Neurocirurgia). O Departamento funciona no 1º andar do Bloco J (Campus 1) pelo e-mail medicina@furb.br e telefone (47) 3321-0277.',
         ],
+        photoSlot: {
+          title: 'Bloco J (Campus 1) & Policlínica FURB',
+          caption: 'Placeholder de foto: fachada do Bloco J, laboratórios ou áreas clínicas da graduação',
+          icon: 'local_hospital',
+          afterParagraphIndex: 0,
+        },
       },
       {
         heading: 'Único curso em Santa Catarina com Acreditação Internacional SAEME',
@@ -71,12 +91,19 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         paragraphs: [
           'O Centro Acadêmico de Medicina de Blumenau representa todos os estudantes perante a universidade e coordena eventos, ações filantrópicas, calendário acadêmico e espaços no Edifício Cristina (Convivência, Coworking e Descanso).',
         ],
+        photoSlot: {
+          title: 'Cerimônia do Jaleco & Espaços CAMBLU',
+          caption: 'Placeholder de foto: Cerimônia do Jaleco ou salas de Convivência e Coworking no Edifício Cristina',
+          icon: 'checkroom',
+          afterParagraphIndex: 0,
+        },
         bullets: [
           'Cerimônia do Jaleco: ritual de passagem em que o veterano veste o jaleco no calouro e acontece a assinatura oficial do Livro de Linhagens.',
           'Integração de Calouros: encontro festivo e acolhedor no início de cada semestre entre calouros e veteranos.',
           'SECIMED: Semana Científica de Medicina realizada anualmente desde 2002 com palestras, workshops e publicação de Anais.',
           'Lojinha do CAMBLU e Clube CAMBLU: produtos oficiais e planos de vantagens integrados aqui no site.',
         ],
+        links: [{ label: 'Enviar Demanda na Página do CAMBLU', url: '/demandas' }],
       },
     ],
   },
@@ -91,12 +118,19 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         paragraphs: [
           'Fundada em 12/11/2005, a AAARIH é referência esportiva e festiva no sul do Brasil, levando o mascote Leão da Medicina FURB para quadras e arenas.',
         ],
+        photoSlot: {
+          title: 'AAARIH, Intermed Sul & Bateria Fera',
+          caption: 'Placeholder de foto: delegação em quadra no Intermed, Sunset ou batucada da Bateria Fera',
+          icon: 'sports_soccer',
+          afterParagraphIndex: 0,
+        },
         bullets: [
           'Competições: Intermed Sul (36 atléticas), JUMED/SC, CopaMed e Jogos Internos (JIM).',
           'Treinos semanais em diversas modalidades para sócios.',
           'Eventos clássicos: Sunset (apresentação oficial de cada novo leão) e Oktomed.',
           'Bateria Fera: a batucada oficial da Medicina FURB aberta a novos ritmistas desde a 1ª fase.',
         ],
+        links: [{ label: 'Instagram AAARIH (@atleticamedfurb)', url: 'https://www.instagram.com/atleticamedfurb/' }],
       },
     ],
   },
@@ -111,6 +145,12 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         paragraphs: [
           'O comitê local conecta acadêmicos da FURB à maior federação estudantil médica do mundo, acumulando pontos para intercâmbios nacionais e internacionais.',
         ],
+        photoSlot: {
+          title: 'Ações da IFMSA Brazil FURB',
+          caption: 'Placeholder de foto: campanhas de saúde pública, Hospital do Ursinho ou ações locais dos comitês',
+          icon: 'public',
+          afterParagraphIndex: 0,
+        },
         bullets: [
           'SCOME: Educação Médica e preenchimento de lacunas curriculares.',
           'SCOPH: Saúde Pública (Hospital do Ursinho, ações em comunidade, Setembro Amarelo).',
@@ -118,6 +158,7 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
           'SCORP: Direitos Humanos, Paz e acolhimento de minorias na saúde.',
           'Intercâmbio, Capacity Building (CB) e NUPEC (Núcleo de Pesquisa Científica).',
         ],
+        links: [{ label: 'Instagram IFMSA Brazil FURB (@ifmsabrazilfurb)', url: 'https://www.instagram.com/ifmsabrazilfurb/' }],
       },
     ],
   },
@@ -133,6 +174,13 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
           'As ligas promovem palestras, discussões de casos clínicos, workshops práticos, produção científica e estágios extracurriculares aprovados pelo DAEX.',
           'Você pode participar de mais de uma liga ao mesmo tempo — apenas cuide dos horários e da frequência mínima exigida para certificação.',
         ],
+        photoSlot: {
+          title: 'Workshops & Sessões Clínicas das Ligas',
+          caption: 'Placeholder de foto: aulas abertas, simulações de procedimentos ou eventos das Ligas Acadêmicas',
+          icon: 'biotech',
+          afterParagraphIndex: 0,
+        },
+        links: [{ label: 'Explorar Catálogo de Ligas', url: '/ligas' }],
       },
     ],
   },
@@ -148,6 +196,12 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
           'Na MEDFURB o trote tem foco solidário e social, conectando os recém-ingressos a ações comunitárias em Blumenau.',
           'Já as Linhagens formam árvores de apadrinhamento registradas em livro oficial: seu veterano orienta rotinas de estudo, empresta materiais e acompanha sua adaptação ao curso até a formatura.',
         ],
+        photoSlot: {
+          title: 'Trote Solidário & Livro de Linhagens',
+          caption: 'Placeholder de foto: ações comunitárias do trote solidário ou registro das árvores de linhagem',
+          icon: 'diversity_3',
+          afterParagraphIndex: 0,
+        },
       },
     ],
   },
@@ -162,6 +216,12 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         paragraphs: [
           'Domine desde a primeira semana os três sistemas digitais da FURB para não perder prazos de matrícula, frequências ou entregas.',
         ],
+        photoSlot: {
+          title: 'Campus FURB, Laboratórios & Mostra MIPE',
+          caption: 'Placeholder de foto: vivência acadêmica nos laboratórios da FURB ou apresentação na MIPE',
+          icon: 'science',
+          afterParagraphIndex: 0,
+        },
         bullets: [
           'Portal Acadêmico: rematrícula, horários, requerimentos, envio de AACCs e classificados.',
           'DION: consulta de notas e controle de faltas (mantenha sempre sua própria anotação de presença).',
@@ -187,7 +247,15 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         heading: 'Opções de permanência na FURB',
         paragraphs: [
           'Fique atento aos editais semestrais da Coordenadoria de Assuntos Estudantis (CAE · cae@furb.br · (47) 3321-0307). No Universidade Gratuita, lembre-se da obrigatoriedade semestral de aprovação mínima de 75% das disciplinas cursadas.',
+          'Além do programa estadual Universidade Gratuita (furb.br/ug), você também pode consultar opções como o FlexFURB (financiamento próprio da universidade) e o Financiamento Estudantil Unicred diretamente nos canais oficiais da FURB.',
         ],
+        photoSlot: {
+          title: 'Atendimento CAE & Campus 1 FURB',
+          caption: 'Placeholder de foto: espaço de acolhimento da CAE ou Campus 1 onde ocorrem os editais estudantis',
+          icon: 'payments',
+          afterParagraphIndex: 0,
+        },
+        links: [{ label: 'Universidade Gratuita (furb.br/ug)', url: 'https://www.furb.br/ug' }],
       },
     ],
   },
@@ -201,7 +269,17 @@ export const MANUAL_CHAPTERS: ManualChapter[] = [
         heading: 'Para cuidar do outro, cuide primeiro de você',
         paragraphs: [
           'O início da faculdade traz muitas expectativas e disciplinas densas como Anatomia. Organize sua rotina com metas realistas, evite comparações, crie rede de apoio e procure o acolhimento psicológico da CAE quando sentir necessidade.',
-          'Se presenciar ou viver qualquer situação ofensiva ou de assédio no curso, utilize o canal sigiloso CAMBLU Mulher aqui no portal — aberto a qualquer estudante.',
+          'Se presenciar ou viver qualquer situação ofensiva ou de assédio no curso, utilize o canal sigiloso CAMBLU Mulher aqui no portal — aberto a qualquer estudante, além do portal de Demandas para solicitações estudantis.',
+        ],
+        photoSlot: {
+          title: 'Rede de Apoio & Bem-Estar na MEDFURB',
+          caption: 'Placeholder de foto: rodas de conversa, acolhimento estudantil e ações de bem-estar do CAMBLU',
+          icon: 'favorite',
+          afterParagraphIndex: 0,
+        },
+        links: [
+          { label: 'Canal CAMBLU Mulher', url: '/camblu-mulher' },
+          { label: 'Página de Demandas', url: '/demandas' },
         ],
       },
     ],

@@ -4,6 +4,7 @@ import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import {
   exportCertificatePdf,
   exportCertificatePng,
@@ -107,8 +108,13 @@ export function CertificatesPage() {
     );
     return (
       <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '1.5rem' }}>
-        <div className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
-          <h1>Validação Pública de Certificado CAMBLU</h1>
+        <div className="m3-card page-hero-card" style={{ display: 'grid', gap: '1.1rem' }}>
+          <AnimatedClimateTitle tone="primary" accessibleHeading="Validação Pública de Certificado CAMBLU">
+            Certificados
+          </AnimatedClimateTitle>
+          <div className="hero-editorial-subtitle hero-editorial-subtitle--on-light">
+            Validação Pública de Certificado CAMBLU
+          </div>
           <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
             <input
               type="text"
@@ -159,11 +165,11 @@ export function CertificatesPage() {
   if (!profile) {
     return (
       <section className="page-section container m3-reveal">
-        <div className="m3-card" style={{ maxInlineSize: '36rem', marginInline: 'auto', textAlign: 'center' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>
-            Acesse sua área de Certificados
-          </h1>
-          <p className="text-muted" style={{ marginInline: 'auto', marginBlockEnd: '1rem' }}>
+        <div className="m3-card page-hero-card" style={{ maxInlineSize: '42rem', marginInline: 'auto', textAlign: 'center', display: 'grid', gap: '1.1rem', justifyItems: 'center' }}>
+          <AnimatedClimateTitle tone="primary" align="center" accessibleHeading="Acesse sua área de Certificados">
+            Certificados
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc page-hero-desc--on-light" style={{ marginInline: 'auto' }}>
             Entre com sua conta Google para visualizar e baixar seus certificados em PDF ou PNG.
           </p>
           <button
@@ -186,9 +192,11 @@ export function CertificatesPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '1.75rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-        <div>
-          <h1>Meus Certificados Automáticos</h1>
-          <p className="text-muted">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle tone="primary" accessibleHeading="Meus Certificados Automáticos">
+            Certificados
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc page-hero-desc--on-light">
             Gerados automaticamente após a leitura de presença dos QR Codes do evento. Exporte em PDF (para AACCs) ou PNG.
           </p>
         </div>

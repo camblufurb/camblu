@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { SECIMED_INFO } from '../data/institutional';
 
 /**
@@ -27,26 +28,31 @@ export function AnaisSecimedPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'grid', gap: '0.85rem' }}>
-        <span className="m3-label-large" style={{ color: '#f1de97' }}>
-          ISSN {SECIMED_INFO.issn} · Acesso Aberto CC BY-NC 4.0 · Publicação Gratuita
-        </span>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
+          <span className="m3-label-large" style={{ color: '#f1de97' }}>
+            ISSN {SECIMED_INFO.issn} · Acesso Aberto CC BY-NC 4.0 · Publicação Gratuita
+          </span>
 
-        <h1>Anais da Semana Científica de Medicina (SECIMED)</h1>
-        <p style={{ color: '#dceddf' }}>
-          Publicação científica oficial do curso de Medicina da FURB reunindo os trabalhos e resumos aprovados e
-          apresentados na SECIMED, promovendo ciência aberta e intercâmbio acadêmico gratuito.
-        </p>
+          <AnimatedClimateTitle tone="light" accessibleHeading="Anais — Semana Científica de Medicina (SECIMED)">
+            Anais
+          </AnimatedClimateTitle>
+          <div className="hero-editorial-subtitle">Semana Científica de Medicina (SECIMED)</div>
+          <p className="page-hero-desc">
+            Publicação científica oficial do curso de Medicina da FURB reunindo os trabalhos e resumos aprovados e
+            apresentados na SECIMED, promovendo ciência aberta e intercâmbio acadêmico gratuito.
+          </p>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <a href={SECIMED_INFO.zenodoUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--gold">
-            <Icon name="open_in_new" size={18} />
-            <span>Comunidade no Zenodo</span>
-          </a>
-          <Link to="/secimed" className="m3-btn m3-btn--outlined" style={{ color: '#ffffff', borderColor: 'rgb(255 255 255 / 0.35)' }}>
-            <Icon name="science" size={18} />
-            <span>Sobre a SECIMED</span>
-          </Link>
+          <div className="page-hero-actions">
+            <a href={SECIMED_INFO.zenodoUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--gold">
+              <Icon name="open_in_new" size={18} />
+              <span>Comunidade no Zenodo</span>
+            </a>
+            <Link to="/secimed" className="m3-btn m3-btn--outlined" style={{ color: '#ffffff', borderColor: 'rgb(255 255 255 / 0.35)' }}>
+              <Icon name="science" size={18} />
+              <span>Sobre a SECIMED</span>
+            </Link>
+          </div>
         </div>
       </div>
 

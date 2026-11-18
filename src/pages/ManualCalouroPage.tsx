@@ -1,16 +1,93 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ExpressiveShapeFrame, M3_SHAPE_ROTATION } from '../components/ExpressiveShapeFrame';
 import { Icon } from '../components/Icon';
-import { FRESHMAN_CHECKLIST, MANUAL_CHAPTERS, MANUAL_PDF_URL } from '../data/manualCalouro';
+import {
+  FRESHMAN_CHECKLIST,
+  MANUAL_CHAPTERS,
+  MANUAL_PDF_URL,
+  type ManualPhotoPlaceholder,
+} from '../data/manualCalouro';
+import type { M3ShapeVariant } from '../types/domain';
+
+const TOP_GALLERY_SLOTS: {
+  icon: string;
+  title: string;
+  caption: string;
+  shape: M3ShapeVariant;
+}[] = [
+  { icon: 'celebration', title: 'Recepção & Integração', caption: 'Foto: Recepção dos Calouros / Sunset AAARIH', shape: 'arch' },
+  { icon: 'checkroom', title: 'Cerimônia do Jaleco', caption: 'Foto: Entrega solene dos jalecos aos ingressantes', shape: 'clover4' },
+  { icon: 'local_hospital', title: 'Hospital Universitário & Campus', caption: 'Foto: Prática clínica e Policlínica FURB', shape: 'sunny' },
+  { icon: 'apartment', title: 'Salas no Edifício Cristina', caption: 'Foto: Convivência e Coworking exclusivos', shape: 'flower' },
+];
+
+const INLINE_PHOTO_SHAPES: M3ShapeVariant[] = [
+  'clover4',
+  'arch',
+  'flower',
+  'clover8',
+  'gem',
+  'pill',
+  'sunny',
+  'squircle',
+  'circle',
+  'clover4',
+];
+
+function ManualPhotoPlaceholderCard({
+  slot,
+  shape,
+  hoverRotateDeg = 4,
+  top = false,
+}: {
+  slot: Pick<ManualPhotoPlaceholder, 'icon' | 'title' | 'caption'>;
+  shape: M3ShapeVariant;
+  hoverRotateDeg?: number;
+  top?: boolean;
+}) {
+  return (
+    <figure className={`calouro-photo-placeholder m3-shape-card ${top ? 'calouro-photo-placeholder--top' : ''}`}>
+      <div className="calouro-shaped-frame-wrap">
+        <ExpressiveShapeFrame shape={shape} maxWidth={top ? '9.5rem' : '10.5rem'} hoverRotateDeg={hoverRotateDeg}>
+          <div className="calouro-shaped-canvas" aria-hidden="true">
+            <div style={{ display: 'grid', placeItems: 'center', gap: '0.25rem' }}>
+              <Icon name={slot.icon} size={34} />
+              <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)', fontSize: '0.68rem' }}>
+                Espaço de foto
+              </span>
+            </div>
+          </div>
+        </ExpressiveShapeFrame>
+      </div>
+
+      <div className="calouro-photo-copy">
+        <strong style={{ fontSize: '0.96rem' }}>{slot.title}</strong>
+        <figcaption className="text-muted" style={{ fontSize: '0.82rem', maxInlineSize: 'min(100%, 40ch)' }}>
+          {slot.caption}
+        </figcaption>
+      </div>
+    </figure>
+  );
+}
 
 const CHECKLIST_KEY = 'camblu.freshman.checklist';
 
-const QUICK_PATHWAYS = [
+const QUICK_PATHWAYS: {
+  to: string;
+  title: string;
+  detail: string;
+  icon: string;
+  shape: M3ShapeVariant;
+  bg: string;
+  accent: string;
+}[] = [
   {
     to: '/perfil',
     title: 'Cadastro & Camiseta',
     detail: 'Informe sua turma e tamanho da camiseta de calouro.',
     icon: 'checkroom',
+    shape: 'clover4',
     bg: '#e3eeff',
     accent: '#3b82f7',
   },
@@ -19,6 +96,7 @@ const QUICK_PATHWAYS = [
     title: 'Entidades MEDFURB',
     detail: 'CAMBLU, AAARIH, DCE FURB e IFMSA Brazil.',
     icon: 'groups',
+    shape: 'sunny',
     bg: '#ebf8f1',
     accent: '#22a06b',
   },
@@ -27,6 +105,7 @@ const QUICK_PATHWAYS = [
     title: '35 Ligas Acadêmicas',
     detail: 'Explore ensino, pesquisa e extensão desde a 1ª fase.',
     icon: 'biotech',
+    shape: 'flower',
     bg: '#fbf3d5',
     accent: '#9c7206',
   },
@@ -35,6 +114,7 @@ const QUICK_PATHWAYS = [
     title: 'Calendário & Sistemas',
     detail: 'Datas oficiais, DION, AVA3 e controle de AACCs.',
     icon: 'calendar_month',
+    shape: 'gem',
     bg: '#ede9fe',
     accent: '#6d28d9',
   },
@@ -73,7 +153,10 @@ export function ManualCalouroPage() {
           (b) =>
             b.heading.toLowerCase().includes(q) ||
             b.paragraphs.some((p) => p.toLowerCase().includes(q)) ||
-            b.bullets?.some((li) => li.toLowerCase().includes(q)),
+            b.bullets?.some((li) => li.toLowerCase().includes(q)) ||
+            b.photoSlot?.title.toLowerCase().includes(q) ||
+            b.photoSlot?.caption.toLowerCase().includes(q) ||
+            b.links?.some((lk) => lk.label.toLowerCase().includes(q)),
         ),
     );
   }, [search]);
@@ -103,21 +186,19 @@ export function ManualCalouroPage() {
         </div>
 
         <div className="calouro-bento-tiles m3-hero-emblem" aria-label="Caminhos rápidos do calouro">
-          {QUICK_PATHWAYS.map((tile) => (
-            <Link key={tile.to} to={tile.to} className="calouro-bento-tile" style={{ background: tile.bg }}>
-              <span
-                style={{
-                  inlineSize: '2.5rem',
-                  blockSize: '2.5rem',
-                  borderRadius: 'var(--md-sys-shape-corner-md)',
-                  background: '#ffffff',
-                  color: tile.accent,
-                  display: 'grid',
-                  placeItems: 'center',
-                }}
-              >
-                <Icon name={tile.icon} size={22} />
-              </span>
+          {QUICK_PATHWAYS.map((tile, tIdx) => (
+            <Link key={tile.to} to={tile.to} className="calouro-bento-tile m3-shape-card" style={{ background: tile.bg }}>
+              <div className="calouro-icon-shape-wrap">
+                <ExpressiveShapeFrame shape={tile.shape} maxWidth="2.85rem" hoverRotateDeg={tIdx % 2 === 0 ? 6 : -6}>
+                  <div
+                    className="calouro-icon-shape-inner"
+                    style={{ background: '#ffffff', color: tile.accent }}
+                    aria-hidden="true"
+                  >
+                    <Icon name={tile.icon} size={22} />
+                  </div>
+                </ExpressiveShapeFrame>
+              </div>
               <div style={{ display: 'grid', gap: '0.2rem' }}>
                 <strong style={{ fontSize: '0.96rem' }}>{tile.title}</strong>
                 <span className="text-muted" style={{ fontSize: '0.82rem', lineHeight: 1.35 }}>
@@ -139,34 +220,14 @@ export function ManualCalouroPage() {
         </div>
 
         <div className="grid-cards">
-          {[
-            { icon: 'celebration', title: 'Recepção & Integração', caption: 'Foto: Recepção dos Calouros / Sunset AAARIH' },
-            { icon: 'checkroom', title: 'Cerimônia do Jaleco', caption: 'Foto: Entrega solene dos jalecos aos ingressantes' },
-            { icon: 'local_hospital', title: 'Hospital Universitário & Campus', caption: 'Foto: Prática clínica e Policlínica FURB' },
-            { icon: 'apartment', title: 'Salas no Edifício Cristina', caption: 'Foto: Convivência e Coworking exclusivos' },
-          ].map((slot) => (
-            <figure
+          {TOP_GALLERY_SLOTS.map((slot, sIdx) => (
+            <ManualPhotoPlaceholderCard
               key={slot.title}
-              style={{
-                margin: 0,
-                aspectRatio: '16 / 10',
-                borderRadius: 'var(--md-sys-shape-corner-lg)',
-                border: '2px dashed var(--md-sys-color-outline-variant)',
-                background: 'var(--md-sys-color-surface-container-low)',
-                display: 'grid',
-                placeItems: 'center',
-                textAlign: 'center',
-                padding: '1rem',
-                gap: '0.35rem',
-                alignContent: 'center',
-              }}
-            >
-              <Icon name={slot.icon} size={32} className="m3-badge--blue" />
-              <strong style={{ fontSize: '0.94rem' }}>{slot.title}</strong>
-              <figcaption className="text-muted" style={{ fontSize: '0.78rem' }}>
-                {slot.caption}
-              </figcaption>
-            </figure>
+              slot={slot}
+              shape={slot.shape}
+              hoverRotateDeg={sIdx % 2 === 0 ? 5 : -5}
+              top
+            />
           ))}
         </div>
       </article>
@@ -259,72 +320,103 @@ export function ManualCalouroPage() {
             </button>
           </div>
         ) : (
-          filteredChapters.map((chap, idx) => (
-            <article key={chap.id} id={chap.id} className="calouro-chapter-band m3-motion-stagger" style={{ '--stagger-i': idx } as React.CSSProperties}>
-              <aside className="calouro-chapter-aside" style={{ display: 'grid', gap: '0.65rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <div
-                    style={{
-                      inlineSize: '2.75rem',
-                      blockSize: '2.75rem',
-                      borderRadius: 'var(--md-sys-shape-corner-md)',
-                      background: 'var(--camblu-action-blue-container)',
-                      color: 'var(--camblu-action-blue)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Icon name={chap.icon} size={22} />
+          filteredChapters.map((chap, idx) => {
+            const iconShape = M3_SHAPE_ROTATION[(idx + 2) % M3_SHAPE_ROTATION.length];
+            const photoShape = INLINE_PHOTO_SHAPES[idx % INLINE_PHOTO_SHAPES.length];
+            const rotateDeg = idx % 2 === 0 ? 5 : -5;
+            return (
+              <article key={chap.id} id={chap.id} className="calouro-chapter-band m3-motion-stagger" style={{ '--stagger-i': idx } as React.CSSProperties}>
+                <aside className="calouro-chapter-aside m3-shape-card" style={{ display: 'grid', gap: '0.65rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div className="calouro-icon-shape-wrap">
+                      <ExpressiveShapeFrame shape={iconShape} maxWidth="2.85rem" hoverRotateDeg={rotateDeg}>
+                        <div
+                          className="calouro-icon-shape-inner"
+                          style={{ background: 'var(--camblu-action-blue-container)', color: 'var(--camblu-action-blue)' }}
+                          aria-hidden="true"
+                        >
+                          <Icon name={chap.icon} size={22} />
+                        </div>
+                      </ExpressiveShapeFrame>
+                    </div>
+                    <span className="m3-label-large" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
+                      Capítulo {String(idx + 1).padStart(2, '0')}
+                    </span>
                   </div>
-                  <span className="m3-label-large" style={{ color: 'var(--md-sys-color-on-surface-variant)' }}>
-                    Capítulo {String(idx + 1).padStart(2, '0')}
-                  </span>
-                </div>
-                <h2>{chap.title}</h2>
-                <p className="text-muted">{chap.summary}</p>
-              </aside>
+                  <h2>{chap.title}</h2>
+                  <p className="text-muted">{chap.summary}</p>
+                </aside>
 
-              <div style={{ display: 'grid', gap: '1.1rem' }}>
-                {chap.blocks.map((block) => (
-                  <div
-                    key={block.heading}
-                    className="m3-card m3-card--tonal"
-                    style={{ padding: '1.15rem 1.25rem', display: 'grid', gap: '0.6rem' }}
-                  >
-                    <h3>{block.heading}</h3>
-                    {block.paragraphs.map((p) => (
-                      <p key={p}>{p}</p>
-                    ))}
-                    {block.bullets && (
-                      <ul style={{ margin: 0, paddingInlineStart: '1.25rem', display: 'grid', gap: '0.4rem' }}>
-                        {block.bullets.map((b) => (
-                          <li key={b}>{b}</li>
+                <div className="calouro-chapter-content">
+                  {chap.blocks.map((block) => {
+                    const photoInsertIdx = block.photoSlot
+                      ? Math.min(block.photoSlot.afterParagraphIndex ?? 0, Math.max(0, block.paragraphs.length - 1))
+                      : -1;
+                    return (
+                      <div key={block.heading} className="m3-card m3-card--tonal calouro-block-card">
+                        <h3>{block.heading}</h3>
+                        {block.paragraphs.length === 0 && block.photoSlot && (
+                          <ManualPhotoPlaceholderCard
+                            slot={block.photoSlot}
+                            shape={photoShape}
+                            hoverRotateDeg={rotateDeg}
+                          />
+                        )}
+                        {block.paragraphs.map((p, pIdx) => (
+                          <Fragment key={p}>
+                            <p>{p}</p>
+                            {block.photoSlot && photoInsertIdx === pIdx && (
+                              <ManualPhotoPlaceholderCard
+                                slot={block.photoSlot}
+                                shape={photoShape}
+                                hoverRotateDeg={rotateDeg}
+                              />
+                            )}
+                          </Fragment>
                         ))}
-                      </ul>
-                    )}
-                    {block.links && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', paddingBlockStart: '0.35rem' }}>
-                        {block.links.map((lk) => (
-                          <a
-                            key={lk.url}
-                            href={lk.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="m3-btn m3-btn--blue"
-                            style={{ minBlockSize: '40px' }}
-                          >
-                            <Icon name="open_in_new" size={17} />
-                            <span>{lk.label}</span>
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      {block.bullets && (
+                        <ul style={{ margin: 0, paddingInlineStart: '1.25rem', display: 'grid', gap: '0.4rem' }}>
+                          {block.bullets.map((b) => (
+                            <li key={b}>{b}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {block.links && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', paddingBlockStart: '0.35rem' }}>
+                          {block.links.map((lk) =>
+                            lk.url.startsWith('/') ? (
+                              <Link
+                                key={lk.url}
+                                to={lk.url}
+                                className="m3-btn m3-btn--blue"
+                                style={{ minBlockSize: '40px' }}
+                              >
+                                <Icon name="arrow_forward" size={17} />
+                                <span>{lk.label}</span>
+                              </Link>
+                            ) : (
+                              <a
+                                key={lk.url}
+                                href={lk.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="m3-btn m3-btn--blue"
+                                style={{ minBlockSize: '40px' }}
+                              >
+                                <Icon name="open_in_new" size={17} />
+                                <span>{lk.label}</span>
+                              </a>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </article>
-          ))
+            );
+          })
         )}
       </div>
     </section>

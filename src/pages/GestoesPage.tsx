@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { ExpressiveShapeFrame } from '../components/ExpressiveShapeFrame';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import type { GestaoCargo, GestaoMember } from '../types/domain';
 
 const TOP_LEADERSHIP_CARGOS: GestaoCargo[] = ['Presidente', 'Vice-Presidente', 'Tesoureiro(a)'];
@@ -75,15 +76,20 @@ export function GestoesPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ maxInlineSize: '44rem' }}>
-          <span className="m3-label-large" style={{ display: 'block', marginBlockEnd: '0.4rem', color: '#f1de97' }}>
+      <div className="m3-card m3-card--forest page-hero-card page-hero-card--split">
+        <div className="page-hero-inner" style={{ flex: '1 1 20rem' }}>
+          <span className="m3-label-large" style={{ color: '#f1de97' }}>
             Representação Discente
           </span>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>
+          <AnimatedClimateTitle tone="light" accessibleHeading={`Gestões — ${currentTerm.chapaName} (${currentTerm.year})`}>
+            GESTÕES
+          </AnimatedClimateTitle>
+          <div className="hero-editorial-subtitle">
             {currentTerm.chapaName} ({currentTerm.year})
-          </h1>
-          {currentTerm.mission && <p style={{ color: '#dceddf' }}>{currentTerm.mission}</p>}
+          </div>
+          {currentTerm.mission && (
+            <p className="page-hero-desc">{currentTerm.mission}</p>
+          )}
         </div>
 
         <div className="m3-field" style={{ minInlineSize: 'min(100%, 18rem)' }}>

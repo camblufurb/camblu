@@ -214,24 +214,28 @@ export const MEDFURB_DATA = {
       summary:
         'Programa estadual (LC nº 831/2023) para estudantes em primeira graduação presencial residentes em SC há 5+ anos ou naturais do estado, com renda per capita inferior a 8 salários mínimos para Medicina.',
       url: 'https://www.furb.br/web/5940/servicos/portal-academico/apoio-ao-estudante/universidade-gratuita',
+      linkLabel: 'Edital e detalhes na FURB',
     },
     {
       name: 'Financiamento Estudantil Unicred',
       summary:
         'Linha de financiamento acadêmico oferecida pela Unicred, patrocinadora institucional do CAMBLU, com condições diferenciadas para estudantes de Medicina.',
       url: 'https://www.unicred.com.br/',
+      linkLabel: 'Site do patrocinador',
     },
     {
       name: 'FlexFURB',
       summary:
         'Financiamento estudantil da FURB de até 70% dos encargos educacionais durante o curso, com contratação e editais próprios da universidade.',
       url: 'https://www.furb.br/web/5270/servicos/portal-academico/apoio-ao-estudante/flexfurb',
+      linkLabel: 'Edital e detalhes na FURB',
     },
     {
       name: 'UNIEDU (Renovação)',
       summary:
         'Programa estadual em fase de extinção, mantido exclusivamente para renovação dos acadêmicos já contemplados anteriormente.',
       url: 'https://www.furb.br/web/1628/servicos/portal-academico/apoio-ao-estudante/renovacao-uniedu',
+      linkLabel: 'Edital e detalhes na FURB',
     },
   ],
   optionalInternships: {

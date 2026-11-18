@@ -3,6 +3,7 @@ import { useAppData } from '../context/AppDataContext';
 import { LIGAS_CREATE_DRIVE_URL } from '../data/ligas';
 import { ExpressiveShapeFrame } from '../components/ExpressiveShapeFrame';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 
 export function LigasPage() {
   const { ligas } = useAppData();
@@ -26,23 +27,27 @@ export function LigasPage() {
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
-      <div className="m3-card m3-card--forest" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1.25rem' }}>
-        <div style={{ maxInlineSize: '46rem' }}>
-          <h1 style={{ marginBlockEnd: '0.5rem' }}>Catálogo de Ligas Acadêmicas</h1>
-          <p style={{ color: '#dceddf' }}>
+      <div className="m3-card m3-card--forest page-hero-card">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle tone="light">
+            Ligas Acadêmicas
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             A MEDFURB conta com {ligas.length} Ligas Acadêmicas ativas aprovadas pelo DAEX. O CAMBLU organiza o
             calendário unificado e impulsiona grandes eventos por meio do edital PAF-Ligas.
           </p>
+          <div className="page-hero-actions">
+            <a
+              href={LIGAS_CREATE_DRIVE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="m3-btn m3-btn--gold"
+            >
+              <Icon name="folder_open" size={19} />
+              <span>Manual: Como criar uma Liga</span>
+            </a>
+          </div>
         </div>
-        <a
-          href={LIGAS_CREATE_DRIVE_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="m3-btn m3-btn--gold"
-        >
-          <Icon name="folder_open" size={19} />
-          <span>Manual: Como criar uma Liga</span>
-        </a>
       </div>
 
       <div className="m3-card" style={{ display: 'grid', gap: '1rem' }}>

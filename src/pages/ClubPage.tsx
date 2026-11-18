@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { CambluCrest } from '../components/SponsorLogos';
 import { useToast } from '../components/ToastProvider';
 import { useAuth } from '../context/AuthContext';
@@ -52,44 +53,21 @@ export function ClubPage() {
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2.5rem' }}>
       {/* Hero Showcase (Xbox Game Pass + Fortnite Item Shop vibe) */}
-      <div className="club-hero-stage m3-motion-hero">
-        <div className="m3-hero-copy" style={{ display: 'grid', gap: '1.1rem', maxInlineSize: '42rem', flex: '1 1 22rem' }}>
-          <h1 style={{ color: '#ffffff' }}>Desbloqueie o Clube CAMBLU</h1>
-          <p style={{ color: '#e2efe7' }}>
+      <div className="club-hero-stage page-hero-card m3-motion-hero">
+        <div className="m3-hero-copy page-hero-inner" style={{ maxInlineSize: '54rem', flex: '1 1 22rem' }}>
+          <AnimatedClimateTitle tone="light">
+            Clube CAMBLU
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Suba de nível na Medicina FURB: escolha o passe que mais combina com a sua rotina acadêmica e acumule descontos na Lojinha, eventos gratuitos com Coffee, entrada na SECIMED e cartão digital exclusivo.
           </p>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', paddingBlockStart: '0.25rem' }}>
-            <a href="#planos-clube" className="m3-btn m3-btn--blue">
-              <span>Ver planos e níveis</span>
-              <Icon name="arrow_downward" size={18} />
-            </a>
+          <div className="page-hero-actions">
             <Link to="/clube/cartao" className="m3-btn m3-btn--gold">
               <Icon name="badge" size={19} />
               <span>Abrir Meu Cartão Digital</span>
             </Link>
           </div>
-        </div>
-
-        <div className="club-hero-cards-stack m3-hero-emblem" aria-label="Níveis de raridade do Clube CAMBLU">
-          {CLUB_PLANS.map((plan) => (
-            <div
-              key={plan.tier}
-              className="club-mini-tier"
-              style={{ background: plan.gradientCss }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Icon name={plan.icon} filled size={20} />
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, opacity: 0.9 }}>
-                  {plan.perks.length} itens
-                </span>
-              </div>
-              <strong style={{ fontSize: '0.96rem' }}>{plan.name}</strong>
-              <span style={{ fontSize: '0.78rem', opacity: 0.9 }}>
-                {formatBrlFromCents(getPlanPriceCents(plan.tier, cycle))}/{cycle === 'mensal' ? 'mês' : 'sem'}
-              </span>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -346,7 +324,7 @@ export function ClubPage() {
         <article className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '0.6rem', alignContent: 'center' }}>
           <h2>Parcerias Spaiq & Gorit PRO</h2>
           <p className="text-muted">
-            Assinantes ativos do Clube CAMBLU (a partir do nível Comum) têm acesso programado às vantagens de estudo nas plataformas parceiras Spaiq e Gorit PRO vinculadas ao Centro Acadêmico.
+            Assinantes ativos do Clube CAMBLU (a partir do nível Raro) têm acesso programado às vantagens de estudo nas plataformas parceiras Spaiq e Gorit PRO vinculadas ao Centro Acadêmico.
           </p>
         </article>
       </div>

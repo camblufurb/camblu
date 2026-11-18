@@ -1,4 +1,5 @@
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { InstitutionLogo, type InstitutionLogoId } from '../components/InstitutionLogo';
 
 const CAMBLU_STATUTORY_PILLARS = [
@@ -88,10 +89,12 @@ export function InstituicoesPage() {
   return (
     <section className="page-section container" style={{ display: 'grid', gap: '2.5rem' }}>
       {/* Hero */}
-      <div className="m3-card m3-card--forest m3-motion-hero" style={{ display: 'grid', gap: '0.85rem' }}>
-        <div className="m3-hero-copy" style={{ display: 'grid', gap: '0.75rem', maxInlineSize: '48rem' }}>
-          <h1>Instituições da Medicina FURB</h1>
-          <p style={{ color: '#dceddf' }}>
+      <div className="m3-card m3-card--forest page-hero-card m3-motion-hero">
+        <div className="m3-hero-copy page-hero-inner">
+          <AnimatedClimateTitle tone="light" accessibleHeading="Movimento Estudantil — Instituições da Medicina FURB">
+            MOVIMENTO ESTUDANTIL
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Conheça as quatro instituições que estruturam a representação discente, o esporte universitário, a extensão
             humanitária e os direitos estudantis no curso de Medicina da FURB.
           </p>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FloatingCartPill } from '../components/FloatingCartPill';
 import { Icon } from '../components/Icon';
+import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
 import { useShopCart } from '../context/ShopCartContext';
@@ -41,16 +42,15 @@ export function ShopPage() {
       style={{ display: 'grid', gap: '2.25rem', paddingBlockEnd: totalItemsCount > 0 ? '5.5rem' : undefined }}
     >
       {/* Hero estilo Fivebucks Outlet: LOJINHA à esquerda + 4 produtos à direita */}
-      <div className="shop-fivebucks-hero">
-        <div style={{ display: 'grid', gap: '0.85rem' }}>
-          <span className="m3-label-large" style={{ color: '#f1de97' }}>
-            CAMBLU · Medicina FURB
-          </span>
-          <h1 style={{ color: '#ffffff', letterSpacing: '0.03em' }}>LOJINHA</h1>
-          <p style={{ color: '#dceddf' }}>
+      <div className="shop-fivebucks-hero page-hero-card">
+        <div className="page-hero-inner">
+          <AnimatedClimateTitle scale="split" tone="light" accessibleHeading="Lojinha CAMBLU">
+            LOJINHA
+          </AnimatedClimateTitle>
+          <p className="page-hero-desc">
             Moletons, camisetas, garrafas térmicas e tirantes oficiais da MEDFURB com pagamento via PIX/Cartão e retirada no campus.
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
+          <div className="page-hero-actions">
             <button type="button" className="m3-btn m3-btn--gold" onClick={() => setCartOpen(true)}>
               <Icon name="shopping_cart" size={19} />
               <span>Sacola ({totalItemsCount})</span>
