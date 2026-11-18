@@ -176,6 +176,18 @@ export function resolveStudentAcademicMetadata(affiliation: UserAffiliation | st
   };
 }
 
+function resolveSafeEnrollmentSummaryUrl(raw: string | undefined): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed || trimmed.length > 1500) return undefined;
+  if (
+    /^https:\/\/firebasestorage\.googleapis\.com\//i.test(trimmed) ||
+    /^data:application\/pdf;base64,/i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+  return undefined;
+}
+
 /**
  * Builds a deterministic student-card validation payload from a local/demo UserProfile.
  */
@@ -255,14 +267,13 @@ export function buildMemberCardVerificationFromProfile(
     institution: academic.institution,
     course: academic.course,
     turma: academic.isFurbStudent && user.turma ? user.turma.trim() : '',
-    enrollmentSummaryUrl:
-      academic.isFurbStudent && user.enrollmentSummaryUrl?.trim()
-        ? user.enrollmentSummaryUrl.trim()
-        : undefined,
+    enrollmentSummaryUrl: academic.isFurbStudent
+      ? resolveSafeEnrollmentSummaryUrl(user.enrollmentSummaryUrl)
+      : undefined,
     profileCompleted: Boolean(user.profileCompleted),
     reason: academic.isFurbStudent
       ? undefined
-      : 'Plano ativo no Clube CAMBLU, porém este cadastro possui vínculo Externo (não vinculado ao curso de Medicina FURB).',
+      : 'Cartão de membro externo ativo no Clube CAMBLU (não vinculado ao curso de Medicina FURB).',
     verifiedAt,
   };
 }

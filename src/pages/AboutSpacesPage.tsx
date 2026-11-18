@@ -6,6 +6,7 @@ import { M3Dialog } from '../components/M3Dialog';
 import { Icon } from '../components/Icon';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { SPACES_DATA } from '../data/institutional';
+import { buildMarqueeRowItems, getMemberInitials, sortGestaoTermsDesc } from '../lib/gestoes';
 import type { GestaoMember } from '../types/domain';
 
 const CAMBLU_PILLARS = [
@@ -44,15 +45,40 @@ const STATUTORY_GOALS = [
   'Realizar reuniões semanais democráticas e abertas a todos os estudantes de Medicina da FURB.',
 ];
 
-function buildMarqueeRowMembers(members: GestaoMember[], rowIndex: number): GestaoMember[] {
-  if (members.length === 0) return [];
-  const subset = members.filter((_, i) => i % 3 === rowIndex);
-  const source = subset.length > 0 ? subset : members;
-  const repeated: GestaoMember[] = [];
-  while (repeated.length < 8) {
-    repeated.push(...source);
-  }
-  return repeated;
+function MarqueeMemberButton({
+  member,
+  onSelect,
+  decorative = false,
+}: {
+  member: GestaoMember;
+  onSelect: (member: GestaoMember) => void;
+  decorative?: boolean;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <button
+      type="button"
+      className="sobre-member-btn"
+      tabIndex={decorative ? -1 : undefined}
+      aria-label={decorative ? undefined : `${member.name} — ${member.cargo}`}
+      onClick={() => onSelect(member)}
+    >
+      <span className="sobre-member-fallback" aria-hidden="true">
+        {getMemberInitials(member.name)}
+      </span>
+      {member.photoUrl && !imgError ? (
+        <img
+          className="sobre-member-avatar"
+          src={member.photoUrl}
+          alt={decorative ? '' : member.name}
+          loading="eager"
+          decoding="async"
+          onError={() => setImgError(true)}
+        />
+      ) : null}
+    </button>
+  );
 }
 
 /**
@@ -62,18 +88,22 @@ function buildMarqueeRowMembers(members: GestaoMember[], rowIndex: number): Gest
 export function AboutSpacesPage() {
   const { gestoes } = useAppData();
   const [selectedMember, setSelectedMember] = useState<GestaoMember | null>(null);
+  const [marqueePaused, setMarqueePaused] = useState(false);
 
   const currentTerm = useMemo(
-    () => [...gestoes].sort((a, b) => b.year - a.year)[0],
+    () => sortGestaoTermsDesc(gestoes)[0],
     [gestoes],
   );
 
   const marqueeRows = useMemo(() => {
     const members = currentTerm?.members || [];
+    const r1 = buildMarqueeRowItems(members, 0, 3, 24);
+    const r2 = buildMarqueeRowItems(members, 1, 3, 24);
+    const r3 = buildMarqueeRowItems(members, 2, 3, 24);
     return [
-      { id: 'row-1', speedSeconds: 28, reverse: false, items: buildMarqueeRowMembers(members, 0) },
-      { id: 'row-2', speedSeconds: 38, reverse: true, items: buildMarqueeRowMembers(members, 1) },
-      { id: 'row-3', speedSeconds: 32, reverse: false, items: buildMarqueeRowMembers(members, 2) },
+      { id: 'row-1', speedSeconds: Math.max(42, Math.round(r1.length * 1.9)), reverse: false, items: r1 },
+      { id: 'row-2', speedSeconds: Math.max(54, Math.round(r2.length * 2.35)), reverse: true, items: r2 },
+      { id: 'row-3', speedSeconds: Math.max(46, Math.round(r3.length * 2.05)), reverse: false, items: r3 },
     ];
   }, [currentTerm]);
 
@@ -203,13 +233,28 @@ export function AboutSpacesPage() {
                 Clique em qualquer foto para visualizar o nome e o cargo do integrante na diretoria.
               </p>
             </div>
-            <Link to="/gestoes" className="m3-btn m3-btn--outlined">
-              <Icon name="badge" size={18} />
-              <span>Ver todas as gestões</span>
-            </Link>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="m3-btn m3-btn--text"
+                style={{ minBlockSize: '40px' }}
+                onClick={() => setMarqueePaused((p) => !p)}
+              >
+                <Icon name={marqueePaused ? 'play_arrow' : 'pause'} size={18} />
+                <span>{marqueePaused ? 'Retomar rotação' : 'Pausar rotação'}</span>
+              </button>
+              <Link to="/gestoes" className="m3-btn m3-btn--outlined">
+                <Icon name="badge" size={18} />
+                <span>Ver todas as gestões</span>
+              </Link>
+            </div>
           </div>
 
-          <div className="sobre-marquee-wrap" aria-label={`Diretores da gestão ${currentTerm.chapaName}`}>
+          <div
+            className="sobre-marquee-wrap"
+            data-paused={marqueePaused ? 'true' : 'false'}
+            aria-label={`Diretores da gestão ${currentTerm.chapaName}`}
+          >
             {marqueeRows.map((row) => (
               <div key={row.id} className="sobre-marquee-row">
                 <div
@@ -217,22 +262,25 @@ export function AboutSpacesPage() {
                   data-reverse={row.reverse ? 'true' : 'false'}
                   style={{ '--marquee-duration': `${row.speedSeconds}s` } as React.CSSProperties}
                 >
-                  {[...row.items, ...row.items].map((member, copyIdx) => (
-                    <button
-                      key={`${row.id}-${member.id}-${copyIdx}`}
-                      type="button"
-                      className="sobre-member-btn"
-                      aria-label={`${member.name} — ${member.cargo}`}
-                      onClick={() => setSelectedMember(member)}
-                    >
-                      <img
-                        className="sobre-member-avatar"
-                        src={member.photoUrl}
-                        alt={member.name}
-                        loading="eager"
+                  <div className="sobre-marquee-group">
+                    {row.items.map((member, idx) => (
+                      <MarqueeMemberButton
+                        key={`${row.id}-a-${member.id}-${idx}`}
+                        member={member}
+                        onSelect={setSelectedMember}
                       />
-                    </button>
-                  ))}
+                    ))}
+                  </div>
+                  <div className="sobre-marquee-group" aria-hidden="true">
+                    {row.items.map((member, idx) => (
+                      <MarqueeMemberButton
+                        key={`${row.id}-b-${member.id}-${idx}`}
+                        member={member}
+                        onSelect={setSelectedMember}
+                        decorative
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}

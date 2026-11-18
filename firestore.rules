@@ -48,6 +48,18 @@ service cloud.firestore {
              email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[.][a-zA-Z]{2,}$');
     }
 
+    function isValidPhotoUrl(url) {
+      return url is string &&
+             url.size() <= 1500 &&
+             url.matches('^https://.+');
+    }
+
+    function isValidEnrollmentUrl(url, uid) {
+      return url is string &&
+             url.size() <= 1500 &&
+             url.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/camblu[.]firebasestorage[.]app/o/enrollment-summaries%2F' + uid + '%2F[^?]+[?]alt=media&token=[a-zA-Z0-9-]+$');
+    }
+
     function isValidUserCreate(uid) {
       let d = request.resource.data;
       return hasOnlyAllowedFields([
@@ -60,19 +72,22 @@ service cloud.firestore {
              d.uid == uid &&
              validStr(d.name, 1, 140) &&
              isValidEmail(d.email) &&
+             (!('photoURL' in d) || d.photoURL == null || isValidPhotoUrl(d.photoURL)) &&
              d.cpf is string && d.cpf.size() <= 14 &&
              d.phone is string && d.phone.size() <= 20 &&
              d.affiliation in ['FURB', 'externo'] &&
              (!('turma' in d) || d.turma == null || (d.turma is string && d.turma.size() <= 12)) &&
              (!('tshirtSize' in d) || d.tshirtSize == null || (d.tshirtSize is string && d.tshirtSize.size() <= 20)) &&
-             (!('enrollmentSummaryUrl' in d) || d.enrollmentSummaryUrl == null || (d.enrollmentSummaryUrl is string && d.enrollmentSummaryUrl.size() <= 1500)) &&
+             (!('enrollmentSummaryUrl' in d) || d.enrollmentSummaryUrl == null || isValidEnrollmentUrl(d.enrollmentSummaryUrl, uid)) &&
              (!('enrollmentSummaryFileName' in d) || d.enrollmentSummaryFileName == null || (d.enrollmentSummaryFileName is string && d.enrollmentSummaryFileName.size() <= 180)) &&
              (!('enrollmentSummaryUploadedAt' in d) || d.enrollmentSummaryUploadedAt == null || (d.enrollmentSummaryUploadedAt is string && d.enrollmentSummaryUploadedAt.size() <= 50)) &&
              d.isCalouro is bool &&
              d.profileCompleted is bool &&
              d.role == 'student' &&
              d.membershipTier == 'none' &&
-             d.membershipActive == false;
+             d.membershipActive == false &&
+             d.createdAt is string && d.createdAt.size() <= 40 &&
+             d.updatedAt is string && d.updatedAt.size() <= 40;
     }
 
     function isValidUserSelfUpdate(uid) {
@@ -93,16 +108,18 @@ service cloud.firestore {
              !d.diff(resource.data).affectedKeys().hasAny(immutableKeys) &&
              d.uid == uid &&
              validStr(d.name, 2, 140) &&
+             (!('photoURL' in d) || d.photoURL == null || isValidPhotoUrl(d.photoURL)) &&
              d.cpf is string && d.cpf.size() <= 14 &&
              d.phone is string && d.phone.size() <= 20 &&
              d.affiliation in ['FURB', 'externo'] &&
              (!('turma' in d) || d.turma == null || (d.turma is string && d.turma.size() <= 12)) &&
              (!('tshirtSize' in d) || d.tshirtSize == null || (d.tshirtSize is string && d.tshirtSize.size() <= 20)) &&
-             (!('enrollmentSummaryUrl' in d) || d.enrollmentSummaryUrl == null || (d.enrollmentSummaryUrl is string && d.enrollmentSummaryUrl.size() <= 1500)) &&
+             (!('enrollmentSummaryUrl' in d) || d.enrollmentSummaryUrl == null || isValidEnrollmentUrl(d.enrollmentSummaryUrl, uid)) &&
              (!('enrollmentSummaryFileName' in d) || d.enrollmentSummaryFileName == null || (d.enrollmentSummaryFileName is string && d.enrollmentSummaryFileName.size() <= 180)) &&
              (!('enrollmentSummaryUploadedAt' in d) || d.enrollmentSummaryUploadedAt == null || (d.enrollmentSummaryUploadedAt is string && d.enrollmentSummaryUploadedAt.size() <= 50)) &&
              d.isCalouro is bool &&
-             d.profileCompleted is bool;
+             d.profileCompleted is bool &&
+             d.updatedAt is string && d.updatedAt.size() <= 40;
     }
 
     function isValidDemandCreate() {
@@ -111,8 +128,12 @@ service cloud.firestore {
                'id', 'topic', 'senderName', 'senderEmail', 'turma',
                'anonymous', 'message', 'createdAt', 'dispatchedEmail'
              ]) &&
+             validStr(d.id, 3, 60) &&
              d.topic in ['Demanda de turma', 'Demanda pessoal', 'Dúvida', 'Reclamação', 'CAMBLU Mulher'] &&
              d.anonymous is bool &&
+             (!('senderName' in d) || d.senderName == null || (d.senderName is string && d.senderName.size() <= 140)) &&
+             (!('senderEmail' in d) || d.senderEmail == null || (d.senderEmail is string && d.senderEmail.size() <= 160)) &&
+             (!('turma' in d) || d.turma == null || (d.turma is string && d.turma.size() <= 16)) &&
              validStr(d.message, 5, 4000) &&
              d.dispatchedEmail is bool &&
              d.createdAt is string && d.createdAt.size() <= 40;

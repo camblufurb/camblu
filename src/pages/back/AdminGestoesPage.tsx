@@ -9,6 +9,7 @@ import { useAppData } from '../../context/AppDataContext';
 import { useAuth } from '../../context/AuthContext';
 import { GESTAO_CARGO_OPTIONS, GESTOES_SEED } from '../../data/gestoes';
 import { db, isFirebaseConfigured } from '../../lib/firebase';
+import { sortGestaoTermsDesc } from '../../lib/gestoes';
 import { logError, logInfo } from '../../lib/logger';
 import type { GestaoCargo, GestaoMember, GestaoTerm, M3ShapeVariant } from '../../types/domain';
 
@@ -33,8 +34,8 @@ export function AdminGestoesPage() {
   const { notify } = useToast();
   const seededOnceRef = useRef(false);
 
-  const sortedGestoes = useMemo(() => [...gestoes].sort((a, b) => b.year - a.year), [gestoes]);
-  const [selectedGestaoId, setSelectedGestaoId] = useState(sortedGestoes[0]?.id || 'gestao-2026');
+  const sortedGestoes = useMemo(() => sortGestaoTermsDesc(gestoes), [gestoes]);
+  const [selectedGestaoId, setSelectedGestaoId] = useState('');
 
   const [newTermYear, setNewTermYear] = useState(2027);
   const [newTermChapa, setNewTermChapa] = useState('');
@@ -73,7 +74,8 @@ export function AdminGestoesPage() {
   const [memberShape, setMemberShape] = useState<M3ShapeVariant>(() => pickRandomShape());
   const [memberPhoto, setMemberPhoto] = useState('');
 
-  const activeGestao = sortedGestoes.find((g) => g.id === selectedGestaoId) || sortedGestoes[0];
+  const activeGestao =
+    (selectedGestaoId ? sortedGestoes.find((g) => g.id === selectedGestaoId) : undefined) || sortedGestoes[0];
 
   const openAddPopup = () => {
     setEditingMemberId(null);
@@ -149,6 +151,7 @@ export function AdminGestoesPage() {
       year: newTermYear,
       chapaName: newTermChapa.trim(),
       members: [],
+      createdAt: new Date().toISOString(),
     };
     try {
       await saveGestao(term);

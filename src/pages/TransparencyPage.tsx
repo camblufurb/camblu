@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
+import { aggregateDirectionCategories } from '../lib/transparencyPosterGenerator';
 import { formatBrlFromCents } from '../lib/validators';
 
 const MONTH_ORDER = [
@@ -24,6 +25,7 @@ export function TransparencyPage() {
   const { transparencyEntries, transparencyMeta } = useAppData();
   const [selectedSheet, setSelectedSheet] = useState('Todos');
   const [selectedType, setSelectedType] = useState<'todos' | 'receita' | 'despesa'>('todos');
+  const [selectedCategory, setSelectedCategory] = useState('Todas');
 
   // 5.2: Saldo atual NÃO é exibido no front — apenas entradas, saídas, categorias e heatmap!
   const monthlyStats = useMemo(() => {
@@ -44,27 +46,34 @@ export function TransparencyPage() {
   const maxMonthlyVal = Math.max(1, ...monthlyStats.flatMap((m) => [m.receitas, m.despesas]));
   const maxHeatmapVal = Math.max(1, ...heatmapMonths.flatMap((m) => [m.receitas, m.despesas]));
 
-  const categoryTotals = useMemo(() => {
-    const map = new Map<string, { receitas: number; despesas: number }>();
-    for (const e of transparencyEntries) {
-      const curr = map.get(e.category) || { receitas: 0, despesas: 0 };
-      if (e.type === 'receita') curr.receitas += e.amountCents;
-      if (e.type === 'despesa') curr.despesas += e.amountCents;
-      map.set(e.category, curr);
-    }
-    return Array.from(map.entries())
-      .map(([category, vals]) => ({ category, ...vals }))
-      .sort((a, b) => b.despesas + b.receitas - (a.despesas + a.receitas));
-  }, [transparencyEntries]);
+  const incomeCategories = useMemo(
+    () => aggregateDirectionCategories(transparencyEntries, 'receita'),
+    [transparencyEntries],
+  );
 
-  const maxExpenseCat = Math.max(1, ...categoryTotals.map((c) => c.despesas));
+  const expenseCategories = useMemo(
+    () => aggregateDirectionCategories(transparencyEntries, 'despesa'),
+    [transparencyEntries],
+  );
+
+  const maxIncomeCat = Math.max(1, ...incomeCategories.map((c) => c.cents));
+  const maxExpenseCat = Math.max(1, ...expenseCategories.map((c) => c.cents));
+
+  const availableCategories = useMemo(
+    () =>
+      Array.from(new Set(transparencyEntries.map((e) => e.category).filter(Boolean))).sort((a, b) =>
+        a.localeCompare(b, 'pt-BR'),
+      ),
+    [transparencyEntries],
+  );
 
   const filteredEntries = useMemo(() => {
     return transparencyEntries
       .filter((e) => selectedSheet === 'Todos' || e.sheet === selectedSheet)
       .filter((e) => selectedType === 'todos' || e.type === selectedType)
+      .filter((e) => selectedCategory === 'Todas' || e.category === selectedCategory)
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [transparencyEntries, selectedSheet, selectedType]);
+  }, [transparencyEntries, selectedSheet, selectedType, selectedCategory]);
 
   const totalReceitasPeriod = transparencyEntries
     .filter((e) => e.type === 'receita')
@@ -119,58 +128,63 @@ export function TransparencyPage() {
         </div>
       </div>
 
-      {/* Gráficos: Gasto e Receita por Mês + Categorias */}
-      <div className="grid-two">
-        <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
-          <div>
-            <h2>Entradas x Saídas por Mês / SECIMED</h2>
-            <p className="text-muted">Comparativo mensal do fluxo de caixa operacional.</p>
-          </div>
-          <div style={{ display: 'grid', gap: '0.65rem' }}>
-            {monthlyStats.map((m) => (
-              <div key={m.sheet} style={{ display: 'grid', gap: '0.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <strong>{m.sheet}</strong>
-                  <span>
-                    +{formatBrlFromCents(m.receitas)} / -{formatBrlFromCents(m.despesas)}
-                  </span>
-                </div>
-                <div style={{ display: 'grid', gap: '0.2rem' }}>
-                  <div
-                    style={{
-                      blockSize: '8px',
-                      inlineSize: `${Math.max(2, (m.receitas / maxMonthlyVal) * 100)}%`,
-                      borderRadius: '9999px',
-                      background: 'var(--md-sys-color-success)',
-                    }}
-                    title={`Receitas: ${formatBrlFromCents(m.receitas)}`}
-                  />
-                  <div
-                    style={{
-                      blockSize: '8px',
-                      inlineSize: `${Math.max(2, (m.despesas / maxMonthlyVal) * 100)}%`,
-                      borderRadius: '9999px',
-                      background: 'var(--camblu-action-blue)',
-                    }}
-                    title={`Despesas: ${formatBrlFromCents(m.despesas)}`}
-                  />
-                </div>
+      {/* Gráfico mensal: Entradas x Saídas por Mês / SECIMED */}
+      <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
+        <div>
+          <h2>Entradas x Saídas por Mês / SECIMED</h2>
+          <p className="text-muted">Comparativo mensal do fluxo de caixa operacional.</p>
+        </div>
+        <div style={{ display: 'grid', gap: '0.65rem' }}>
+          {monthlyStats.map((m) => (
+            <div key={m.sheet} style={{ display: 'grid', gap: '0.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <strong>{m.sheet}</strong>
+                <span>
+                  +{formatBrlFromCents(m.receitas)} / -{formatBrlFromCents(m.despesas)}
+                </span>
               </div>
-            ))}
-          </div>
-        </article>
+              <div style={{ display: 'grid', gap: '0.2rem' }}>
+                <div
+                  style={{
+                    blockSize: '8px',
+                    inlineSize: `${Math.max(2, (m.receitas / maxMonthlyVal) * 100)}%`,
+                    borderRadius: '9999px',
+                    background: 'var(--md-sys-color-success)',
+                  }}
+                  title={`Receitas: ${formatBrlFromCents(m.receitas)}`}
+                />
+                <div
+                  style={{
+                    blockSize: '8px',
+                    inlineSize: `${Math.max(2, (m.despesas / maxMonthlyVal) * 100)}%`,
+                    borderRadius: '9999px',
+                    background: 'var(--camblu-action-blue)',
+                  }}
+                  title={`Despesas: ${formatBrlFromCents(m.despesas)}`}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </article>
 
+      {/* Gráficos por Categoria Unificada (Entradas e Saídas) */}
+      <div className="grid-two">
         <article className="m3-card" style={{ display: 'grid', gap: '1rem', alignContent: 'start' }}>
           <div>
-            <h2>Gastos por Categoria</h2>
-            <p className="text-muted">Distribuição das despesas entre projetos e custeio.</p>
+            <h2>Entradas por Categoria</h2>
+            <p className="text-muted">
+              Origens das receitas agrupadas em {incomeCategories.length} categorias consolidadas.
+            </p>
           </div>
           <div style={{ display: 'grid', gap: '0.75rem' }}>
-            {categoryTotals.map((c) => (
-              <div key={c.category} style={{ display: 'grid', gap: '0.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.86rem' }}>
-                  <strong>{c.category}</strong>
-                  <span>{formatBrlFromCents(c.despesas)}</span>
+            {incomeCategories.map((c) => (
+              <div key={`in-${c.label}`} style={{ display: 'grid', gap: '0.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.86rem' }}>
+                  <strong>
+                    {c.label} <span className="text-muted">({c.percent}%)</span>
+                  </strong>
+                  <span>{formatBrlFromCents(c.cents)}</span>
                 </div>
                 <div
                   style={{
@@ -184,8 +198,46 @@ export function TransparencyPage() {
                   <div
                     style={{
                       blockSize: '100%',
-                      inlineSize: `${Math.min(100, (c.despesas / maxExpenseCat) * 100)}%`,
-                      background: 'var(--md-sys-color-primary)',
+                      inlineSize: `${Math.max(3, Math.min(100, (c.cents / maxIncomeCat) * 100))}%`,
+                      background: 'var(--md-sys-color-success)',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="m3-card" style={{ display: 'grid', gap: '1rem', alignContent: 'start' }}>
+          <div>
+            <h2>Saídas por Categoria</h2>
+            <p className="text-muted">
+              Investimentos e custeio agrupados em {expenseCategories.length} categorias consolidadas.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {expenseCategories.map((c) => (
+              <div key={`out-${c.label}`} style={{ display: 'grid', gap: '0.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', fontSize: '0.86rem' }}>
+                  <strong>
+                    {c.label} <span className="text-muted">({c.percent}%)</span>
+                  </strong>
+                  <span>{formatBrlFromCents(c.cents)}</span>
+                </div>
+                <div
+                  style={{
+                    blockSize: '10px',
+                    inlineSize: '100%',
+                    borderRadius: '9999px',
+                    background: 'var(--md-sys-color-surface-container-high)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      blockSize: '100%',
+                      inlineSize: `${Math.max(3, Math.min(100, (c.cents / maxExpenseCat) * 100))}%`,
+                      background: 'var(--camblu-action-blue)',
                     }}
                   />
                 </div>
@@ -284,6 +336,20 @@ export function TransparencyPage() {
               <option value="todos">Entradas e Saídas</option>
               <option value="receita">Apenas Entradas</option>
               <option value="despesa">Apenas Saídas</option>
+            </select>
+            <select
+              className="m3-select"
+              style={{ inlineSize: 'auto' }}
+              aria-label="Filtrar por categoria"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              <option value="Todas">Todas as categorias ({availableCategories.length})</option>
+              {availableCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
           </div>
         </div>

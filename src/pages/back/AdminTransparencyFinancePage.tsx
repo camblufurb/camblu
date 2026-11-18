@@ -29,6 +29,7 @@ export function AdminTransparencyFinancePage() {
     deleteTransparencyEntry,
     updateTransparencyMeta,
     syncTransparencySheet,
+    categorizeTransparencyWithGemini,
   } = useAppData();
   const { notify } = useToast();
   const tableCaptionId = useId();
@@ -42,11 +43,21 @@ export function AdminTransparencyFinancePage() {
   const [driveUrl, setDriveUrl] = useState(transparencyMeta.driveMinutesUrl);
   const [sheetUrl, setSheetUrl] = useState(transparencyMeta.spreadsheetUrl || '');
   const [syncingSheet, setSyncingSheet] = useState(false);
+  const [categorizingAi, setCategorizingAi] = useState(false);
 
   const sheetEntries = useMemo(
     () => transparencyEntries.filter((e) => e.sheet === sheet).sort((a, b) => b.date.localeCompare(a.date)),
     [transparencyEntries, sheet],
   );
+
+  const categoryDistribution = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entry of transparencyEntries) {
+      const cat = entry.category || 'Sem categoria';
+      counts.set(cat, (counts.get(cat) || 0) + 1);
+    }
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [transparencyEntries]);
 
   const handleAddEntry = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,12 +132,23 @@ export function AdminTransparencyFinancePage() {
           <button
             type="button"
             className="m3-btn m3-btn--blue"
-            disabled={syncingSheet}
+            disabled={syncingSheet || categorizingAi}
             onClick={async () => {
               setSyncingSheet(true);
               try {
-                const count = await syncTransparencySheet(sheetUrl.trim());
-                notify(`Planilha sincronizada com sucesso (${count} lançamentos importados)!`);
+                const res = await syncTransparencySheet(sheetUrl.trim());
+                if (res.usedAi) {
+                  notify(
+                    `Planilha sincronizada (${res.count} lançamentos) e agrupada em ${res.categoriesCount} categorias via Gemini Flash-Lite!`,
+                  );
+                } else if (res.warning) {
+                  notify(
+                    `Planilha sincronizada (${res.count} itens), porém Gemini falhou: ${res.warning}`,
+                    'info',
+                  );
+                } else {
+                  notify(`Planilha sincronizada com sucesso (${res.count} lançamentos importados)!`);
+                }
               } catch (err) {
                 notify(err instanceof Error ? err.message : 'Erro ao importar planilha.', 'error');
               } finally {
@@ -135,7 +157,28 @@ export function AdminTransparencyFinancePage() {
             }}
           >
             <Icon name="sync" size={18} />
-            <span>{syncingSheet ? 'Importando...' : 'Salvar & Sincronizar Planilha'}</span>
+            <span>{syncingSheet ? 'Importando & Categorizando...' : 'Salvar, Sincronizar & Categorizar'}</span>
+          </button>
+          <button
+            type="button"
+            className="m3-btn m3-btn--gold"
+            disabled={categorizingAi || syncingSheet || transparencyEntries.length === 0}
+            onClick={async () => {
+              setCategorizingAi(true);
+              try {
+                const res = await categorizeTransparencyWithGemini();
+                notify(
+                  `${res.count} lançamentos categorizados em ${res.categories.length} categorias (${res.model})!`,
+                );
+              } catch (err) {
+                notify(err instanceof Error ? err.message : 'Erro ao categorizar com Gemini.', 'error');
+              } finally {
+                setCategorizingAi(false);
+              }
+            }}
+          >
+            <Icon name="auto_awesome" size={18} />
+            <span>{categorizingAi ? 'Categorizando com Gemini...' : 'Categorizar com Gemini AI'}</span>
           </button>
           {sheetUrl && (
             <a href={sheetUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--outlined">
@@ -144,10 +187,27 @@ export function AdminTransparencyFinancePage() {
             </a>
           )}
         </div>
-        {transparencyMeta.lastSyncedAt && (
-          <span className="text-muted" style={{ fontSize: '0.82rem' }}>
-            Última sincronização automática: {new Date(transparencyMeta.lastSyncedAt).toLocaleString('pt-BR')}
-          </span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+          {transparencyMeta.lastSyncedAt && (
+            <span className="text-muted" style={{ fontSize: '0.82rem' }}>
+              Última sincronização: {new Date(transparencyMeta.lastSyncedAt).toLocaleString('pt-BR')}
+            </span>
+          )}
+          {transparencyMeta.aiCategorizationModel && (
+            <span className="m3-badge m3-badge--blue">
+              <Icon name="auto_awesome" size={14} />
+              {transparencyMeta.aiCategorizationModel} · {categoryDistribution.length} categorias ativas
+            </span>
+          )}
+        </div>
+        {categoryDistribution.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+            {categoryDistribution.map(([catName, qty]) => (
+              <span key={catName} className="m3-badge">
+                {catName} ({qty})
+              </span>
+            ))}
+          </div>
         )}
       </div>
 

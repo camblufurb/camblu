@@ -2550,19 +2550,32 @@
 
   .sobre-marquee-track {
     display: flex;
-    gap: 0.9rem;
     inline-size: max-content;
     will-change: transform;
-    animation: sobre-marquee var(--marquee-duration, 32s) linear infinite;
+    backface-visibility: hidden;
   }
 
-  .sobre-marquee-track[data-reverse='true'] {
-    animation-direction: reverse;
+  @media (prefers-reduced-motion: no-preference) {
+    .sobre-marquee-track {
+      animation: sobre-marquee var(--marquee-duration, 46s) linear infinite;
+    }
+
+    .sobre-marquee-track[data-reverse='true'] {
+      animation-direction: reverse;
+    }
+
+    .sobre-marquee-wrap[data-paused='true'] .sobre-marquee-track,
+    .sobre-marquee-row:hover .sobre-marquee-track,
+    .sobre-marquee-row:focus-within .sobre-marquee-track {
+      animation-play-state: paused;
+    }
   }
 
-  .sobre-marquee-row:hover .sobre-marquee-track,
-  .sobre-marquee-row:focus-within .sobre-marquee-track {
-    animation-play-state: paused;
+  .sobre-marquee-group {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.9rem;
+    padding-inline-end: 0.9rem;
   }
 
   @keyframes sobre-marquee {
@@ -2575,13 +2588,17 @@
   }
 
   .sobre-member-btn {
+    position: relative;
     flex: 0 0 auto;
     padding: 0;
     border: 2px solid var(--md-sys-color-outline-variant);
     border-radius: 9999px;
-    background: var(--md-sys-color-surface-container-low);
+    background: linear-gradient(145deg, #0f3325, #1e5b42);
+    color: #f1de97;
     cursor: pointer;
     overflow: hidden;
+    display: grid;
+    place-items: center;
     inline-size: clamp(4.25rem, 9.5vw, 5.5rem);
     block-size: clamp(4.25rem, 9.5vw, 5.5rem);
     transition: transform 180ms var(--m3-spring-spatial-fast), border-color 180ms ease, box-shadow 180ms ease;
@@ -2593,11 +2610,21 @@
     box-shadow: var(--elevation-2);
   }
 
+  .sobre-member-fallback {
+    font-size: clamp(1rem, 2.2vw, 1.35rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    user-select: none;
+  }
+
   .sobre-member-avatar {
+    position: absolute;
+    inset: 0;
     inline-size: 100%;
     block-size: 100%;
     object-fit: cover;
     display: block;
+    background: transparent;
   }
 
   /* Ligas 2 colunas no mobile */

@@ -26,6 +26,18 @@ import {
   resolveStaticRouteSeo,
   type SeoMetaPayload,
 } from './seo.js';
+import {
+  categorizeTransparencyEntriesWithGemini,
+  GEMINI_CATEGORIZER_MODEL,
+  type CategorizableTransparencyEntry,
+  type TransparencyEntryDirection,
+} from './transparencyCategorizer.js';
+import { runTransparencyMonthAudit } from './transparencyAuditor.js';
+import {
+  generateProductImagesWithNanoBanana,
+  type InlineImagePayload,
+  type ProductAiShotRequest,
+} from './productImageGenerator.js';
 
 initializeApp();
 const db = getFirestore();
@@ -57,6 +69,7 @@ function resolveSiteOrigin(req: { headers: Record<string, string | string[] | un
 const stripeRestrictedKey = defineSecret('STRIPE_RESTRICTED_KEY');
 const stripeWebhookSecret = defineSecret('STRIPE_WEBHOOK_SECRET');
 const smtpPass = defineSecret('SMTP_PASS');
+const geminiApiKey = defineSecret('GEMINI_API_KEY');
 
 let cachedStripe: Stripe | null = null;
 function getStripeClient(): Stripe {
@@ -68,6 +81,32 @@ function getStripeClient(): Stripe {
 
 function digitsOnly(v: string): string {
   return String(v || '').replace(/\D+/g, '');
+}
+
+function sanitizeHeaderString(v: unknown, maxLen = 140): string {
+  return String(v || '')
+    .replace(/[\r\n]+/g, ' ')
+    .trim()
+    .slice(0, maxLen);
+}
+
+function isMembershipCurrentlyValid(userData: {
+  membershipActive?: boolean;
+  membershipValidUntil?: string | null;
+}): boolean {
+  const validUntil = userData.membershipValidUntil || null;
+  return Boolean(
+    userData.membershipActive && (!validUntil || new Date(validUntil).getTime() > Date.now()),
+  );
+}
+
+function isSafeEnrollmentPdfUrl(url: unknown, uid: string): string | undefined {
+  if (typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.length > 1500) return undefined;
+  const encodedUid = encodeURIComponent(uid);
+  const expectedPrefix = `https://firebasestorage.googleapis.com/v0/b/camblu.firebasestorage.app/o/enrollment-summaries%2F${encodedUid}%2F`;
+  return trimmed.startsWith(expectedPrefix) ? trimmed : undefined;
 }
 
 async function verifyBearerToken(req: Request): Promise<DecodedIdToken | null> {
@@ -288,10 +327,396 @@ app.post('/api/stripe/webhook', async (req: Request & { rawBody?: Buffer }, res:
   }
 });
 
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '8mb' }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'camblu-api' });
+});
+
+app.post('/api/transparency/categorize', async (req, res) => {
+  const decoded = await verifyBearerToken(req);
+  if (!decoded || decoded.email?.toLowerCase() !== ADMIN_EMAIL || !decoded.email_verified) {
+    res.status(403).json({ error: 'Apenas camblufurb@gmail.com pode categorizar a transparência.' });
+    return;
+  }
+
+  const key = geminiApiKey.value();
+  if (!key) {
+    res.status(500).json({ error: 'Segredo GEMINI_API_KEY não configurado no Firebase.' });
+    return;
+  }
+
+  const body = (req.body || {}) as {
+    entries?: Array<{
+      id?: string;
+      sheet?: string;
+      year?: number;
+      date?: string;
+      type?: TransparencyEntryDirection;
+      category?: string;
+      description?: string;
+      amountCents?: number;
+      createdAt?: string;
+    }>;
+    persist?: boolean;
+    meta?: {
+      spreadsheetUrl?: string;
+      lastSyncedAt?: string;
+      driveMinutesUrl?: string;
+      currentBalanceCents?: number;
+      projectedBalanceCents?: number;
+      replaceSyncedSheetEntries?: boolean;
+    };
+  };
+
+  try {
+    let sourceDocs: Array<{
+      id: string;
+      sheet: string;
+      year: number;
+      date: string;
+      type: TransparencyEntryDirection;
+      category: string;
+      description: string;
+      amountCents: number;
+      createdAt: string;
+    }> = [];
+
+    if (Array.isArray(body.entries) && body.entries.length > 0) {
+      if (body.entries.length > 800) {
+        res.status(400).json({ error: 'Limite máximo de 800 lançamentos por solicitação.' });
+        return;
+      }
+      sourceDocs = body.entries
+        .filter((e) => e && e.id && e.description && typeof e.amountCents === 'number')
+        .map((e) => {
+          const date = String(e.date || new Date().toISOString().slice(0, 10));
+          const type: TransparencyEntryDirection =
+            e.type === 'receita' || e.type === 'despesa' || e.type === 'ativo' || e.type === 'passivo'
+              ? e.type
+              : 'despesa';
+          return {
+            id: sanitizeHeaderString(e.id, 120),
+            sheet: sanitizeHeaderString(e.sheet || 'Geral', 60) || 'Geral',
+            year: Number(e.year) || Number(date.slice(0, 4)) || new Date().getFullYear(),
+            date: sanitizeHeaderString(date, 20),
+            type,
+            category: sanitizeHeaderString(e.category || '', 60),
+            description: sanitizeHeaderString(e.description, 240),
+            amountCents: Math.abs(Math.round(Number(e.amountCents) || 0)),
+            createdAt: String(e.createdAt || `${date}T12:00:00.000Z`),
+          };
+        });
+    } else {
+      const snap = await db.collection('transparencyEntries').get();
+      sourceDocs = snap.docs.map((d) => {
+        const data = d.data();
+        const date = String(data.date || new Date().toISOString().slice(0, 10));
+        return {
+          id: d.id,
+          sheet: String(data.sheet || 'Geral'),
+          year: Number(data.year) || Number(date.slice(0, 4)) || new Date().getFullYear(),
+          date,
+          type: (data.type as TransparencyEntryDirection) || 'despesa',
+          category: String(data.category || ''),
+          description: String(data.description || ''),
+          amountCents: Math.abs(Number(data.amountCents) || 0),
+          createdAt: String(data.createdAt || `${date}T12:00:00.000Z`),
+        };
+      });
+    }
+
+    const categorizable: CategorizableTransparencyEntry[] = sourceDocs.map((e) => ({
+      id: e.id,
+      sheet: e.sheet,
+      date: e.date,
+      type: e.type,
+      description: e.description,
+      amountCents: e.amountCents,
+      category: e.category,
+    }));
+
+    const aiResult = await categorizeTransparencyEntriesWithGemini(categorizable, key);
+    const categorizedEntries = sourceDocs.map((entry) => ({
+      ...entry,
+      category: aiResult.assignments[entry.id] || entry.category || 'Administrativo & Financeiro',
+    }));
+
+    const shouldPersist = body.persist !== false;
+    const categorizedAt = new Date().toISOString();
+
+    if (shouldPersist) {
+      const incomingIds = new Set(categorizedEntries.map((e) => e.id));
+      const ops: Array<{ type: 'set'; id: string; data: Record<string, unknown> } | { type: 'delete'; id: string }> = [];
+
+      if (body.meta?.replaceSyncedSheetEntries) {
+        const existingSnap = await db.collection('transparencyEntries').get();
+        existingSnap.docs.forEach((docSnap) => {
+          if (docSnap.id.startsWith('gs-') && !incomingIds.has(docSnap.id)) {
+            ops.push({ type: 'delete', id: docSnap.id });
+          }
+        });
+      }
+
+      categorizedEntries.forEach((entry) => {
+        ops.push({ type: 'set', id: entry.id, data: entry });
+      });
+
+      for (let i = 0; i < ops.length; i += 400) {
+        const batch = db.batch();
+        const chunk = ops.slice(i, i + 400);
+        for (const op of chunk) {
+          const ref = db.collection('transparencyEntries').doc(op.id);
+          if (op.type === 'delete') batch.delete(ref);
+          else batch.set(ref, op.data, { merge: true });
+        }
+        await batch.commit();
+      }
+
+      const publicPatch: Record<string, unknown> = {
+        savedCategories: aiResult.categories,
+        aiCategorizationModel: GEMINI_CATEGORIZER_MODEL,
+        aiCategorizedAt: categorizedAt,
+        updatedAt: categorizedAt,
+      };
+      if (body.meta?.spreadsheetUrl) publicPatch.spreadsheetUrl = body.meta.spreadsheetUrl;
+      if (body.meta?.lastSyncedAt) publicPatch.lastSyncedAt = body.meta.lastSyncedAt;
+      if (body.meta?.driveMinutesUrl) publicPatch.driveMinutesUrl = body.meta.driveMinutesUrl;
+
+      const configPatch: Record<string, unknown> = { ...publicPatch };
+      if (
+        typeof body.meta?.currentBalanceCents === 'number' &&
+        Number.isFinite(body.meta.currentBalanceCents) &&
+        body.meta.currentBalanceCents > 0
+      ) {
+        configPatch.currentBalanceCents = Math.round(body.meta.currentBalanceCents);
+      }
+      if (
+        typeof body.meta?.projectedBalanceCents === 'number' &&
+        Number.isFinite(body.meta.projectedBalanceCents) &&
+        body.meta.projectedBalanceCents > 0
+      ) {
+        configPatch.projectedBalanceCents = Math.round(body.meta.projectedBalanceCents);
+      }
+
+      await Promise.all([
+        db.collection('transparencyMeta').doc('public').set(publicPatch, { merge: true }),
+        db.collection('transparencyMeta').doc('config').set(configPatch, { merge: true }),
+      ]);
+    }
+
+    res.json({
+      ok: true,
+      model: aiResult.model,
+      categories: aiResult.categories,
+      assignments: aiResult.assignments,
+      entries: categorizedEntries,
+      persisted: shouldPersist,
+      categorizedAt,
+    });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/transparency/categorize', {
+      origin: 'functions -> /api/transparency/categorize',
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(502).json({
+      error: (err as Error)?.message || 'Falha ao categorizar transparência com Gemini.',
+    });
+  }
+});
+
+function extractGoogleSpreadsheetIdSafe(rawUrl: unknown): string | null {
+  if (typeof rawUrl !== 'string') return null;
+  const match = rawUrl.trim().match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+function foldSheetTabName(v: string): string {
+  return v
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+async function fetchGoogleSheetCsvsFromServer(
+  spreadsheetUrl: string,
+  monthSheet: string,
+): Promise<{ overviewCsv?: string; monthCsv?: string }> {
+  const spreadsheetId = extractGoogleSpreadsheetIdSafe(spreadsheetUrl);
+  if (!spreadsheetId) return {};
+  const base = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+  const htmlResp = await fetch(`${base}/htmlview`, { cache: 'no-store' });
+  if (!htmlResp.ok) return {};
+  const html = await htmlResp.text();
+  const tabs: Array<{ name: string; gid: string }> = [];
+  const regex = /items\.push\(\{name:\s*"([^"]+)"[^}]*gid:\s*"([0-9]+)"/g;
+  let match = regex.exec(html);
+  while (match) {
+    tabs.push({ name: match[1], gid: match[2] });
+    match = regex.exec(html);
+  }
+  const overviewTab = tabs.find((t) => foldSheetTabName(t.name) === 'overview');
+  const targetTab = tabs.find((t) => foldSheetTabName(t.name) === foldSheetTabName(monthSheet));
+
+  const [overviewCsv, monthCsv] = await Promise.all([
+    overviewTab
+      ? fetch(`${base}/export?format=csv&gid=${encodeURIComponent(overviewTab.gid)}`, { cache: 'no-store' })
+          .then((r) => (r.ok ? r.text() : undefined))
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
+    targetTab
+      ? fetch(`${base}/export?format=csv&gid=${encodeURIComponent(targetTab.gid)}`, { cache: 'no-store' })
+          .then((r) => (r.ok ? r.text() : undefined))
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
+  ]);
+
+  return { overviewCsv, monthCsv };
+}
+
+app.post('/api/transparency/audit-month', async (req, res) => {
+  const decoded = await verifyBearerToken(req);
+  if (!decoded || decoded.email?.toLowerCase() !== ADMIN_EMAIL || !decoded.email_verified) {
+    res.status(403).json({ error: 'Apenas camblufurb@gmail.com pode auditar a transparência.' });
+    return;
+  }
+
+  const key = geminiApiKey.value();
+  if (!key) {
+    res.status(500).json({ error: 'Segredo GEMINI_API_KEY não configurado no Firebase.' });
+    return;
+  }
+
+  const body = (req.body || {}) as {
+    monthSheet?: string;
+    spreadsheetUrl?: string;
+    overviewCsv?: string;
+    monthCsv?: string;
+    entries?: Array<{
+      id?: string;
+      sheet?: string;
+      date?: string;
+      type?: TransparencyEntryDirection;
+      category?: string;
+      description?: string;
+      amountCents?: number;
+    }>;
+  };
+
+  const monthSheet = sanitizeHeaderString(body.monthSheet || '', 60);
+  if (!monthSheet) {
+    res.status(400).json({ error: 'monthSheet obrigatório.' });
+    return;
+  }
+
+  try {
+    let entries: CategorizableTransparencyEntry[] = [];
+    if (Array.isArray(body.entries)) {
+      entries = body.entries
+        .filter((e) => e && e.id && e.description && typeof e.amountCents === 'number')
+        .slice(0, 300)
+        .map((e) => ({
+          id: sanitizeHeaderString(e.id, 120),
+          sheet: sanitizeHeaderString(e.sheet || monthSheet, 60) || monthSheet,
+          date: sanitizeHeaderString(e.date || '2026-01-01', 20),
+          type:
+            e.type === 'receita' || e.type === 'despesa' || e.type === 'ativo' || e.type === 'passivo'
+              ? e.type
+              : 'despesa',
+          category: sanitizeHeaderString(e.category || '', 60),
+          description: sanitizeHeaderString(e.description, 240),
+          amountCents: Math.abs(Math.round(Number(e.amountCents) || 0)),
+        }));
+    } else {
+      const snap = await db.collection('transparencyEntries').where('sheet', '==', monthSheet).get();
+      entries = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          sheet: String(data.sheet || monthSheet),
+          date: String(data.date || '2026-01-01'),
+          type: (data.type as TransparencyEntryDirection) || 'despesa',
+          category: String(data.category || ''),
+          description: String(data.description || ''),
+          amountCents: Math.abs(Number(data.amountCents) || 0),
+        };
+      });
+    }
+
+    let overviewCsv = typeof body.overviewCsv === 'string' ? body.overviewCsv.slice(0, 12_000) : undefined;
+    let monthCsv = typeof body.monthCsv === 'string' ? body.monthCsv.slice(0, 20_000) : undefined;
+
+    if ((!overviewCsv || !monthCsv) && body.spreadsheetUrl) {
+      const fetched = await fetchGoogleSheetCsvsFromServer(body.spreadsheetUrl, monthSheet);
+      overviewCsv = overviewCsv || fetched.overviewCsv;
+      monthCsv = monthCsv || fetched.monthCsv;
+    }
+
+    const result = await runTransparencyMonthAudit(
+      { monthSheet, entries, overviewCsv, monthCsv },
+      key,
+    );
+
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/transparency/audit-month', {
+      origin: 'functions -> /api/transparency/audit-month',
+      monthSheet,
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(502).json({
+      error: (err as Error)?.message || 'Falha ao conferir planilha e cálculos com Gemini.',
+    });
+  }
+});
+
+app.post('/api/shop/generate-images', async (req, res) => {
+  const decoded = await verifyBearerToken(req);
+  if (!decoded || decoded.email?.toLowerCase() !== ADMIN_EMAIL || !decoded.email_verified) {
+    res.status(403).json({ error: 'Apenas camblufurb@gmail.com pode gerar imagens de produtos com IA.' });
+    return;
+  }
+
+  const key = geminiApiKey.value();
+  if (!key) {
+    res.status(500).json({ error: 'Segredo GEMINI_API_KEY não configurado no Firebase.' });
+    return;
+  }
+
+  const body = (req.body || {}) as {
+    productImages?: InlineImagePayload[];
+    shots?: ProductAiShotRequest[];
+  };
+
+  if (!Array.isArray(body.productImages) || body.productImages.length === 0) {
+    res.status(400).json({ error: 'Envie ao menos uma imagem base do produto.' });
+    return;
+  }
+  if (!Array.isArray(body.shots) || body.shots.length === 0 || body.shots.length > 4) {
+    res.status(400).json({ error: 'Solicite entre 1 e 4 variações de imagem por geração.' });
+    return;
+  }
+
+  try {
+    const result = await generateProductImagesWithNanoBanana({
+      productImages: body.productImages.slice(0, 4),
+      shots: body.shots.slice(0, 4),
+      apiKey: key,
+    });
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/shop/generate-images', {
+      origin: 'functions -> /api/shop/generate-images',
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(502).json({
+      error: (err as Error)?.message || 'Falha ao gerar imagens do produto com Gemini Nano Banana 2.1.',
+    });
+  }
 });
 
 app.get('/sitemap.xml', async (req, res) => {
@@ -488,10 +913,7 @@ app.get('/api/clube/cartao/verify', async (req, res) => {
       institution: isFurbStudent ? 'FURB' : 'Externo (sem vínculo FURB)',
       course: isFurbStudent ? 'Medicina' : 'Visitante / Externo',
       turma: isFurbStudent && u.turma ? String(u.turma).trim() : '',
-      enrollmentSummaryUrl:
-        isFurbStudent && typeof u.enrollmentSummaryUrl === 'string' && u.enrollmentSummaryUrl.trim()
-          ? u.enrollmentSummaryUrl.trim()
-          : undefined,
+      enrollmentSummaryUrl: isFurbStudent ? isSafeEnrollmentPdfUrl(u.enrollmentSummaryUrl, uid) : undefined,
       profileCompleted: Boolean(u.profileCompleted),
       reason: isFurbStudent
         ? undefined
@@ -512,30 +934,40 @@ app.get('/api/clube/cartao/verify', async (req, res) => {
 // Verificação pública de certificado sem vazamento de CPF completo
 app.get('/api/certificates/verify', async (req, res) => {
   const code = typeof req.query.code === 'string' ? req.query.code.trim() : '';
-  if (!code) {
+  if (!code || code.length > 120) {
     res.status(400).json({ error: 'Informe o código do certificado.' });
     return;
   }
 
-  const snap = await db.collection('certificates').where('code', '==', code).limit(1).get();
-  if (snap.empty) {
-    res.status(404).json({ valid: false });
-    return;
-  }
+  try {
+    const snap = await db.collection('certificates').where('code', '==', code).limit(1).get();
+    res.set('Cache-Control', 'no-store');
+    if (snap.empty) {
+      res.status(404).json({ valid: false });
+      return;
+    }
 
-  const c = snap.docs[0].data();
-  const cpf = digitsOnly(c.ownerCpf || '');
-  const maskedCpf = cpf.length === 11 ? `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**` : '***';
-  res.json({
-    valid: true,
-    code: c.code,
-    ownerName: c.ownerName,
-    maskedCpf,
-    eventTitle: c.eventTitle,
-    eventDateLabel: c.eventDateLabel,
-    totalHours: c.totalHours,
-    issuedAt: c.issuedAt,
-  });
+    const c = snap.docs[0].data();
+    const cpf = digitsOnly(c.ownerCpf || '');
+    const maskedCpf = cpf.length === 11 ? `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**` : '***';
+    res.json({
+      valid: true,
+      code: c.code,
+      ownerName: c.ownerName,
+      maskedCpf,
+      eventTitle: c.eventTitle,
+      eventDateLabel: c.eventDateLabel,
+      totalHours: c.totalHours,
+      issuedAt: c.issuedAt,
+    });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/certificates/verify', {
+      origin: 'functions -> /api/certificates/verify',
+      code,
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ valid: false, error: 'Não foi possível verificar o certificado.' });
+  }
 });
 
 app.post('/api/checkout/event', async (req, res) => {
@@ -555,110 +987,159 @@ app.post('/api/checkout/event', async (req, res) => {
     return;
   }
 
-  const [evSnap, userSnap] = await Promise.all([
-    db.collection('events').doc(eventId).get(),
-    db.collection('users').doc(decoded.uid).get(),
-  ]);
+  try {
+    const [evSnap, userSnap] = await Promise.all([
+      db.collection('events').doc(eventId).get(),
+      db.collection('users').doc(decoded.uid).get(),
+    ]);
 
-  if (!evSnap.exists || !userSnap.exists) {
-    res.status(404).json({ error: 'Evento ou usuário não encontrado.' });
-    return;
-  }
+    if (!evSnap.exists || !userSnap.exists) {
+      res.status(404).json({ error: 'Evento ou usuário não encontrado.' });
+      return;
+    }
 
-  const evData = evSnap.data()!;
-  const userData = userSnap.data()!;
-  const lots = (evData.lots || []) as Array<{
-    id: string;
-    name: string;
-    priceCents: number;
-    totalQuantity: number;
-    soldQuantity: number;
-    qrDefinitions: Array<{
+    const evData = evSnap.data()!;
+    if (evData.published === false) {
+      res.status(400).json({ error: 'Este evento não está disponível para inscrições.' });
+      return;
+    }
+
+    const userData = userSnap.data()!;
+    const lots = (evData.lots || []) as Array<{
       id: string;
-      label: string;
-      dateTime: string;
-      certificateHours: number;
+      name: string;
+      priceCents: number;
+      totalQuantity: number;
+      soldQuantity: number;
+      qrDefinitions: Array<{
+        id: string;
+        label: string;
+        dateTime: string;
+        certificateHours: number;
+      }>;
     }>;
-  }>;
-  const lot = lots.find((l) => l.id === lotId);
-  if (!lot || lot.soldQuantity >= lot.totalQuantity) {
-    res.status(400).json({ error: 'Lote indisponível ou esgotado.' });
-    return;
-  }
+    const lot = lots.find((l) => l.id === lotId);
+    if (!lot || lot.soldQuantity >= lot.totalQuantity) {
+      res.status(400).json({ error: 'Lote indisponível ou esgotado.' });
+      return;
+    }
 
-  const pricing = computeEventPricing(
-    lot.priceCents,
-    evData,
-    (userData.membershipTier || 'none') as MembershipTier,
-    Boolean(userData.membershipActive),
-  );
+    const membershipValid = isMembershipCurrentlyValid(userData);
+    const pricing = computeEventPricing(
+      lot.priceCents,
+      evData,
+      (userData.membershipTier || 'none') as MembershipTier,
+      membershipValid,
+    );
 
-  // Gratuidade pelo Clube (Raro em Coffee, Épico/Lendário em todos)
-  if (pricing.finalCents === 0) {
-    const ticketId = `tkt-${Date.now().toString(36)}-${decoded.uid.slice(0, 5)}`;
-    await db.collection('tickets').doc(ticketId).set({
-      id: ticketId,
-      eventId: evSnap.id,
-      eventSlug: evData.slug,
-      eventTitle: evData.title,
-      lotId: lot.id,
-      lotName: lot.name,
-      ownerUid: decoded.uid,
-      ownerName: userData.name || '',
-      ownerCpf: userData.cpf || '',
-      ownerEmail: userData.email || '',
-      paidCents: 0,
-      discountReason: pricing.reason || 'Gratuidade Clube CAMBLU',
-      status: 'valid',
-      purchasedAt: new Date().toISOString(),
-      transferHistory: [],
-      qrInstances: (lot.qrDefinitions || []).map((q, idx) => ({
-        qrCode: `CAMBLU-${String(evData.slug).slice(0, 8).toUpperCase()}-${idx + 1}-${ticketId.slice(-5).toUpperCase()}`,
-        definitionId: q.id,
-        label: q.label,
-        dateTime: q.dateTime,
-        certificateHours: q.certificateHours,
-        checkedInAt: null,
-      })),
-    });
-    await evSnap.ref.update({
-      lots: lots.map((l) => (l.id === lot.id ? { ...l, soldQuantity: l.soldQuantity + 1 } : l)),
-    });
-    res.json({ freeIssued: true, ticketId });
-    return;
-  }
+    // Gratuidade pelo Clube (Raro em Coffee, Épico/Lendário em todos) — transação atômica e única por usuário
+    if (pricing.finalCents === 0) {
+      const existingTicketSnap = await db
+        .collection('tickets')
+        .where('ownerUid', '==', decoded.uid)
+        .where('eventId', '==', evSnap.id)
+        .limit(1)
+        .get();
+      if (!existingTicketSnap.empty) {
+        res.status(409).json({ error: 'Você já possui um ingresso emitido para este evento.' });
+        return;
+      }
 
-  const siteOrigin = resolveSiteOrigin(req);
-  const stripe = getStripeClient();
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    payment_method_types: paymentMethod === 'stripe_pix' ? ['pix', 'card'] : ['card', 'pix'],
-    customer_email: userData.email || decoded.email,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: 'brl',
-          unit_amount: pricing.finalCents,
-          product_data: {
-            name: `${evData.title} — ${lot.name}`,
-            description: pricing.reason || 'Ingresso CAMBLU (taxas Stripe inclusas)',
+      const ticketId = `tkt-free-${evSnap.id.slice(0, 12)}-${decoded.uid.slice(0, 12)}`;
+      const ticketRef = db.collection('tickets').doc(ticketId);
+
+      await db.runTransaction(async (tx) => {
+        const [freshEvSnap, freshTicketSnap] = await Promise.all([
+          tx.get(evSnap.ref),
+          tx.get(ticketRef),
+        ]);
+        if (freshTicketSnap.exists) {
+          throw new Error('Você já possui um ingresso emitido para este evento.');
+        }
+        const freshEvData = freshEvSnap.data() || {};
+        const freshLots = (freshEvData.lots || []) as typeof lots;
+        const freshLot = freshLots.find((l) => l.id === lot.id);
+        if (!freshLot || freshLot.soldQuantity >= freshLot.totalQuantity) {
+          throw new Error('Lote indisponível ou esgotado.');
+        }
+
+        tx.set(ticketRef, {
+          id: ticketId,
+          eventId: evSnap.id,
+          eventSlug: evData.slug,
+          eventTitle: evData.title,
+          lotId: freshLot.id,
+          lotName: freshLot.name,
+          ownerUid: decoded.uid,
+          ownerName: userData.name || '',
+          ownerCpf: userData.cpf || '',
+          ownerEmail: userData.email || '',
+          paidCents: 0,
+          discountReason: pricing.reason || 'Gratuidade Clube CAMBLU',
+          status: 'valid',
+          purchasedAt: new Date().toISOString(),
+          transferHistory: [],
+          qrInstances: (freshLot.qrDefinitions || []).map((q, idx) => ({
+            qrCode: `CAMBLU-${String(evData.slug).slice(0, 8).toUpperCase()}-${idx + 1}-${ticketId.slice(-5).toUpperCase()}`,
+            definitionId: q.id,
+            label: q.label,
+            dateTime: q.dateTime,
+            certificateHours: q.certificateHours,
+            checkedInAt: null,
+          })),
+        });
+
+        tx.update(evSnap.ref, {
+          lots: freshLots.map((l) =>
+            l.id === freshLot.id ? { ...l, soldQuantity: l.soldQuantity + 1 } : l,
+          ),
+        });
+      });
+
+      res.json({ freeIssued: true, ticketId });
+      return;
+    }
+
+    const siteOrigin = resolveSiteOrigin(req);
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: paymentMethod === 'stripe_pix' ? ['pix', 'card'] : ['card', 'pix'],
+      customer_email: userData.email || decoded.email,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'brl',
+            unit_amount: pricing.finalCents,
+            product_data: {
+              name: `${evData.title} — ${lot.name}`,
+              description: pricing.reason || 'Ingresso CAMBLU (taxas Stripe inclusas)',
+            },
           },
         },
+      ],
+      metadata: {
+        kind: 'event_ticket',
+        uid: decoded.uid,
+        eventId: evSnap.id,
+        lotId: lot.id,
+        discountReason: pricing.reason || '',
       },
-    ],
-    metadata: {
-      kind: 'event_ticket',
-      uid: decoded.uid,
-      eventId: evSnap.id,
-      lotId: lot.id,
-      discountReason: pricing.reason || '',
-    },
-    success_url: `${siteOrigin}/meus-ingressos?checkout=success`,
-    cancel_url: `${siteOrigin}/eventos/${evData.slug}?checkout=cancelled`,
-  });
+      success_url: `${siteOrigin}/meus-ingressos?checkout=success`,
+      cancel_url: `${siteOrigin}/eventos/${evData.slug}?checkout=cancelled`,
+    });
 
-  res.json({ checkoutUrl: session.url });
+    res.json({ checkoutUrl: session.url });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/checkout/event', {
+      origin: 'functions -> /api/checkout/event',
+      uid: decoded.uid,
+      eventId,
+      message: (err as Error)?.message,
+    });
+    res.status(400).json({ error: (err as Error)?.message || 'Falha ao iniciar checkout do evento.' });
+  }
 });
 
 app.post('/api/checkout/shop', async (req, res) => {
@@ -672,86 +1153,112 @@ app.post('/api/checkout/shop', async (req, res) => {
     items?: Array<{ productId: string; size: string; quantity: number }>;
     paymentMethod?: 'stripe_pix' | 'stripe_card';
   };
-  if (!items || items.length === 0) {
-    res.status(400).json({ error: 'Sacola vazia.' });
+  if (!Array.isArray(items) || items.length === 0 || items.length > 25) {
+    res.status(400).json({ error: 'Sacola vazia ou acima do limite permitido.' });
     return;
   }
 
-  const userSnap = await db.collection('users').doc(decoded.uid).get();
-  if (!userSnap.exists) {
-    res.status(404).json({ error: 'Perfil do usuário não encontrado.' });
-    return;
-  }
-  const userData = userSnap.data()!;
-
-  let subtotalCents = 0;
-  const resolvedItems: Array<{
-    productId: string;
-    productName: string;
-    size: string;
-    quantity: number;
-    unitPriceCents: number;
-  }> = [];
-
-  for (const item of items) {
-    const pSnap = await db.collection('products').doc(item.productId).get();
-    if (!pSnap.exists) {
-      res.status(400).json({ error: `Produto inválido: ${item.productId}` });
+  try {
+    const userSnap = await db.collection('users').doc(decoded.uid).get();
+    if (!userSnap.exists) {
+      res.status(404).json({ error: 'Perfil do usuário não encontrado.' });
       return;
     }
-    const pData = pSnap.data()!;
-    const sizeObj = (pData.sizes || []).find((s: { size: string; stock: number }) => s.size === item.size);
-    if (!sizeObj || sizeObj.stock < item.quantity) {
-      res.status(400).json({ error: `Estoque insuficiente para ${pData.name} (${item.size}).` });
-      return;
+    const userData = userSnap.data()!;
+
+    let subtotalCents = 0;
+    const resolvedItems: Array<{
+      productId: string;
+      productName: string;
+      size: string;
+      quantity: number;
+      unitPriceCents: number;
+    }> = [];
+
+    for (const item of items) {
+      if (
+        !item?.productId ||
+        !item?.size ||
+        typeof item.quantity !== 'number' ||
+        !Number.isInteger(item.quantity) ||
+        item.quantity < 1 ||
+        item.quantity > 20
+      ) {
+        res.status(400).json({ error: 'Quantidade ou item inválido na sacola.' });
+        return;
+      }
+
+      const pSnap = await db.collection('products').doc(String(item.productId)).get();
+      if (!pSnap.exists || pSnap.data()?.active === false) {
+        res.status(400).json({ error: `Produto inválido: ${item.productId}` });
+        return;
+      }
+      const pData = pSnap.data()!;
+      const sizeObj = (pData.sizes || []).find(
+        (s: { size: string; stock: number }) => s.size === item.size,
+      );
+      if (!sizeObj || sizeObj.stock < item.quantity) {
+        res.status(400).json({ error: `Estoque insuficiente para ${pData.name} (${item.size}).` });
+        return;
+      }
+      subtotalCents += pData.priceCents * item.quantity;
+      resolvedItems.push({
+        productId: pSnap.id,
+        productName: pData.name,
+        size: item.size,
+        quantity: item.quantity,
+        unitPriceCents: pData.priceCents,
+      });
     }
-    subtotalCents += pData.priceCents * item.quantity;
-    resolvedItems.push({
-      productId: pSnap.id,
-      productName: pData.name,
-      size: item.size,
-      quantity: item.quantity,
-      unitPriceCents: pData.priceCents,
-    });
-  }
 
-  const pricing = computeShopPricing(
-    subtotalCents,
-    (userData.membershipTier || 'none') as MembershipTier,
-    Boolean(userData.membershipActive),
-  );
+    const membershipValid = isMembershipCurrentlyValid(userData);
+    const pricing = computeShopPricing(
+      subtotalCents,
+      (userData.membershipTier || 'none') as MembershipTier,
+      membershipValid,
+    );
 
-  const siteOrigin = resolveSiteOrigin(req);
-  const stripe = getStripeClient();
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    payment_method_types: paymentMethod === 'stripe_pix' ? ['pix', 'card'] : ['card', 'pix'],
-    customer_email: userData.email || decoded.email,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: 'brl',
-          unit_amount: pricing.totalCents,
-          product_data: {
-            name: 'Pedido Lojinha CAMBLU',
-            description: resolvedItems.map((i) => `${i.quantity}x ${i.productName} (${i.size})`).join(', '),
+    const siteOrigin = resolveSiteOrigin(req);
+    const stripe = getStripeClient();
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: paymentMethod === 'stripe_pix' ? ['pix', 'card'] : ['card', 'pix'],
+      customer_email: userData.email || decoded.email,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'brl',
+            unit_amount: pricing.totalCents,
+            product_data: {
+              name: 'Pedido Lojinha CAMBLU',
+              description: resolvedItems
+                .map((i) => `${i.quantity}x ${i.productName} (${i.size})`)
+                .join(', '),
+            },
           },
         },
+      ],
+      metadata: {
+        kind: 'shop_order',
+        uid: decoded.uid,
+        subtotalCents: String(subtotalCents),
+        discountCents: String(pricing.discountCents),
+        itemsJson: JSON.stringify(resolvedItems),
       },
-    ],
-    metadata: {
-      kind: 'shop_order',
-      uid: decoded.uid,
-      subtotalCents: String(subtotalCents),
-      discountCents: String(pricing.discountCents),
-      itemsJson: JSON.stringify(resolvedItems),
-    },
-    success_url: `${siteOrigin}/lojinha?checkout=success`,
-    cancel_url: `${siteOrigin}/lojinha?checkout=cancelled`,
-  });
+      success_url: `${siteOrigin}/lojinha?checkout=success`,
+      cancel_url: `${siteOrigin}/lojinha?checkout=cancelled`,
+    });
 
-  res.json({ checkoutUrl: session.url });
+    res.json({ checkoutUrl: session.url });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/checkout/shop', {
+      origin: 'functions -> /api/checkout/shop',
+      uid: decoded.uid,
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ error: 'Não foi possível iniciar o pagamento da Lojinha.' });
+  }
 });
 
 app.post('/api/checkout/membership', async (req, res) => {
@@ -770,39 +1277,50 @@ app.post('/api/checkout/membership', async (req, res) => {
     return;
   }
 
-  const unitAmount = CLUB_PRICE_MAP[tier][cycle];
-  const isMonthly = cycle === 'mensal';
-  const siteOrigin = resolveSiteOrigin(req);
-  const stripe = getStripeClient();
+  try {
+    const unitAmount = CLUB_PRICE_MAP[tier][cycle];
+    const isMonthly = cycle === 'mensal';
+    const siteOrigin = resolveSiteOrigin(req);
+    const stripe = getStripeClient();
 
-  const session = await stripe.checkout.sessions.create({
-    mode: isMonthly ? 'subscription' : 'payment',
-    payment_method_types: isMonthly ? ['card'] : ['card', 'pix'],
-    customer_email: decoded.email,
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: 'brl',
-          unit_amount: unitAmount,
-          ...(isMonthly ? { recurring: { interval: 'month' } } : {}),
-          product_data: {
-            name: `Clube CAMBLU — Plano ${tier.toUpperCase()} (${cycle})`,
+    const session = await stripe.checkout.sessions.create({
+      mode: isMonthly ? 'subscription' : 'payment',
+      payment_method_types: isMonthly ? ['card'] : ['card', 'pix'],
+      customer_email: decoded.email,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: 'brl',
+            unit_amount: unitAmount,
+            ...(isMonthly ? { recurring: { interval: 'month' } } : {}),
+            product_data: {
+              name: `Clube CAMBLU — Plano ${tier.toUpperCase()} (${cycle})`,
+            },
           },
         },
+      ],
+      metadata: {
+        kind: 'club_membership',
+        uid: decoded.uid,
+        tier,
+        cycle,
       },
-    ],
-    metadata: {
-      kind: 'club_membership',
+      success_url: `${siteOrigin}/clube/cartao?assinatura=sucesso`,
+      cancel_url: `${siteOrigin}/clube?assinatura=cancelada`,
+    });
+
+    res.json({ checkoutUrl: session.url });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/checkout/membership', {
+      origin: 'functions -> /api/checkout/membership',
       uid: decoded.uid,
       tier,
       cycle,
-    },
-    success_url: `${siteOrigin}/clube/cartao?assinatura=sucesso`,
-    cancel_url: `${siteOrigin}/clube?assinatura=cancelada`,
-  });
-
-  res.json({ checkoutUrl: session.url });
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ error: 'Não foi possível iniciar a assinatura do Clube.' });
+  }
 });
 
 // Item 1.5 — Transferência atômica de ingresso por CPF
@@ -820,53 +1338,68 @@ app.post('/api/tickets/transfer', async (req, res) => {
     return;
   }
 
-  const recipientSnap = await db.collection('users').where('cpf', '==', cleanCpf).limit(1).get();
-  if (recipientSnap.empty) {
-    res.status(404).json({ error: 'Nenhuma conta cadastrada encontrada com este CPF.' });
-    return;
-  }
-  const dest = recipientSnap.docs[0].data();
-  const ticketRef = db.collection('tickets').doc(ticketId);
-
-  let updatedTicket: Record<string, unknown> | null = null;
-  await db.runTransaction(async (tx) => {
-    const tSnap = await tx.get(ticketRef);
-    if (!tSnap.exists) throw new Error('Ingresso não encontrado.');
-    const tData = tSnap.data()!;
-    if (tData.ownerUid !== decoded.uid) {
-      throw new Error('Você não é o titular deste ingresso.');
+  try {
+    const recipientSnap = await db.collection('users').where('cpf', '==', cleanCpf).limit(1).get();
+    if (recipientSnap.empty) {
+      res.status(404).json({ error: 'Nenhuma conta cadastrada encontrada com este CPF.' });
+      return;
     }
-    const qrs = (tData.qrInstances || []) as Array<{ checkedInAt?: string | null }>;
-    if (qrs.some((q) => Boolean(q.checkedInAt))) {
-      throw new Error('Ingressos com presença já registrada não podem ser transferidos.');
+    const dest = recipientSnap.docs[0].data();
+    if (dest.uid === decoded.uid) {
+      res.status(400).json({ error: 'O ingresso já pertence à sua conta.' });
+      return;
     }
 
-    const logEntry = {
-      fromUid: tData.ownerUid,
-      fromCpf: tData.ownerCpf,
-      toUid: dest.uid,
-      toCpf: dest.cpf,
-      transferredAt: new Date().toISOString(),
-    };
-    const nextHistory = [...(tData.transferHistory || []), logEntry];
-    tx.update(ticketRef, {
-      ownerUid: dest.uid,
-      ownerName: dest.name,
-      ownerCpf: dest.cpf,
-      ownerEmail: dest.email,
-      transferHistory: nextHistory,
+    const ticketRef = db.collection('tickets').doc(ticketId);
+    let updatedTicket: Record<string, unknown> | null = null;
+
+    await db.runTransaction(async (tx) => {
+      const tSnap = await tx.get(ticketRef);
+      if (!tSnap.exists) throw new Error('Ingresso não encontrado.');
+      const tData = tSnap.data()!;
+      if (tData.ownerUid !== decoded.uid) {
+        throw new Error('Você não é o titular deste ingresso.');
+      }
+      const qrs = (tData.qrInstances || []) as Array<{ checkedInAt?: string | null }>;
+      if (qrs.some((q) => Boolean(q.checkedInAt))) {
+        throw new Error('Ingressos com presença já registrada não podem ser transferidos.');
+      }
+
+      const logEntry = {
+        fromUid: tData.ownerUid,
+        fromCpf: tData.ownerCpf,
+        toUid: dest.uid,
+        toCpf: dest.cpf,
+        transferredAt: new Date().toISOString(),
+      };
+      const nextHistory = [...(tData.transferHistory || []), logEntry];
+      tx.update(ticketRef, {
+        ownerUid: dest.uid,
+        ownerName: dest.name,
+        ownerCpf: dest.cpf,
+        ownerEmail: dest.email,
+        transferHistory: nextHistory,
+      });
+      updatedTicket = {
+        ...tData,
+        ownerUid: dest.uid,
+        ownerName: dest.name,
+        ownerCpf: dest.cpf,
+        ownerEmail: dest.email,
+        transferHistory: nextHistory,
+      };
     });
-    updatedTicket = {
-      ...tData,
-      ownerUid: dest.uid,
-      ownerName: dest.name,
-      ownerCpf: dest.cpf,
-      ownerEmail: dest.email,
-      transferHistory: nextHistory,
-    };
-  });
 
-  res.json({ ok: true, ticket: updatedTicket });
+    res.json({ ok: true, ticket: updatedTicket });
+  } catch (err) {
+    console.warn('[CAMBLU-API] Falha ao transferir ingresso em /api/tickets/transfer', {
+      origin: 'functions -> /api/tickets/transfer',
+      uid: decoded.uid,
+      ticketId,
+      message: (err as Error)?.message,
+    });
+    res.status(400).json({ error: (err as Error)?.message || 'Falha ao transferir ingresso.' });
+  }
 });
 
 // Item 1.4 — Check-in administrativo de QR Code e emissão automática de certificado
@@ -878,61 +1411,79 @@ app.post('/api/tickets/checkin', async (req, res) => {
   }
 
   const { qrCode } = req.body as { qrCode?: string };
-  if (!qrCode) {
+  const cleanQr = typeof qrCode === 'string' ? qrCode.trim() : '';
+  if (!cleanQr || cleanQr.length > 160) {
     res.status(400).json({ error: 'qrCode obrigatório.' });
     return;
   }
 
-  const allSnap = await db.collection('tickets').get();
-  const targetDoc = allSnap.docs.find((d) =>
-    ((d.data().qrInstances || []) as Array<{ qrCode: string }>).some((q) => q.qrCode === qrCode.trim()),
-  );
-  if (!targetDoc) {
-    res.status(404).json({ error: 'QR Code não encontrado.' });
-    return;
+  try {
+    const allSnap = await db.collection('tickets').get();
+    const targetDoc = allSnap.docs.find((d) =>
+      ((d.data().qrInstances || []) as Array<{ qrCode: string }>).some((q) => q.qrCode === cleanQr),
+    );
+    if (!targetDoc) {
+      res.status(404).json({ error: 'QR Code não encontrado.' });
+      return;
+    }
+
+    const tData = targetDoc.data();
+    const existingQrs = (tData.qrInstances || []) as Array<{
+      qrCode: string;
+      certificateHours: number;
+      checkedInAt?: string | null;
+      checkedInBy?: string | null;
+    }>;
+    const targetQrInstance = existingQrs.find((q) => q.qrCode === cleanQr);
+    if (targetQrInstance?.checkedInAt) {
+      res.status(409).json({
+        error: `Este QR Code já teve presença registrada para ${tData.ownerName || 'o participante'}.`,
+      });
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const nextQrs = existingQrs.map((q) =>
+      q.qrCode === cleanQr && !q.checkedInAt
+        ? { ...q, checkedInAt: now, checkedInBy: ADMIN_EMAIL }
+        : q,
+    );
+    await targetDoc.ref.update({ qrInstances: nextQrs });
+
+    const totalHours = nextQrs
+      .filter((q) => Boolean(q.checkedInAt))
+      .reduce((acc, q) => acc + (q.certificateHours || 0), 0);
+
+    const certId = `cert-${targetDoc.id}`;
+    const evSnap = await db.collection('events').doc(tData.eventId).get();
+    const evData = evSnap.data() || {};
+
+    await db.collection('certificates').doc(certId).set(
+      {
+        id: certId,
+        code: `CAMBLU-${new Date().getFullYear()}-${targetDoc.id.slice(-5).toUpperCase()}`,
+        ticketId: targetDoc.id,
+        eventId: tData.eventId,
+        eventTitle: tData.eventTitle,
+        eventDateLabel: evData.startAt ? new Date(evData.startAt).toLocaleDateString('pt-BR') : 'Blumenau/SC',
+        ownerUid: tData.ownerUid,
+        ownerName: tData.ownerName,
+        ownerCpf: tData.ownerCpf,
+        totalHours,
+        issuedAt: now,
+        templateConfig: evData.certificateTemplate || null,
+      },
+      { merge: true },
+    );
+
+    res.json({ ok: true, totalHours, ownerName: tData.ownerName });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/tickets/checkin', {
+      origin: 'functions -> /api/tickets/checkin',
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ error: 'Falha ao registrar presença.' });
   }
-
-  const tData = targetDoc.data();
-  const now = new Date().toISOString();
-  const nextQrs = (tData.qrInstances as Array<{
-    qrCode: string;
-    certificateHours: number;
-    checkedInAt?: string | null;
-    checkedInBy?: string | null;
-  }>).map((q) =>
-    q.qrCode === qrCode.trim() && !q.checkedInAt
-      ? { ...q, checkedInAt: now, checkedInBy: ADMIN_EMAIL }
-      : q,
-  );
-  await targetDoc.ref.update({ qrInstances: nextQrs });
-
-  const totalHours = nextQrs
-    .filter((q) => Boolean(q.checkedInAt))
-    .reduce((acc, q) => acc + (q.certificateHours || 0), 0);
-
-  const certId = `cert-${targetDoc.id}`;
-  const evSnap = await db.collection('events').doc(tData.eventId).get();
-  const evData = evSnap.data() || {};
-
-  await db.collection('certificates').doc(certId).set(
-    {
-      id: certId,
-      code: `CAMBLU-${new Date().getFullYear()}-${targetDoc.id.slice(-5).toUpperCase()}`,
-      ticketId: targetDoc.id,
-      eventId: tData.eventId,
-      eventTitle: tData.eventTitle,
-      eventDateLabel: evData.startAt ? new Date(evData.startAt).toLocaleDateString('pt-BR') : 'Blumenau/SC',
-      ownerUid: tData.ownerUid,
-      ownerName: tData.ownerName,
-      ownerCpf: tData.ownerCpf,
-      totalHours,
-      issuedAt: now,
-      templateConfig: evData.certificateTemplate || null,
-    },
-    { merge: true },
-  );
-
-  res.json({ ok: true, totalHours, ownerName: tData.ownerName });
 });
 
 // Item 8 — Envio de Demandas & CAMBLU Mulher para camblufurb@gmail.com
@@ -952,6 +1503,9 @@ app.post('/api/demands/send', async (req, res) => {
     return;
   }
 
+  const cleanSenderName = anonymous ? null : sanitizeHeaderString(senderName, 140) || null;
+  const cleanSenderEmail = anonymous ? null : sanitizeHeaderString(senderEmail, 160) || null;
+  const cleanTurma = sanitizeHeaderString(turma, 16) || null;
   const id = `dem-${Date.now().toString(36)}`;
   let dispatchedEmail = false;
 
@@ -965,16 +1519,16 @@ app.post('/api/demands/send', async (req, res) => {
       await transporter.sendMail({
         from: `"Portal CAMBLU" <${ADMIN_EMAIL}>`,
         to: ADMIN_EMAIL,
-        replyTo: !anonymous && senderEmail ? senderEmail : undefined,
+        replyTo: cleanSenderEmail || undefined,
         subject: topic,
         text: [
           `Tópico: ${topic}`,
           `Anônimo: ${anonymous ? 'Sim' : 'Não'}`,
-          !anonymous && senderName ? `Nome: ${senderName}` : null,
-          !anonymous && senderEmail ? `E-mail: ${senderEmail}` : null,
-          turma ? `Turma: ${turma}` : null,
+          cleanSenderName ? `Nome: ${cleanSenderName}` : null,
+          cleanSenderEmail ? `E-mail: ${cleanSenderEmail}` : null,
+          cleanTurma ? `Turma: ${cleanTurma}` : null,
           '',
-          message.trim(),
+          message.trim().slice(0, 4000),
         ]
           .filter(Boolean)
           .join('\n'),
@@ -991,25 +1545,34 @@ app.post('/api/demands/send', async (req, res) => {
     dispatchedEmail = false;
   }
 
-  await db.collection('demands').doc(id).set({
-    id,
-    topic,
-    anonymous: Boolean(anonymous),
-    senderName: anonymous ? null : senderName || null,
-    senderEmail: anonymous ? null : senderEmail || null,
-    turma: turma || null,
-    message: message.trim().slice(0, 4000),
-    dispatchedEmail,
-    createdAt: FieldValue.serverTimestamp(),
-  });
+  try {
+    await db.collection('demands').doc(id).set({
+      id,
+      topic,
+      anonymous: Boolean(anonymous),
+      senderName: cleanSenderName,
+      senderEmail: cleanSenderEmail,
+      turma: cleanTurma,
+      message: message.trim().slice(0, 4000),
+      dispatchedEmail,
+      createdAt: FieldValue.serverTimestamp(),
+    });
 
-  res.json({ ok: true, id, dispatchedEmail });
+    res.json({ ok: true, id, dispatchedEmail });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro ao salvar demanda no Firestore', {
+      origin: 'functions -> /api/demands/send -> db.demands',
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ error: 'Não foi possível registrar a demanda.' });
+  }
 });
 
 export const api = onRequest(
   {
     region: 'southamerica-east1',
-    secrets: [stripeRestrictedKey, stripeWebhookSecret, smtpPass],
+    timeoutSeconds: 180,
+    secrets: [stripeRestrictedKey, stripeWebhookSecret, smtpPass, geminiApiKey],
   },
   app,
 );

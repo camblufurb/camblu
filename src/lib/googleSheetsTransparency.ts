@@ -1,4 +1,5 @@
 import type { TransparencyEntry, TransparencyType } from '../types/domain';
+import { API_BASE_URL, getAuthHeaders } from './firebase';
 import { logInfo, logWarn } from './logger';
 
 export interface ParsedSheetTab {
@@ -130,7 +131,7 @@ function normalizeType(rawType: string, desc: string): { type: TransparencyType;
   const norm = normalizeHeader(rawType);
   if (norm === 'receita' || norm === 'entrada') return { type: 'receita' };
   if (norm === 'despesa' || norm === 'saida') return { type: 'despesa' };
-  if (norm === 'ativo') return { type: 'ativo' };
+  if (norm === 'ativo' || norm.includes('transfer')) return { type: 'ativo' };
   if (norm === 'passivo') return { type: 'passivo' };
 
   const descLower = normalizeHeader(desc);
@@ -331,4 +332,160 @@ export async function syncGoogleSheetTransparency(spreadsheetUrl: string): Promi
     tabCount: discoveredTabs.length,
     lastSyncedAt: new Date().toISOString(),
   };
+}
+
+export interface GeminiCategorizeResponse {
+  model: string;
+  categories: string[];
+  assignments: Record<string, string>;
+  entries: TransparencyEntry[];
+  persisted: boolean;
+  categorizedAt?: string;
+}
+
+/**
+ * Calls the admin-authenticated backend endpoint backed by `gemini-flash-lite-latest`
+ * to group all transparency inflows/outflows into the minimal coherent set of categories.
+ */
+export async function requestGeminiTransparencyCategorization(
+  entries: TransparencyEntry[],
+  options?: {
+    persist?: boolean;
+    meta?: {
+      spreadsheetUrl?: string;
+      lastSyncedAt?: string;
+      driveMinutesUrl?: string;
+      currentBalanceCents?: number;
+      projectedBalanceCents?: number;
+      replaceSyncedSheetEntries?: boolean;
+    };
+  },
+): Promise<GeminiCategorizeResponse> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE_URL}/transparency/categorize`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      entries,
+      persist: options?.persist !== false,
+      meta: options?.meta,
+    }),
+  });
+
+  if (!res.ok) {
+    const errPayload = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(errPayload.error || `Erro HTTP ${res.status} ao categorizar com Gemini.`);
+  }
+
+  return (await res.json()) as GeminiCategorizeResponse;
+}
+
+export interface GeminiMonthAuditProposal {
+  errorLocation: string;
+  explanation: string;
+  proposedSolution: string;
+  dataSourceChanges: string[];
+  formulaChanges: {
+    inflowsFormula: string;
+    outflowsFormula: string;
+    netResultFormula: string;
+    notes: string;
+  };
+  proposedEntries: Array<{
+    id: string;
+    sheet: string;
+    date: string;
+    type: TransparencyType;
+    category: string;
+    description: string;
+    amountCents: number;
+  }>;
+  proposedTotals: {
+    totalInCents: number;
+    totalOutCents: number;
+    netResultCents: number;
+  };
+}
+
+export interface GeminiMonthAuditResult {
+  status: 'ok' | 'discrepancy_found';
+  monthSheet: string;
+  auditModel: string;
+  fixerModel: string | null;
+  checkedAt: string;
+  currentSnapshot: {
+    totalInCents: number;
+    totalOutCents: number;
+    netResultCents: number;
+    ativoCents: number;
+    passivoCents: number;
+    entriesCount: number;
+  };
+  audit: {
+    isAccurate: boolean;
+    severity: 'ok' | 'warning' | 'error';
+    summary: string;
+    discrepancies: string[];
+  };
+  proposal: GeminiMonthAuditProposal | null;
+}
+
+/**
+ * Fetches the raw `overview` CSV and the specific monthly tab CSV directly from the public Google Sheet
+ * so the backend Gemini auditor can inspect original cells/formulas without extra Google throttling.
+ */
+export async function fetchGoogleSheetAuditCsvs(
+  spreadsheetUrl: string,
+  targetSheetName: string,
+): Promise<{ overviewCsv?: string; monthCsv?: string }> {
+  const spreadsheetId = extractGoogleSheetId(spreadsheetUrl);
+  if (!spreadsheetId) return {};
+  const base = `https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+  const htmlResp = await fetch(`${base}/htmlview`, { cache: 'no-store' });
+  if (!htmlResp.ok) return {};
+  const html = await htmlResp.text();
+  const tabs = parseGoogleSheetTabs(html);
+  const overviewTab = tabs.find((t) => normalizeHeader(t.name) === 'overview');
+  const targetTab = tabs.find((t) => normalizeHeader(t.name) === normalizeHeader(targetSheetName));
+
+  const [overviewCsv, monthCsv] = await Promise.all([
+    overviewTab
+      ? fetch(`${base}/export?format=csv&gid=${encodeURIComponent(overviewTab.gid)}`, { cache: 'no-store' })
+          .then((r) => (r.ok ? r.text() : undefined))
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
+    targetTab
+      ? fetch(`${base}/export?format=csv&gid=${encodeURIComponent(targetTab.gid)}`, { cache: 'no-store' })
+          .then((r) => (r.ok ? r.text() : undefined))
+          .catch(() => undefined)
+      : Promise.resolve(undefined),
+  ]);
+
+  return { overviewCsv, monthCsv };
+}
+
+/**
+ * Audits a month's imported transparency data & calculations via `gemini-flash-lite-latest`,
+ * escalating to `gemini-flash-latest` when discrepancies require data source / formula fixes.
+ */
+export async function requestMonthAuditWithGemini(payload: {
+  monthSheet: string;
+  entries: TransparencyEntry[];
+  spreadsheetUrl?: string;
+  overviewCsv?: string;
+  monthCsv?: string;
+}): Promise<GeminiMonthAuditResult> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE_URL}/transparency/audit-month`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const errPayload = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(errPayload.error || `Erro HTTP ${res.status} na auditoria da transparência.`);
+  }
+
+  return (await res.json()) as GeminiMonthAuditResult;
 }

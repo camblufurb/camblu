@@ -1,10 +1,17 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { collection, doc, onSnapshot, query, setDoc, where, type Query } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, query, setDoc, where, writeBatch, type Query } from 'firebase/firestore';
 import { useAuth } from './AuthContext';
 import { db, isFirebaseConfigured } from '../lib/firebase';
 import { logError, logInfo, logWarn } from '../lib/logger';
 import { stripUndefinedDeep } from '../lib/objectUtils';
-import { syncGoogleSheetTransparency } from '../lib/googleSheetsTransparency';
+import { sortGestaoTermsDesc } from '../lib/gestoes';
+import {
+  fetchGoogleSheetAuditCsvs,
+  requestGeminiTransparencyCategorization,
+  requestMonthAuditWithGemini,
+  syncGoogleSheetTransparency,
+  type GeminiMonthAuditResult,
+} from '../lib/googleSheetsTransparency';
 import { ANAIS_SEED, EDITAIS_SEED, EVENTS_SEED, ORDERS_SEED, PRODUCTS_SEED } from '../data/catalogSeeds';
 import { GESTOES_SEED } from '../data/gestoes';
 import { LIGAS_SEED } from '../data/ligas';
@@ -187,7 +194,26 @@ interface AppDataContextValue extends AppDataState {
   addTransparencyEntry: (entry: TransparencyEntry) => Promise<void>;
   deleteTransparencyEntry: (entryId: string) => Promise<void>;
   updateTransparencyMeta: (meta: TransparencyMeta) => Promise<void>;
-  syncTransparencySheet: (customUrl?: string) => Promise<number>;
+  syncTransparencySheet: (customUrl?: string) => Promise<{
+    count: number;
+    categoriesCount: number;
+    usedAi: boolean;
+    warning?: string;
+  }>;
+  categorizeTransparencyWithGemini: () => Promise<{ count: number; categories: string[]; model: string }>;
+  auditTransparencyMonth: (monthSheet: string) => Promise<GeminiMonthAuditResult>;
+  applyTransparencyMonthFix: (
+    monthSheet: string,
+    proposedEntries: Array<{
+      id: string;
+      sheet: string;
+      date: string;
+      type: TransparencyEntry['type'];
+      category: string;
+      description: string;
+      amountCents: number;
+    }>,
+  ) => Promise<TransparencyEntry[]>;
   saveEdital: (edital: EditalItem) => Promise<void>;
   deleteEdital: (id: string) => Promise<void>;
   saveAnais: (anais: AnaisEdition) => Promise<void>;
@@ -276,12 +302,52 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const syncTransparencySheet = useCallback(
-    async (customUrl?: string): Promise<number> => {
+    async (customUrl?: string) => {
       const targetUrl = (customUrl ?? state.transparencyMeta.spreadsheetUrl ?? '').trim();
-      if (!targetUrl) return 0;
+      if (!targetUrl) {
+        return { count: 0, categoriesCount: 0, usedAi: false };
+      }
 
       logInfo('Sheets', 'Iniciando sincronização da planilha de transparência', { targetUrl });
       const synced = await syncGoogleSheetTransparency(targetUrl);
+
+      let finalEntries = synced.entries;
+      let finalCategories = synced.savedCategories;
+      let aiModel: string | undefined;
+      let aiCategorizedAt: string | undefined;
+      let usedAi = false;
+      let warning: string | undefined;
+
+      if (isFirebaseConfigured && db && isAdmin) {
+        try {
+          const aiRes = await requestGeminiTransparencyCategorization(synced.entries, {
+            persist: true,
+            meta: {
+              spreadsheetUrl: targetUrl,
+              lastSyncedAt: synced.lastSyncedAt,
+              driveMinutesUrl: state.transparencyMeta.driveMinutesUrl,
+              currentBalanceCents:
+                synced.currentBalanceCents > 0
+                  ? synced.currentBalanceCents
+                  : state.transparencyMeta.currentBalanceCents,
+              projectedBalanceCents:
+                synced.projectedBalanceCents > 0
+                  ? synced.projectedBalanceCents
+                  : state.transparencyMeta.projectedBalanceCents,
+              replaceSyncedSheetEntries: true,
+            },
+          });
+          finalEntries = aiRes.entries;
+          finalCategories = aiRes.categories;
+          aiModel = aiRes.model;
+          aiCategorizedAt = aiRes.categorizedAt || synced.lastSyncedAt;
+          usedAi = true;
+        } catch (err) {
+          warning = err instanceof Error ? err.message : 'Gemini indisponível no momento.';
+          logWarn('Gemini', 'Categorização Gemini falhou durante sync; salvando planilha com categorias padrão', err);
+        }
+      }
+
       const nextMeta: TransparencyMeta = {
         ...state.transparencyMeta,
         spreadsheetUrl: targetUrl,
@@ -292,19 +358,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           synced.projectedBalanceCents > 0
             ? synced.projectedBalanceCents
             : state.transparencyMeta.projectedBalanceCents,
-        savedCategories: Array.from(
-          new Set([...state.transparencyMeta.savedCategories, ...synced.savedCategories]),
-        ).sort(),
+        savedCategories: finalCategories,
+        aiCategorizationModel: aiModel ?? state.transparencyMeta.aiCategorizationModel,
+        aiCategorizedAt: aiCategorizedAt ?? state.transparencyMeta.aiCategorizedAt,
         updatedAt: synced.lastSyncedAt,
       };
 
       setState((p) => ({
         ...p,
-        transparencyEntries: synced.entries,
+        transparencyEntries: finalEntries,
         transparencyMeta: nextMeta,
       }));
 
-      if (isFirebaseConfigured && db && isAdmin) {
+      if (isFirebaseConfigured && db && isAdmin && !usedAi) {
         await persistDoc('transparencyMeta', 'public', {
           driveMinutesUrl: nextMeta.driveMinutesUrl,
           spreadsheetUrl: nextMeta.spreadsheetUrl,
@@ -312,20 +378,166 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
           savedCategories: nextMeta.savedCategories,
         });
         await persistDoc('transparencyMeta', 'config', nextMeta);
-        await Promise.all(synced.entries.map((entry) => persistDoc('transparencyEntries', entry.id, entry)));
+        for (let i = 0; i < finalEntries.length; i += 400) {
+          const batch = writeBatch(db);
+          for (const entry of finalEntries.slice(i, i + 400)) {
+            batch.set(doc(db, 'transparencyEntries', entry.id), stripUndefinedDeep(entry), { merge: true });
+          }
+          await batch.commit();
+        }
       }
 
-      return synced.entries.length;
+      return {
+        count: finalEntries.length,
+        categoriesCount: finalCategories.length,
+        usedAi,
+        warning,
+      };
     },
     [isAdmin, persistDoc, state.transparencyMeta],
   );
 
+  const categorizeTransparencyWithGemini = useCallback(async () => {
+    const aiRes = await requestGeminiTransparencyCategorization(state.transparencyEntries, {
+      persist: Boolean(isFirebaseConfigured && db && isAdmin),
+      meta: {
+        spreadsheetUrl: state.transparencyMeta.spreadsheetUrl,
+        lastSyncedAt: state.transparencyMeta.lastSyncedAt,
+        driveMinutesUrl: state.transparencyMeta.driveMinutesUrl,
+        currentBalanceCents: state.transparencyMeta.currentBalanceCents,
+        projectedBalanceCents: state.transparencyMeta.projectedBalanceCents,
+      },
+    });
+    const categorizedAt = aiRes.categorizedAt || new Date().toISOString();
+    setState((p) => ({
+      ...p,
+      transparencyEntries: aiRes.entries,
+      transparencyMeta: {
+        ...p.transparencyMeta,
+        savedCategories: aiRes.categories,
+        aiCategorizationModel: aiRes.model,
+        aiCategorizedAt: categorizedAt,
+        updatedAt: categorizedAt,
+      },
+    }));
+    return {
+      count: aiRes.entries.length,
+      categories: aiRes.categories,
+      model: aiRes.model,
+    };
+  }, [isAdmin, state.transparencyEntries, state.transparencyMeta]);
+
+  const auditTransparencyMonth = useCallback(
+    async (monthSheet: string): Promise<GeminiMonthAuditResult> => {
+      const sheetEntries = state.transparencyEntries.filter((e) => e.sheet === monthSheet);
+      const sheetUrl = state.transparencyMeta.spreadsheetUrl?.trim() || '';
+      let overviewCsv: string | undefined;
+      let monthCsv: string | undefined;
+
+      if (sheetUrl) {
+        try {
+          const csvs = await fetchGoogleSheetAuditCsvs(sheetUrl, monthSheet);
+          overviewCsv = csvs.overviewCsv;
+          monthCsv = csvs.monthCsv;
+        } catch (err) {
+          logWarn('Sheets', 'Não foi possível ler CSVs no cliente para auditoria; tentando no backend', err);
+        }
+      }
+
+      return requestMonthAuditWithGemini({
+        monthSheet,
+        entries: sheetEntries,
+        spreadsheetUrl: sheetUrl || undefined,
+        overviewCsv,
+        monthCsv,
+      });
+    },
+    [state.transparencyEntries, state.transparencyMeta.spreadsheetUrl],
+  );
+
+  const applyTransparencyMonthFix = useCallback(
+    async (
+      monthSheet: string,
+      proposedEntries: Array<{
+        id: string;
+        sheet: string;
+        date: string;
+        type: TransparencyEntry['type'];
+        category: string;
+        description: string;
+        amountCents: number;
+      }>,
+    ): Promise<TransparencyEntry[]> => {
+      const normalizedMonthEntries: TransparencyEntry[] = proposedEntries.map((item) => ({
+        id: item.id,
+        sheet: monthSheet,
+        year: Number.parseInt(item.date.slice(0, 4), 10) || new Date().getFullYear(),
+        date: item.date,
+        type: item.type,
+        category: item.category,
+        description: item.description,
+        amountCents: Math.abs(Math.round(item.amountCents)),
+        createdAt: `${item.date}T12:00:00.000Z`,
+      }));
+
+      const prevMonthIds = new Set(
+        state.transparencyEntries.filter((e) => e.sheet === monthSheet).map((e) => e.id),
+      );
+      const nextMonthIds = new Set(normalizedMonthEntries.map((e) => e.id));
+      const updatedAll = [
+        ...state.transparencyEntries.filter((e) => e.sheet !== monthSheet),
+        ...normalizedMonthEntries,
+      ];
+      const nextCategories = Array.from(
+        new Set(updatedAll.map((e) => e.category).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      const updatedAt = new Date().toISOString();
+
+      setState((p) => ({
+        ...p,
+        transparencyEntries: updatedAll,
+        transparencyMeta: {
+          ...p.transparencyMeta,
+          savedCategories: nextCategories,
+          updatedAt,
+        },
+      }));
+
+      if (isFirebaseConfigured && db && isAdmin) {
+        const batch = writeBatch(db);
+        prevMonthIds.forEach((oldId) => {
+          if (!nextMonthIds.has(oldId)) {
+            batch.delete(doc(db!, 'transparencyEntries', oldId));
+          }
+        });
+        normalizedMonthEntries.forEach((entry) => {
+          batch.set(doc(db!, 'transparencyEntries', entry.id), stripUndefinedDeep(entry), { merge: true });
+        });
+        batch.set(
+          doc(db, 'transparencyMeta', 'public'),
+          { savedCategories: nextCategories, updatedAt },
+          { merge: true },
+        );
+        batch.set(
+          doc(db, 'transparencyMeta', 'config'),
+          { savedCategories: nextCategories, updatedAt },
+          { merge: true },
+        );
+        await batch.commit();
+      }
+
+      return normalizedMonthEntries;
+    },
+    [isAdmin, state.transparencyEntries],
+  );
+
   useEffect(() => {
+    if (isFirebaseConfigured && db) return;
     const url = state.transparencyMeta.spreadsheetUrl?.trim();
     if (!url || lastAutoSyncUrlRef.current === url) return;
     lastAutoSyncUrlRef.current = url;
     void syncTransparencySheet(url).catch((err) => {
-      logWarn('Sheets', 'Sincronização automática da planilha falhou; mantendo dados em cache/Firestore', err);
+      logWarn('Sheets', 'Sincronização automática da planilha falhou; mantendo dados em cache demo', err);
     });
   }, [state.transparencyMeta.spreadsheetUrl, syncTransparencySheet]);
 
@@ -371,10 +583,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       collection(db, 'gestoes'),
       (snap) => {
         const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GestaoTerm);
-        const merged = [
+        const merged = sortGestaoTermsDesc([
           ...docs,
           ...GESTOES_SEED.filter((seed) => !docs.some((item) => item.id === seed.id)),
-        ].sort((a, b) => b.year - a.year);
+        ]);
         logInfo('Firestore', 'Snapshot "gestoes" sincronizado com seed oficial', {
           firestoreCount: docs.length,
           mergedCount: merged.length,
@@ -401,6 +613,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
               spreadsheetUrl: d.spreadsheetUrl ?? prev.transparencyMeta.spreadsheetUrl,
               lastSyncedAt: d.lastSyncedAt ?? prev.transparencyMeta.lastSyncedAt,
               savedCategories: d.savedCategories ?? prev.transparencyMeta.savedCategories,
+              aiCategorizationModel: d.aiCategorizationModel ?? prev.transparencyMeta.aiCategorizationModel,
+              aiCategorizedAt: d.aiCategorizedAt ?? prev.transparencyMeta.aiCategorizedAt,
             },
           }));
         }
@@ -583,6 +797,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         ...p,
         transparencyEntries: p.transparencyEntries.filter((e) => e.id !== entryId),
       }));
+      if (isFirebaseConfigured && db && isAdmin) {
+        await deleteDoc(doc(db, 'transparencyEntries', entryId));
+      }
     },
     updateTransparencyMeta: async (meta) => {
       setState((p) => ({ ...p, transparencyMeta: meta }));
@@ -591,10 +808,15 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         spreadsheetUrl: meta.spreadsheetUrl,
         lastSyncedAt: meta.lastSyncedAt,
         savedCategories: meta.savedCategories,
+        aiCategorizationModel: meta.aiCategorizationModel,
+        aiCategorizedAt: meta.aiCategorizedAt,
       });
       await persistDoc('transparencyMeta', 'config', meta);
     },
     syncTransparencySheet,
+    categorizeTransparencyWithGemini,
+    auditTransparencyMonth,
+    applyTransparencyMonthFix,
     saveEdital: async (edital) => {
       setState((p) => ({ ...p, editais: upsertArray(p.editais, edital) }));
       await persistDoc('editais', edital.id, edital);
@@ -609,7 +831,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     saveGestao: async (gestao) => {
       setState((p) => ({
         ...p,
-        gestoes: upsertArray(p.gestoes, gestao).sort((a, b) => b.year - a.year),
+        gestoes: sortGestaoTermsDesc(upsertArray(p.gestoes, gestao)),
       }));
       await persistDoc('gestoes', gestao.id, gestao);
     },

@@ -7,6 +7,8 @@ import {
   parseOverviewCsv,
   parseSheetTransactionsCsv,
 } from '../googleSheetsTransparency';
+import { aggregateDirectionCategories, aggregateForPie } from '../transparencyPosterGenerator';
+import type { TransparencyEntry } from '../../types/domain';
 
 describe('googleSheetsTransparency parser', () => {
   it('extracts spreadsheet ID from standard Google Sheets URLs', () => {
@@ -77,5 +79,33 @@ describe('googleSheetsTransparency parser', () => {
       { name: 'overview', gid: '0' },
       { name: 'SECIMED', gid: '2013397646' },
     ]);
+  });
+
+  it('treats transferência as ativo and aggregates category slices cleanly for charts and posters', () => {
+    const sepCsv = [
+      'Data,Categoria,Descrição,Valor',
+      '24/09/2026,transferência ,Cotas Viacredi ,"R$ 5.230,00"',
+      '30/09/2026,receita,Lojinha no pix,"R$ 363,00"',
+    ].join('\n');
+    const parsed = parseSheetTransactionsCsv('Setembro', sepCsv);
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0].type).toBe('ativo');
+    expect(parsed[1].type).toBe('receita');
+
+    const sampleEntries: TransparencyEntry[] = [
+      { id: '1', sheet: 'Março', year: 2026, date: '2026-03-01', type: 'receita', category: 'Lojinha & Produtos', description: 'Venda 1', amountCents: 30000, createdAt: '' },
+      { id: '2', sheet: 'Março', year: 2026, date: '2026-03-02', type: 'receita', category: 'Clube CAMBLU', description: 'Clube', amountCents: 10000, createdAt: '' },
+      { id: '3', sheet: 'Março', year: 2026, date: '2026-03-03', type: 'despesa', category: 'Lojinha & Produtos', description: 'Estoque', amountCents: 40000, createdAt: '' },
+      { id: '4', sheet: 'Março', year: 2026, date: '2026-03-04', type: 'despesa', category: 'Espaços & Patrimônio', description: 'Microondas', amountCents: 20000, createdAt: '' },
+    ];
+
+    const incomes = aggregateDirectionCategories(sampleEntries, 'receita');
+    expect(incomes.map((s) => [s.label, s.cents, s.percent])).toEqual([
+      ['Lojinha & Produtos', 30000, 75],
+      ['Clube CAMBLU', 10000, 25],
+    ]);
+
+    const pie = aggregateForPie(sampleEntries.filter((e) => e.type === 'despesa'));
+    expect(pie.map((s) => s.label)).toEqual(['Lojinha & Produtos', 'Espaços & Patrimônio']);
   });
 });

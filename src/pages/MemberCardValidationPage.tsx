@@ -169,6 +169,12 @@ export function MemberCardValidationPage() {
     : undefined;
   const avatarInitial = result?.name?.trim().charAt(0).toUpperCase() || 'C';
   const isFurbValidStudentCard = Boolean(result?.found && result.active && result.valid);
+  const safeEnrollmentPdfUrl =
+    result?.enrollmentSummaryUrl &&
+    (/^https:\/\/firebasestorage\.googleapis\.com\//i.test(result.enrollmentSummaryUrl) ||
+      (isDemoMode && /^data:application\/pdf;base64,/i.test(result.enrollmentSummaryUrl)))
+      ? result.enrollmentSummaryUrl
+      : undefined;
 
   return (
     <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '1.5rem' }}>
@@ -304,7 +310,7 @@ export function MemberCardValidationPage() {
                 </span>
               )}
 
-              {isFurbValidStudentCard && result.enrollmentSummaryUrl ? (
+              {isFurbValidStudentCard && safeEnrollmentPdfUrl ? (
                 <button
                   type="button"
                   className="m3-btn m3-btn--filled"
@@ -424,7 +430,7 @@ export function MemberCardValidationPage() {
         </article>
       )}
 
-      {isFurbValidStudentCard && result?.enrollmentSummaryUrl ? (
+      {isFurbValidStudentCard && safeEnrollmentPdfUrl ? (
         <M3Dialog
           wide
           open={pdfModalOpen}
@@ -433,13 +439,14 @@ export function MemberCardValidationPage() {
         >
           <div style={{ display: 'grid', gap: '1rem' }}>
             <iframe
-              src={result.enrollmentSummaryUrl}
-              title={`Resumo de matrícula de ${result.name || 'estudante'}`}
+              src={safeEnrollmentPdfUrl}
+              title={`Resumo de matrícula de ${result?.name || 'estudante'}`}
               className="member-verify-pdf-frame"
+              referrerPolicy="no-referrer"
             />
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'flex-end' }}>
               <a
-                href={result.enrollmentSummaryUrl}
+                href={safeEnrollmentPdfUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="m3-btn m3-btn--blue"

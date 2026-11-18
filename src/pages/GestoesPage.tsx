@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useAppData } from '../context/AppDataContext';
 import { ExpressiveShapeFrame } from '../components/ExpressiveShapeFrame';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
+import { sortGestaoTermsDesc } from '../lib/gestoes';
 import type { GestaoCargo, GestaoMember } from '../types/domain';
 
 const TOP_LEADERSHIP_CARGOS: GestaoCargo[] = ['Presidente', 'Vice-Presidente', 'Tesoureiro(a)'];
@@ -58,10 +59,10 @@ function MemberCard({
 
 export function GestoesPage() {
   const { gestoes } = useAppData();
-  const sortedTerms = useMemo(() => [...gestoes].sort((a, b) => b.year - a.year), [gestoes]);
-  const [selectedId, setSelectedId] = useState<string>(() => sortedTerms[0]?.id || '');
+  const sortedTerms = useMemo(() => sortGestaoTermsDesc(gestoes), [gestoes]);
+  const [selectedId, setSelectedId] = useState<string>('');
 
-  const currentTerm = sortedTerms.find((g) => g.id === selectedId) || sortedTerms[0];
+  const currentTerm = (selectedId ? sortedTerms.find((g) => g.id === selectedId) : undefined) || sortedTerms[0];
 
   const { topMembers, otherMembers } = useMemo(() => {
     if (!currentTerm) return { topMembers: [], otherMembers: [] };

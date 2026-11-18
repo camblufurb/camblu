@@ -101,6 +101,12 @@ describe('memberCard helpers', () => {
       'https://firebasestorage.googleapis.com/resumo.pdf',
     );
 
+    const unsafeUrlRes = buildMemberCardVerificationFromProfile(
+      { ...baseUser, enrollmentSummaryUrl: 'javascript:alert(1)' },
+      nowMs,
+    );
+    expect(unsafeUrlRes.enrollmentSummaryUrl).toBeUndefined();
+
     const inactiveRes = buildMemberCardVerificationFromProfile(
       {
         ...baseUser,

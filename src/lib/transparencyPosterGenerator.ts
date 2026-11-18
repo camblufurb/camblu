@@ -97,27 +97,68 @@ function wrapText(
   if (line) ctx.fillText(line, x, currY);
 }
 
-function aggregateForPie(entries: TransparencyEntry[]): { label: string; cents: number; color: string }[] {
+export interface CategorySlice {
+  label: string;
+  cents: number;
+  percent: number;
+  color: string;
+}
+
+/**
+ * Aggregates transparency entries of a single flow direction (`receita` or `despesa`)
+ * strictly by their categorized label, sorted by total value descending.
+ */
+export function aggregateDirectionCategories(
+  entries: TransparencyEntry[],
+  direction: 'receita' | 'despesa',
+): CategorySlice[] {
   const byCategory = new Map<string, number>();
+  let total = 0;
+
   for (const e of entries) {
-    const key = e.category && e.category !== 'Geral' ? e.category : e.description.slice(0, 26);
+    if (e.type !== direction || e.amountCents <= 0) continue;
+    const key = e.category && e.category !== 'Geral' ? e.category.trim() : e.description.slice(0, 26);
     byCategory.set(key, (byCategory.get(key) || 0) + e.amountCents);
+    total += e.amountCents;
   }
-  const sorted = Array.from(byCategory.entries())
-    .sort((a, b) => b[1] - a[1]);
-  const top = sorted.slice(0, 5);
-  const othersCents = sorted.slice(5).reduce((sum, [, v]) => sum + v, 0);
+
+  return Array.from(byCategory.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, cents], idx) => ({
+      label,
+      cents,
+      percent: total > 0 ? Math.round((cents / total) * 100) : 0,
+      color: PIE_PALETTE[idx % PIE_PALETTE.length],
+    }));
+}
+
+export function aggregateForPie(entries: TransparencyEntry[], maxPrimarySlices = 6): CategorySlice[] {
+  const byCategory = new Map<string, number>();
+  let total = 0;
+
+  for (const e of entries) {
+    if (e.amountCents <= 0) continue;
+    const key = e.category && e.category !== 'Geral' ? e.category.trim() : e.description.slice(0, 26);
+    byCategory.set(key, (byCategory.get(key) || 0) + e.amountCents);
+    total += e.amountCents;
+  }
+
+  const sorted = Array.from(byCategory.entries()).sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, maxPrimarySlices);
+  const othersCents = sorted.slice(maxPrimarySlices).reduce((sum, [, v]) => sum + v, 0);
   if (othersCents > 0) top.push(['Outros', othersCents]);
+
   return top.map(([label, cents], idx) => ({
     label,
     cents,
+    percent: total > 0 ? Math.round((cents / total) * 100) : 0,
     color: PIE_PALETTE[idx % PIE_PALETTE.length],
   }));
 }
 
 function paintPieAndLegend(
   ctx: CanvasRenderingContext2D,
-  slices: { label: string; cents: number; color: string }[],
+  slices: CategorySlice[],
   totalCents: number,
   emptyMessage: string,
 ) {
@@ -134,8 +175,8 @@ function paintPieAndLegend(
   }
 
   const cx = W / 2;
-  const cy = 570;
-  const radius = 195;
+  const cy = 530;
+  const radius = 185;
   let angle = -Math.PI / 2;
 
   for (const sl of slices) {
@@ -153,29 +194,29 @@ function paintPieAndLegend(
     angle = endAngle;
   }
 
-  let legendY = 825;
+  let legendY = 760;
   for (const sl of slices) {
     const pct = Math.round((sl.cents / totalCents) * 100);
     ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    drawRoundedRect(ctx, 72, legendY, W - 144, 62, 16);
+    drawRoundedRect(ctx, 72, legendY, W - 144, 56, 16);
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(108, legendY + 31, 13, 0, Math.PI * 2);
+    ctx.arc(106, legendY + 28, 12, 0, Math.PI * 2);
     ctx.fillStyle = sl.color;
     ctx.fill();
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '600 26px "Roboto Flex", system-ui, sans-serif';
+    ctx.font = '600 25px "Roboto Flex", system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`${sl.label.slice(0, 28)} (${pct}%)`, 136, legendY + 32);
+    ctx.fillText(`${sl.label.slice(0, 30)} (${pct}%)`, 134, legendY + 29);
 
     ctx.fillStyle = sl.color;
-    ctx.font = '800 26px "Roboto Flex", system-ui, sans-serif';
+    ctx.font = '800 25px "Roboto Flex", system-ui, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(formatBrlFromCents(sl.cents), W - 96, legendY + 32);
+    ctx.fillText(formatBrlFromCents(sl.cents), W - 96, legendY + 29);
 
-    legendY += 72;
+    legendY += 67;
   }
 }
 

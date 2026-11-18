@@ -233,6 +233,8 @@ export interface TransparencyMeta {
   projectedBalanceCents: number;
   investedBalanceCents: number;
   savedCategories: string[];
+  aiCategorizationModel?: string;
+  aiCategorizedAt?: string;
   updatedAt: string;
 }
 
@@ -304,6 +306,7 @@ export interface GestaoTerm {
   mission?: string;
   proposals?: string[];
   members: GestaoMember[];
+  createdAt?: string;
 }
 
 export interface LigaAcademica {
