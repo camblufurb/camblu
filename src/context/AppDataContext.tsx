@@ -368,9 +368,22 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     bindQuery(query(collection(db, 'products'), where('active', '==', true)), 'products');
     bindQuery(collection(db, 'editais'), 'editais');
     bindQuery(collection(db, 'anais'), 'anais');
-    bindQuery(collection(db, 'gestoes'), 'gestoes');
     bindQuery(collection(db, 'ligas'), 'ligas');
     bindQuery(collection(db, 'transparencyEntries'), 'transparencyEntries');
+
+    const unsubGestoes = onSnapshot(
+      collection(db, 'gestoes'),
+      (snap) => {
+        const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GestaoTerm);
+        const merged = [
+          ...docs,
+          ...GESTOES_SEED.filter((seed) => !docs.some((item) => item.id === seed.id)),
+        ].sort((a, b) => b.year - a.year);
+        setState((prev) => ({ ...prev, gestoes: merged }));
+      },
+      () => {},
+    );
+    unsubs.push(unsubGestoes);
 
     const unsubPublicMeta = onSnapshot(
       doc(db, 'transparencyMeta', 'public'),

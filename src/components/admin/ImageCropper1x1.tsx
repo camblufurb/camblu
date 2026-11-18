@@ -10,14 +10,18 @@ export function ImageCropper1x1({ onCropped }: ImageCropper1x1Props) {
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  const [applied, setApplied] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onCroppedRef = useRef(onCropped);
+  onCroppedRef.current = onCropped;
 
   const handleFile = (file: File | undefined) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
+        setApplied(false);
         setImgSrc(reader.result);
         setZoom(1);
         setOffsetX(0);
@@ -38,6 +42,14 @@ export function ImageCropper1x1({ onCropped }: ImageCropper1x1Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imgSrc]);
 
+  const exportCroppedDataUrl = (): string => {
+    const canvas = canvasRef.current;
+    if (!canvas) return '';
+    const webp = canvas.toDataURL('image/webp', 0.82);
+    if (webp.startsWith('data:image/webp')) return webp;
+    return canvas.toDataURL('image/jpeg', 0.84);
+  };
+
   const drawCrop = () => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -45,7 +57,7 @@ export function ImageCropper1x1({ onCropped }: ImageCropper1x1Props) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const size = 400;
+    const size = 320;
     canvas.width = size;
     canvas.height = size;
     ctx.clearRect(0, 0, size, size);
@@ -56,6 +68,12 @@ export function ImageCropper1x1({ onCropped }: ImageCropper1x1Props) {
     const x = (size - drawW) / 2 + offsetX;
     const y = (size - drawH) / 2 + offsetY;
     ctx.drawImage(img, x, y, drawW, drawH);
+
+    const dataUrl = exportCroppedDataUrl();
+    if (dataUrl) {
+      onCroppedRef.current(dataUrl);
+      setApplied(true);
+    }
   };
 
   useEffect(() => {
@@ -64,9 +82,7 @@ export function ImageCropper1x1({ onCropped }: ImageCropper1x1Props) {
   }, [zoom, offsetX, offsetY]);
 
   const applyCrop = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    onCropped(canvas.toDataURL('image/webp', 0.9));
+    drawCrop();
   };
 
   return (
@@ -130,10 +146,17 @@ export function ImageCropper1x1({ onCropped }: ImageCropper1x1Props) {
             </label>
           </div>
 
-          <button type="button" className="m3-btn m3-btn--filled" onClick={applyCrop}>
-            <Icon name="crop" size={18} />
-            <span>Usar Foto Recortada (1:1)</span>
-          </button>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.6rem' }}>
+            <button type="button" className="m3-btn m3-btn--outlined" onClick={applyCrop}>
+              <Icon name="crop" size={18} />
+              <span>Reaplicar Recorte 1:1</span>
+            </button>
+            {applied && (
+              <span className="m3-label-small" style={{ color: 'var(--md-sys-color-primary)' }}>
+                Recorte aplicado automaticamente
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>

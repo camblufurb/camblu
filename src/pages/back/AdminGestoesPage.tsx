@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
 import { ImageCropper1x1 } from '../../components/admin/ImageCropper1x1';
 import { M3_SHAPE_ROTATION } from '../../components/ExpressiveShapeFrame';
 import { M3Dialog } from '../../components/M3Dialog';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/ToastProvider';
 import { useAppData } from '../../context/AppDataContext';
-import { GESTAO_CARGO_OPTIONS } from '../../data/gestoes';
+import { useAuth } from '../../context/AuthContext';
+import { GESTAO_CARGO_OPTIONS, GESTOES_SEED } from '../../data/gestoes';
+import { db, isFirebaseConfigured } from '../../lib/firebase';
 import type { GestaoCargo, GestaoMember, GestaoTerm, M3ShapeVariant } from '../../types/domain';
 
 function buildInitialAvatarSvg(name: string): string {
@@ -20,18 +23,39 @@ function pickRandomShape(): M3ShapeVariant {
 }
 
 /**
- * Bulk member management for student administrations featuring a dropdown term selector,
- * dotted '+' first-slot popup creator, and per-member popup editing/removal.
+ * Bulk member management for student administrations featuring a top creator card,
+ * dropdown term selector, dotted '+' first-slot popup creator, and per-member popup editing.
  */
 export function AdminGestoesPage() {
   const { gestoes, saveGestao } = useAppData();
+  const { isAdmin } = useAuth();
   const { notify } = useToast();
+  const seededOnceRef = useRef(false);
 
   const sortedGestoes = useMemo(() => [...gestoes].sort((a, b) => b.year - a.year), [gestoes]);
   const [selectedGestaoId, setSelectedGestaoId] = useState(sortedGestoes[0]?.id || 'gestao-2026');
 
   const [newTermYear, setNewTermYear] = useState(2027);
   const [newTermChapa, setNewTermChapa] = useState('');
+  const [syncingSeeds, setSyncingSeeds] = useState(false);
+
+  // Garante no Firestore a presença das gestões oficiais 2024 e 2026 mesmo após criação de novas chapas
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db || !isAdmin || seededOnceRef.current) return;
+    seededOnceRef.current = true;
+    void (async () => {
+      try {
+        const snap = await getDocs(collection(db, 'gestoes'));
+        const existingIds = new Set(snap.docs.map((d) => d.id));
+        const missing = GESTOES_SEED.filter((seed) => !existingIds.has(seed.id));
+        for (const term of missing) {
+          await saveGestao(term);
+        }
+      } catch {
+        // fallback local permanece visível via AppDataContext
+      }
+    })();
+  }, [isAdmin, saveGestao]);
 
   // Popup modal state for adding or editing a member
   const [modalOpen, setModalOpen] = useState(false);
@@ -96,13 +120,20 @@ export function AdminGestoesPage() {
   };
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!activeGestao) return;
-    await saveGestao({
-      ...activeGestao,
-      members: activeGestao.members.filter((m) => m.id !== memberId),
-    });
-    setModalOpen(false);
-    notify('Integrante removido da gestão.', 'info');
+    if (!activeGestao || savingMember) return;
+    setSavingMember(true);
+    try {
+      await saveGestao({
+        ...activeGestao,
+        members: activeGestao.members.filter((m) => m.id !== memberId),
+      });
+      setModalOpen(false);
+      notify('Integrante removido da gestão.', 'info');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Erro ao remover integrante.', 'error');
+    } finally {
+      setSavingMember(false);
+    }
   };
 
   const handleCreateTerm = async () => {
@@ -113,10 +144,29 @@ export function AdminGestoesPage() {
       chapaName: newTermChapa.trim(),
       members: [],
     };
-    await saveGestao(term);
-    setSelectedGestaoId(term.id);
-    setNewTermChapa('');
-    notify(`Gestão ${newTermChapa} (${newTermYear}) criada!`);
+    try {
+      await saveGestao(term);
+      setSelectedGestaoId(term.id);
+      setNewTermChapa('');
+      notify(`Gestão ${term.chapaName} (${newTermYear}) criada!`);
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Erro ao criar gestão.', 'error');
+    }
+  };
+
+  const handleSyncOfficialSeeds = async () => {
+    if (syncingSeeds) return;
+    setSyncingSeeds(true);
+    try {
+      for (const term of GESTOES_SEED) {
+        await saveGestao(term);
+      }
+      notify('Gestões 2024 e 2026 sincronizadas a partir dos dados oficiais do camblu.org!');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Erro ao sincronizar gestões no Firestore.', 'error');
+    } finally {
+      setSyncingSeeds(false);
+    }
   };
 
   return (
@@ -124,26 +174,69 @@ export function AdminGestoesPage() {
       <header style={{ display: 'grid', gap: '0.35rem' }}>
         <h1>Gestões (Edição em Lote)</h1>
         <p className="text-muted">
-          Selecione uma gestão no dropdown para carregar todos os membros. Clique no círculo pontilhado (+) para adicionar novos diretores em popup.
+          Crie uma nova gestão no topo ou selecione uma gestão abaixo para editar os integrantes no popup (+).
         </p>
       </header>
+
+      <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
+        <h2>Adicionar Nova Gestão</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'end' }}>
+          <div className="m3-field">
+            <label htmlFor="term-yr">Novo ano</label>
+            <input
+              id="term-yr"
+              type="number"
+              className="m3-input"
+              style={{ inlineSize: '7rem' }}
+              value={newTermYear}
+              onChange={(e) => setNewTermYear(Number(e.target.value))}
+            />
+          </div>
+          <div className="m3-field" style={{ flex: '1 1 14rem' }}>
+            <label htmlFor="term-name">Nome da nova Chapa/Gestão</label>
+            <input
+              id="term-name"
+              className="m3-input"
+              placeholder="Ex.: Gestão Inovação"
+              value={newTermChapa}
+              onChange={(e) => setNewTermChapa(e.target.value)}
+            />
+          </div>
+          <button type="button" className="m3-btn m3-btn--filled" onClick={handleCreateTerm}>
+            <Icon name="add_circle" size={18} />
+            <span>Criar Gestão</span>
+          </button>
+        </div>
+      </article>
 
       <article className="m3-card" style={{ display: 'grid', gap: '1.25rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
           <h2>Gestão Selecionada</h2>
-          <select
-            className="m3-select"
-            style={{ inlineSize: 'auto', minInlineSize: 'min(100%, 16rem)' }}
-            value={activeGestao?.id || ''}
-            onChange={(e) => setSelectedGestaoId(e.target.value)}
-            aria-label="Selecionar gestão"
-          >
-            {sortedGestoes.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.year} — {g.chapaName} ({g.members.length} membros)
-              </option>
-            ))}
-          </select>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+            <select
+              className="m3-select"
+              style={{ inlineSize: 'auto', minInlineSize: 'min(100%, 16rem)' }}
+              value={activeGestao?.id || ''}
+              onChange={(e) => setSelectedGestaoId(e.target.value)}
+              aria-label="Selecionar gestão"
+            >
+              {sortedGestoes.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.year} — {g.chapaName} ({g.members.length} membros)
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="m3-btn m3-btn--outlined"
+              onClick={handleSyncOfficialSeeds}
+              disabled={syncingSeeds}
+              title="Importar/atualizar Gestões 2024 e 2026 do camblu.org no Firestore"
+            >
+              <Icon name="sync" size={18} />
+              <span>{syncingSeeds ? 'Sincronizando...' : 'Importar 2024 e 2026'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Grade Bulk Edit: Primeiro item = Círculo pontilhado com + */}
@@ -217,35 +310,6 @@ export function AdminGestoesPage() {
             ))}
           </div>
         )}
-
-        <hr style={{ border: 'none', borderBlockStart: '1px solid var(--md-sys-color-outline-variant)' }} />
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'end' }}>
-          <div className="m3-field">
-            <label htmlFor="term-yr">Novo ano</label>
-            <input
-              id="term-yr"
-              type="number"
-              className="m3-input"
-              style={{ inlineSize: '7rem' }}
-              value={newTermYear}
-              onChange={(e) => setNewTermYear(Number(e.target.value))}
-            />
-          </div>
-          <div className="m3-field" style={{ flex: '1 1 14rem' }}>
-            <label htmlFor="term-name">Nome da nova Chapa/Gestão</label>
-            <input
-              id="term-name"
-              className="m3-input"
-              placeholder="Ex.: Gestão Inovação"
-              value={newTermChapa}
-              onChange={(e) => setNewTermChapa(e.target.value)}
-            />
-          </div>
-          <button type="button" className="m3-btn m3-btn--outlined" onClick={handleCreateTerm}>
-            Criar Gestão
-          </button>
-        </div>
       </article>
 
       {/* Popup Adicionar / Editar Membro */}
