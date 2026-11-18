@@ -74,12 +74,15 @@ export interface CertificateTemplateConfig {
   };
 }
 
-export interface SecimedPaletteConfig {
+export interface EventPaletteConfig {
   primary: string;
   secondary1: string;
   secondary2: string;
   background: string;
 }
+
+/** Alias mantido para compatibilidade com documentos antigos da SECIMED. */
+export type SecimedPaletteConfig = EventPaletteConfig;
 
 export interface CambluEvent {
   id: string;
@@ -98,7 +101,8 @@ export interface CambluEvent {
   hasCoffee: boolean;
   archived?: boolean;
   qrScannerHidden?: boolean;
-  secimedPalette?: SecimedPaletteConfig;
+  palette?: EventPaletteConfig;
+  secimedPalette?: EventPaletteConfig;
   secimedFeaturePhotos?: Record<string, string>;
   startAt: string;
   endAt: string;
@@ -170,6 +174,12 @@ export interface ProductColorOption {
   hex: string;
 }
 
+export interface ShopProductImageBlocks {
+  furb_individual?: string[];
+  furb_group?: string[];
+  studio_gradient?: string[];
+}
+
 export interface ShopProduct {
   id: string;
   slug?: string;
@@ -177,6 +187,8 @@ export interface ShopProduct {
   description: string;
   priceCents: number; // Stripe fees absorbed by CAMBLU
   images: string[];
+  imageBlocks?: ShopProductImageBlocks;
+  aiReferenceImageUrl?: string;
   sizes: ProductSizeStock[];
   colors?: ProductColorOption[];
   details?: string[];

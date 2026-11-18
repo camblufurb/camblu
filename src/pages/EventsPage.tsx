@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
 import { calculateEventTicketPrice } from '../lib/clubPricing';
+import { getReadableTextColor, resolveEventPalette } from '../lib/colorHarmony';
 import { formatBrlFromCents } from '../lib/validators';
 import { Icon } from '../components/Icon';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
@@ -116,12 +117,19 @@ export function EventsPage() {
               const maxHours = baseLot
                 ? baseLot.qrDefinitions.reduce((acc, q) => acc + q.certificateHours, 0)
                 : 0;
+              const palette = resolveEventPalette(ev);
+              const badgeFg = getReadableTextColor(palette.secondary2);
 
               return (
                 <Link
                   key={ev.id}
                   to={`/eventos/${ev.slug}`}
                   className="m3-card m3-card--interactive shop-card-link"
+                  style={{
+                    borderTop: `4px solid ${palette.primary}`,
+                    backgroundColor: palette.background,
+                    color: getReadableTextColor(palette.background),
+                  }}
                 >
                   <div style={{ display: 'grid', gap: '0.65rem' }}>
                     <div
@@ -129,10 +137,10 @@ export function EventsPage() {
                         aspectRatio: '16 / 9',
                         borderRadius: 'var(--md-sys-shape-corner-md)',
                         overflow: 'hidden',
-                        background: 'linear-gradient(135deg, #0f3325, #1f5c44)',
+                        background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary1})`,
                         display: 'grid',
                         placeItems: 'center',
-                        color: '#edd16e',
+                        color: palette.secondary2,
                         position: 'relative',
                       }}
                     >
@@ -146,15 +154,28 @@ export function EventsPage() {
                       ) : (
                         <Icon name={ev.mode === 'virtual' ? 'videocam' : 'event_available'} size={48} />
                       )}
+                      <span
+                        className="m3-badge"
+                        style={{
+                          position: 'absolute',
+                          insetBlockEnd: '0.55rem',
+                          insetInlineStart: '0.55rem',
+                          backgroundColor: palette.secondary2,
+                          color: badgeFg,
+                        }}
+                      >
+                        <Icon name={ev.hasCoffee ? 'local_cafe' : 'event_note'} size={14} />
+                        <span>{ev.hasCoffee ? 'Inclui Coffee' : 'Sem Coffee'}</span>
+                      </span>
                     </div>
 
-                    <span className="m3-label-small text-muted">
+                    <span className="m3-label-small" style={{ opacity: 0.78 }}>
                       {getModeLabel(ev.mode)} · Até {maxHours}h de certificado
                     </span>
 
                     <h3>{ev.title}</h3>
-                    <p className="text-muted">{ev.locationShort}</p>
-                    <p className="text-muted" style={{ fontSize: '0.88rem' }}>
+                    <p style={{ opacity: 0.82 }}>{ev.locationShort}</p>
+                    <p style={{ fontSize: '0.88rem', opacity: 0.78 }}>
                       {new Date(ev.startAt).toLocaleString('pt-BR', {
                         dateStyle: 'medium',
                         timeStyle: 'short',
@@ -165,7 +186,8 @@ export function EventsPage() {
                   <div
                     style={{
                       paddingBlockStart: '0.75rem',
-                      borderBlockStart: '1px solid var(--md-sys-color-outline-variant)',
+                      borderBlockStart: '1px solid currentColor',
+                      borderBlockStartColor: 'color-mix(in oklab, currentColor 18%, transparent)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -180,14 +202,14 @@ export function EventsPage() {
                               style={{
                                 fontSize: '0.8rem',
                                 textDecoration: 'line-through',
-                                color: 'var(--md-sys-color-on-surface-variant)',
+                                opacity: 0.72,
                                 display: 'block',
                               }}
                             >
                               {formatBrlFromCents(baseLot.priceCents)}
                             </span>
                           )}
-                          <strong style={{ fontSize: '1.15rem', color: 'var(--md-sys-color-primary)' }}>
+                          <strong style={{ fontSize: '1.15rem' }}>
                             {pricing.finalCents === 0 ? 'Gratuito (Clube)' : formatBrlFromCents(pricing.finalCents)}
                           </strong>
                         </>
@@ -214,11 +236,14 @@ export function EventsPage() {
             </p>
           </div>
           <div className="grid-cards">
-            {pastEvents.map((ev) => (
+            {pastEvents.map((ev) => {
+              const pastPalette = resolveEventPalette(ev);
+              return (
               <Link
                 key={ev.id}
                 to={`/eventos/${ev.slug}`}
                 className="m3-card m3-card--tonal m3-card--interactive shop-card-link"
+                style={{ borderTop: `3px solid ${pastPalette.primary}` }}
               >
                 <div style={{ display: 'grid', gap: '0.6rem' }}>
                   <div
@@ -226,10 +251,10 @@ export function EventsPage() {
                       aspectRatio: '16 / 9',
                       borderRadius: 'var(--md-sys-shape-corner-md)',
                       overflow: 'hidden',
-                      background: 'linear-gradient(135deg, #2b3530, #174936)',
+                      background: `linear-gradient(135deg, ${pastPalette.primary}, ${pastPalette.secondary1})`,
                       display: 'grid',
                       placeItems: 'center',
-                      color: '#f1de97',
+                      color: pastPalette.secondary2,
                     }}
                   >
                     {ev.imageUrl ? (
@@ -268,7 +293,8 @@ export function EventsPage() {
                   <Icon name="workspace_premium" size={18} className="m3-badge--blue" />
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

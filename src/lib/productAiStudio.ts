@@ -169,6 +169,7 @@ export function chooseHighContrastStudioGradient(
   productName: string,
   productDesc: string,
   rng: () => number = Math.random,
+  variantIndex = 0,
 ): { tone: 'light_bg' | 'dark_bg'; description: string } {
   const lower = `${productName} ${productDesc}`.toLowerCase();
   const hintsLightProduct =
@@ -179,10 +180,19 @@ export function chooseHighContrastStudioGradient(
     /\b(verde|preto|escuro|marinho|botanico|inox)\b/.test(lower);
 
   const useDarkBg = hintsLightProduct && !hintsDarkProduct ? true : hintsLightProduct && avgLuminance >= 0.56;
+  const list = useDarkBg ? LIGHT_PRODUCT_CONTRAST_GRADIENTS : DARK_PRODUCT_CONTRAST_GRADIENTS;
+  const startIdx = Math.floor(rng() * list.length);
+  const pickedDesc = list[(startIdx + variantIndex) % list.length];
   return useDarkBg
-    ? { tone: 'dark_bg', description: pick(LIGHT_PRODUCT_CONTRAST_GRADIENTS, rng) }
-    : { tone: 'light_bg', description: pick(DARK_PRODUCT_CONTRAST_GRADIENTS, rng) };
+    ? { tone: 'dark_bg', description: pickedDesc }
+    : { tone: 'light_bg', description: pickedDesc };
 }
+
+const STUDIO_ANGLES = [
+  'ângulo frontal centralizado simétrico com ótima margem respirando nas bordas',
+  'ângulo levemente em 3/4 destacando profundidade, corte e caimento/relevo',
+  'enquadramento aproximado limpo valorizando costura, textura e acabamento do brasão/gravação',
+];
 
 /**
  * Builds dynamic, randomized Gemini Nano Banana 2.1 prompts for FURB individual/group photos
@@ -212,6 +222,7 @@ export function buildDynamicProductShotPlans(params: {
   const campusShotsCount = selectedShots.filter((s) => s !== 'studio_gradient').length;
   const drawnRefs = pickRandomFurbReferences(furbRefs, campusShotsCount, rng);
   let campusCursor = 0;
+  let studioCursor = 0;
 
   const extra = customNotes?.trim() ? ` Detalhe adicional prioritário: ${customNotes.trim()}.` : '';
   const productAnchor =
@@ -273,15 +284,24 @@ export function buildDynamicProductShotPlans(params: {
       };
     }
 
-    const gradientSpec = chooseHighContrastStudioGradient(avgLuminance, productName, productDescription, rng);
+    const studioVariant = studioCursor++;
+    const gradientSpec = chooseHighContrastStudioGradient(
+      avgLuminance,
+      productName,
+      productDescription,
+      rng,
+      studioVariant,
+    );
+    const angleDirective = STUDIO_ANGLES[studioVariant % STUDIO_ANGLES.length];
     return {
       id: `shot-${idx + 1}-studio`,
       shotType: 'studio_gradient',
-      label: 'Estúdio (Gradiente Alto Contraste)',
+      label: 'Produto isolado',
       aspectRatio: '1:1',
       prompt: [
         'Fotografia de estúdio comercial minimalista de alta definição centrada EXCLUSIVAMENTE no produto isolado (sem pessoas, sem texto, sem rótulos, sem objetos extras).',
         productAnchor,
+        `Composição em ${angleDirective}.`,
         `Fundo simples e limpo utilizando ${gradientSpec.description}.`,
         'Iluminação de estúdio suave difusa destacando textura do tecido/aço, costura/bordado e contorno perfeito com sombra de contato sutil na base.',
         extra,
@@ -373,7 +393,8 @@ export async function compressImageToInlinePayload(
  * to synthesize product photography conditioned on product photos + drawn FURB campus references.
  */
 export async function requestNanoBananaProductImages(params: {
-  productImages: InlineImagePayload[];
+  productImages?: InlineImagePayload[];
+  productImageUrls?: string[];
   plans: ProductAiShotPlan[];
 }): Promise<{ model: string; images: GeneratedProductAiImageResult[] }> {
   const uniqueUrls = Array.from(
@@ -408,6 +429,7 @@ export async function requestNanoBananaProductImages(params: {
     headers,
     body: JSON.stringify({
       productImages: params.productImages,
+      productImageUrls: params.productImageUrls,
       shots,
     }),
   });
@@ -418,6 +440,34 @@ export async function requestNanoBananaProductImages(params: {
   }
 
   return (await res.json()) as { model: string; images: GeneratedProductAiImageResult[] };
+}
+
+/**
+ * Generates an engaging PT-BR catalog description for a CAMBLU shop item
+ * using the backend `gemini-flash-lite-latest` endpoint.
+ */
+export async function requestProductDescriptionWithGemini(params: {
+  name: string;
+  category?: string;
+  sizes?: Array<{ size: string; stock?: number }>;
+  details?: string[];
+  currentDescription?: string;
+  productImages?: InlineImagePayload[];
+  productImageUrls?: string[];
+}): Promise<{ description: string; model: string }> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE_URL}/shop/generate-description`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    const errPayload = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(errPayload.error || `Erro HTTP ${res.status} ao gerar descrição com gemini-flash-lite-latest.`);
+  }
+
+  return (await res.json()) as { description: string; model: string };
 }
 
 function dataUrlToBlob(dataUrl: string): Blob {

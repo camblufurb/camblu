@@ -59,6 +59,18 @@ describe('productAiStudio & gemini-nano-banana-2.1 generator', () => {
     expect(plans[2].shotType).toBe('studio_gradient');
     expect(plans[2].referenceAsset).toBeUndefined();
     expect(plans[2].prompt).toMatch(/gradiente/i);
+
+    const studio3 = buildDynamicProductShotPlans({
+      productName: 'Garrafa Térmica',
+      productDescription: 'Verde fosco 500ml',
+      productCategory: 'Acessórios',
+      avgLuminance: 0.2,
+      selectedShots: ['studio_gradient', 'studio_gradient', 'studio_gradient'],
+      furbRefs: sampleRefs,
+      rng: () => 0.1,
+    });
+    expect(studio3).toHaveLength(3);
+    expect(new Set(studio3.map((s) => s.prompt)).size).toBe(3);
   });
 
   it('calls gemini-nano-banana-2.1 with product and FURB reference inlineData and parses returned image', async () => {

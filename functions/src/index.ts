@@ -38,6 +38,7 @@ import {
   type InlineImagePayload,
   type ProductAiShotRequest,
 } from './productImageGenerator.js';
+import { generateProductDescriptionWithFlashLite } from './productDescriptionGenerator.js';
 import type { GeminiAuthInput } from './geminiClient.js';
 
 initializeApp();
@@ -673,6 +674,41 @@ app.post('/api/transparency/audit-month', async (req, res) => {
   }
 });
 
+function isAllowedProductStorageUrl(rawUrl: unknown): rawUrl is string {
+  if (typeof rawUrl !== 'string') return false;
+  const trimmed = rawUrl.trim();
+  return (
+    trimmed.length > 0 &&
+    trimmed.length <= 1500 &&
+    trimmed.startsWith('https://firebasestorage.googleapis.com/v0/b/camblu.firebasestorage.app/')
+  );
+}
+
+async function resolveInlineProductImages(
+  productImages?: InlineImagePayload[],
+  productImageUrls?: string[],
+): Promise<InlineImagePayload[]> {
+  const inlineProducts: InlineImagePayload[] = Array.isArray(productImages)
+    ? productImages.slice(0, 4)
+    : [];
+
+  if (inlineProducts.length === 0 && Array.isArray(productImageUrls)) {
+    const safeUrls = productImageUrls.filter(isAllowedProductStorageUrl).slice(0, 4);
+    for (const url of safeUrls) {
+      const imgResp = await fetch(url);
+      if (!imgResp.ok) continue;
+      const ct = (imgResp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim().toLowerCase();
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(ct)) continue;
+      const buf = Buffer.from(await imgResp.arrayBuffer());
+      if (buf.length > 0 && buf.length <= 5_000_000) {
+        inlineProducts.push({ mimeType: ct, data: buf.toString('base64') });
+      }
+    }
+  }
+
+  return inlineProducts;
+}
+
 app.post('/api/shop/generate-images', async (req, res) => {
   const decoded = await verifyBearerToken(req);
   if (!decoded || decoded.email?.toLowerCase() !== ADMIN_EMAIL || !decoded.email_verified) {
@@ -684,21 +720,25 @@ app.post('/api/shop/generate-images', async (req, res) => {
 
   const body = (req.body || {}) as {
     productImages?: InlineImagePayload[];
+    productImageUrls?: string[];
     shots?: ProductAiShotRequest[];
   };
 
-  if (!Array.isArray(body.productImages) || body.productImages.length === 0) {
-    res.status(400).json({ error: 'Envie ao menos uma imagem base do produto.' });
-    return;
-  }
   if (!Array.isArray(body.shots) || body.shots.length === 0 || body.shots.length > 4) {
     res.status(400).json({ error: 'Solicite entre 1 e 4 variações de imagem por geração.' });
     return;
   }
 
   try {
+    const inlineProducts = await resolveInlineProductImages(body.productImages, body.productImageUrls);
+
+    if (inlineProducts.length === 0) {
+      res.status(400).json({ error: 'Envie ao menos uma imagem base válida do produto.' });
+      return;
+    }
+
     const result = await generateProductImagesWithNanoBanana({
-      productImages: body.productImages.slice(0, 4),
+      productImages: inlineProducts,
       shots: body.shots.slice(0, 4),
       apiKey: geminiAuth,
     });
@@ -711,6 +751,53 @@ app.post('/api/shop/generate-images', async (req, res) => {
     });
     res.status(502).json({
       error: (err as Error)?.message || 'Falha ao gerar imagens do produto com Gemini Nano Banana 2.1.',
+    });
+  }
+});
+
+app.post('/api/shop/generate-description', async (req, res) => {
+  const decoded = await verifyBearerToken(req);
+  if (!decoded || decoded.email?.toLowerCase() !== ADMIN_EMAIL || !decoded.email_verified) {
+    res.status(403).json({ error: 'Apenas camblufurb@gmail.com pode gerar descrições com IA.' });
+    return;
+  }
+
+  const geminiAuth = getServerGeminiAuth();
+  const body = (req.body || {}) as {
+    name?: string;
+    category?: string;
+    sizes?: Array<{ size: string; stock?: number }>;
+    details?: string[];
+    currentDescription?: string;
+    productImages?: InlineImagePayload[];
+    productImageUrls?: string[];
+  };
+
+  if (!body.name?.trim()) {
+    res.status(400).json({ error: 'Informe o nome do produto para gerar a descrição.' });
+    return;
+  }
+
+  try {
+    const inlineProducts = await resolveInlineProductImages(body.productImages, body.productImageUrls);
+    const result = await generateProductDescriptionWithFlashLite({
+      name: body.name,
+      category: body.category,
+      sizes: body.sizes,
+      details: body.details,
+      currentDescription: body.currentDescription,
+      productImages: inlineProducts,
+      apiKey: geminiAuth,
+    });
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/shop/generate-description', {
+      origin: 'functions -> /api/shop/generate-description',
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(502).json({
+      error: (err as Error)?.message || 'Falha ao gerar descrição com gemini-flash-lite-latest.',
     });
   }
 });
@@ -1028,7 +1115,7 @@ app.post('/api/checkout/event', async (req, res) => {
       membershipValid,
     );
 
-    // Gratuidade pelo Clube (Raro em Coffee, Épico/Lendário em todos) — transação atômica e única por usuário
+    // Gratuidade pelo Clube (Raro nos eventos regulares, Épico/Lendário em todos incluindo SECIMED) — transação atômica e única por usuário
     if (pricing.finalCents === 0) {
       const existingTicketSnap = await db
         .collection('tickets')

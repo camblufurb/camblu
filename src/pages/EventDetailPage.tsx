@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
 import { calculateEventTicketPrice } from '../lib/clubPricing';
+import { getReadableTextColor, resolveEventPalette } from '../lib/colorHarmony';
 import { formatBrlFromCents } from '../lib/validators';
 import { API_BASE_URL, getAuthHeaders } from '../lib/firebase';
 import { logError, logInfo } from '../lib/logger';
@@ -194,8 +195,18 @@ export function EventDetailPage() {
         ? 'Evento Virtual'
         : 'Evento Presencial';
 
+  const palette = resolveEventPalette(event);
+  const bgForeground = getReadableTextColor(palette.background);
+  const secondary2Foreground = getReadableTextColor(palette.secondary2);
+
   return (
-    <section className="page-section container m3-reveal" style={{ display: 'grid', gap: '2rem' }}>
+    <section
+      className="page-section container m3-reveal"
+      style={{
+        display: 'grid',
+        gap: '2rem',
+      }}
+    >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <Link to="/eventos" className="m3-btn m3-btn--text">
           <Icon name="arrow_back" size={18} />
@@ -215,10 +226,11 @@ export function EventDetailPage() {
               aspectRatio: '16 / 9',
               borderRadius: 'var(--md-sys-shape-corner-xl)',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #071b13, #174936)',
+              background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary1})`,
               display: 'grid',
               placeItems: 'center',
-              color: '#edd16e',
+              color: palette.secondary2,
+              position: 'relative',
             }}
           >
             {event.imageUrl ? (
@@ -226,23 +238,43 @@ export function EventDetailPage() {
             ) : (
               <Icon name={event.mode === 'virtual' ? 'videocam' : 'festival'} size={64} />
             )}
+            <span
+              className="m3-badge"
+              style={{
+                position: 'absolute',
+                insetBlockEnd: '0.85rem',
+                insetInlineStart: '0.85rem',
+                backgroundColor: palette.secondary2,
+                color: secondary2Foreground,
+              }}
+            >
+              <Icon name={event.hasCoffee ? 'local_cafe' : 'event_note'} size={15} />
+              <span>{event.hasCoffee ? 'Inclui Coffee Break' : 'Sem Coffee Break'}</span>
+            </span>
           </div>
 
-          <div className="m3-card" style={{ display: 'grid', gap: '0.9rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 1rem', fontSize: '0.86rem', color: 'var(--md-sys-color-on-surface-variant)' }}>
-              <strong style={{ color: 'var(--camblu-action-blue)' }}>{modeLabel}</strong>
+          <div
+            className="m3-card"
+            style={{
+              display: 'grid',
+              gap: '0.9rem',
+              backgroundColor: palette.background,
+              color: bgForeground,
+              borderColor: palette.primary,
+            }}
+          >
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem 0.9rem', fontSize: '0.86rem', opacity: 0.9 }}>
+              <strong style={{ color: palette.primary === palette.background ? bgForeground : palette.primary }}>
+                {modeLabel}
+              </strong>
               {!isPastEvent && (
                 <>
                   <span>·</span>
                   <span>Capacidade máxima: {event.maxCapacity} pessoas</span>
                 </>
               )}
-              {event.hasCoffee && (
-                <>
-                  <span>·</span>
-                  <span>Inclui Coffee</span>
-                </>
-              )}
+              <span>·</span>
+              <span>{event.hasCoffee ? 'Inclui Coffee' : 'Sem Coffee'}</span>
             </div>
 
             <h1>{event.title}</h1>
@@ -253,6 +285,7 @@ export function EventDetailPage() {
                 padding: '0.95rem 1rem',
                 borderRadius: 'var(--md-sys-shape-corner-md)',
                 background: 'var(--md-sys-color-surface-container-low)',
+                color: 'var(--md-sys-color-on-surface)',
                 display: 'grid',
                 gap: '0.45rem',
               }}

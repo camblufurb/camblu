@@ -37,6 +37,7 @@ export function AdminTransparencyPostsPage() {
     transparencyEntries,
     transparencyMeta,
     categorizeTransparencyWithGemini,
+    saveManualTransparencyCategories,
     auditTransparencyMonth,
     applyTransparencyMonthFix,
   } = useAppData();
@@ -44,7 +45,10 @@ export function AdminTransparencyPostsPage() {
 
   const [posterMonth, setPosterMonth] = useState('Outubro');
   const [slides, setSlides] = useState<TransparencyPosterSlide[]>([]);
-  const [categorizingAi, setCategorizingAi] = useState(false);
+  const [backgroundAiRunning, setBackgroundAiRunning] = useState(false);
+  const [recategorizeDialogOpen, setRecategorizeDialogOpen] = useState(false);
+  const [manualCategoriesDraft, setManualCategoriesDraft] = useState<Record<string, string>>({});
+  const [savingManualCategories, setSavingManualCategories] = useState(false);
   const [auditingMonth, setAuditingMonth] = useState(false);
   const [applyingFix, setApplyingFix] = useState(false);
   const [auditResult, setAuditResult] = useState<GeminiMonthAuditResult | null>(null);
@@ -76,6 +80,14 @@ export function AdminTransparencyPostsPage() {
     [targetEntries],
   );
 
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>(transparencyMeta.savedCategories || []);
+    for (const e of transparencyEntries) {
+      if (e.category?.trim()) set.add(e.category.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [transparencyEntries, transparencyMeta.savedCategories]);
+
   const executeDownloads = (items: TransparencyPosterSlide[]) => {
     items.forEach((s) => triggerSlideDownload(s, posterMonth));
   };
@@ -86,19 +98,59 @@ export function AdminTransparencyPostsPage() {
     setAuditResult(null);
     setVerifiedSnapshotKey('');
     notify(`3 imagens geradas para o post mensal de ${posterMonth}!`);
+    // Categorização complementar via Gemini sempre executa em segundo plano sem bloquear
+    if (!transparencyMeta.aiCategorizedAt && transparencyEntries.length > 0 && !backgroundAiRunning) {
+      setBackgroundAiRunning(true);
+      void categorizeTransparencyWithGemini()
+        .catch(() => {
+          // silently ignore background categorization failure
+        })
+        .finally(() => setBackgroundAiRunning(false));
+    }
   };
 
-  const handleCategorizeAi = async () => {
-    setCategorizingAi(true);
+  const handleOpenRecategorizeDialog = () => {
+    const draft: Record<string, string> = {};
+    for (const entry of targetEntries) {
+      draft[entry.id] = entry.category || '';
+    }
+    setManualCategoriesDraft(draft);
+    setRecategorizeDialogOpen(true);
+  };
+
+  const handleSaveManualCategories = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const updates = targetEntries
+      .map((entry) => ({
+        id: entry.id,
+        category: (manualCategoriesDraft[entry.id] || '').trim(),
+      }))
+      .filter((item) => item.category);
+
+    if (updates.length === 0) {
+      setRecategorizeDialogOpen(false);
+      return;
+    }
+
+    setSavingManualCategories(true);
     try {
-      const res = await categorizeTransparencyWithGemini();
-      notify(
-        `Categorias atualizadas via ${res.model} (${res.categories.length} categorias). Gere os slides novamente para aplicar nos gráficos!`,
-      );
+      await saveManualTransparencyCategories(updates);
+      const updatedMap = new Map(updates.map((u) => [u.id, u.category]));
+      const updatedMonthEntries = targetEntries.map((entry) => {
+        const nextCat = updatedMap.get(entry.id);
+        return nextCat ? { ...entry, category: nextCat } : entry;
+      });
+      if (slides.length > 0) {
+        setSlides(generateTransparencyPostSlides(`${posterMonth} ${monthYear}`, updatedMonthEntries));
+      }
+      setAuditResult(null);
+      setVerifiedSnapshotKey('');
+      setRecategorizeDialogOpen(false);
+      notify(`Categorias de ${posterMonth} atualizadas manualmente!`);
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Erro ao categorizar lançamentos com Gemini.', 'error');
+      notify(err instanceof Error ? err.message : 'Erro ao salvar categorias manuais.', 'error');
     } finally {
-      setCategorizingAi(false);
+      setSavingManualCategories(false);
     }
   };
 
@@ -224,11 +276,11 @@ export function AdminTransparencyPostsPage() {
           <button
             type="button"
             className="m3-btn m3-btn--outlined"
-            disabled={categorizingAi || transparencyEntries.length === 0}
-            onClick={handleCategorizeAi}
+            disabled={targetEntries.length === 0}
+            onClick={handleOpenRecategorizeDialog}
           >
-            <Icon name="psychology" size={18} />
-            <span>{categorizingAi ? 'Categorizando...' : 'Recategorizar (Gemini)'}</span>
+            <Icon name="category" size={18} />
+            <span>Recategorizar</span>
           </button>
           {slides.length > 0 && (
             <button
@@ -477,6 +529,90 @@ export function AdminTransparencyPostsPage() {
             </div>
           </div>
         )}
+      </M3Dialog>
+
+      <M3Dialog
+        open={recategorizeDialogOpen}
+        onClose={() => setRecategorizeDialogOpen(false)}
+        wide
+        title={`Recategorizar lançamentos · ${posterMonth} ${monthYear}`}
+      >
+        <form onSubmit={handleSaveManualCategories} className="m3-motion-panel" style={{ display: 'grid', gap: '1rem' }}>
+          <p className="text-muted" style={{ margin: 0 }}>
+            Ajuste manualmente as categorias usadas nos gráficos deste mês. A categorização automática pelo Gemini continua executando em segundo plano quando novos dados são sincronizados.
+          </p>
+
+          <div className="table-wrapper" style={{ maxBlockSize: '24rem', overflowY: 'auto' }}>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Lançamento</th>
+                  <th>Categoria</th>
+                  <th style={{ textAlign: 'end' }}>Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {targetEntries.map((entry) => (
+                  <tr key={`recat-${entry.id}`}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{entry.date}</td>
+                    <td>
+                      <strong style={{ display: 'block', fontSize: '0.88rem' }}>{entry.description}</strong>
+                      <span className="text-muted" style={{ fontSize: '0.76rem' }}>
+                        {TYPE_LABELS[entry.type]}
+                      </span>
+                    </td>
+                    <td style={{ minInlineSize: '12.5rem' }}>
+                      <input
+                        type="text"
+                        className="m3-input"
+                        list="camblu-manual-recat-list"
+                        required
+                        style={{ minBlockSize: '36px', padding: '0.25rem 0.6rem', fontSize: '0.86rem' }}
+                        value={manualCategoriesDraft[entry.id] ?? ''}
+                        onChange={(e) =>
+                          setManualCategoriesDraft((prev) => ({
+                            ...prev,
+                            [entry.id]: e.target.value,
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={{ textAlign: 'end', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      {entry.type === 'receita' ? '+' : '-'}
+                      {formatBrlFromCents(entry.amountCents)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <datalist id="camblu-manual-recat-list">
+            {availableCategories.map((cat) => (
+              <option key={cat} value={cat} />
+            ))}
+          </datalist>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="m3-btn m3-btn--outlined"
+              disabled={savingManualCategories}
+              onClick={() => setRecategorizeDialogOpen(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="m3-btn m3-btn--blue"
+              disabled={savingManualCategories}
+            >
+              <Icon name="save" size={18} />
+              <span>{savingManualCategories ? 'Salvando...' : 'Salvar categorias'}</span>
+            </button>
+          </div>
+        </form>
       </M3Dialog>
     </div>
   );

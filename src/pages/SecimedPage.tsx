@@ -3,13 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
 import { SECIMED_INFO } from '../data/institutional';
-
-const DEFAULT_PALETTE = {
-  primary: '#5f2841',
-  secondary1: '#dc8987',
-  secondary2: '#a0af6c',
-  background: '#f2efe6',
-};
+import { resolveEventPalette } from '../lib/colorHarmony';
 
 const SECIMED_PILLARS = [
   {
@@ -92,7 +86,9 @@ export function SecimedPage() {
     [events],
   );
 
-  const palette = secimedEvent?.secimedPalette || DEFAULT_PALETTE;
+  const palette = resolveEventPalette(
+    secimedEvent ? { ...secimedEvent, isSecimed: true } : { isSecimed: true },
+  );
   const featurePhotos = secimedEvent?.secimedFeaturePhotos || {};
 
   const colorByKey = (key: 'primary' | 'secondary1' | 'secondary2') => palette[key];

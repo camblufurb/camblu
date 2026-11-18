@@ -95,7 +95,7 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
     tier: 'raro',
     name: 'Raro',
     levelLabel: 'Nível 2 · Mais Escolhido',
-    tagline: 'Todo o pacote Comum somado à entrada gratuita nos eventos CAMBLU com Coffee.',
+    tagline: 'Todo o pacote Comum somado à entrada gratuita nos eventos CAMBLU (com ou sem Coffee).',
     icon: 'bolt',
     themeColor: '#3b82f7',
     glowColor: 'rgb(59 130 247 / 0.28)',
@@ -107,15 +107,15 @@ export const CLUB_PLANS: ClubPlanInfo[] = [
     popular: true,
     benefits: [
       'Todos os benefícios do plano Comum',
-      'Ingresso gratuito em eventos do CAMBLU com Coffee (exceto SECIMED)',
+      'Ingresso gratuito em todos os eventos do CAMBLU com ou sem Coffee (exceto SECIMED)',
       'Acesso às parcerias Spaiq e Gorit PRO',
     ],
     perks: [
-      { text: 'Ingresso gratuito em eventos do CAMBLU com Coffee (exceto SECIMED)', icon: 'local_cafe', isNewAtTier: true },
+      { text: 'Ingresso gratuito em todos os eventos do CAMBLU, com ou sem Coffee (exceto SECIMED)', icon: 'confirmation_number', isNewAtTier: true },
       { text: 'Acesso às parcerias acadêmicas Spaiq e Gorit PRO', icon: 'auto_stories', isNewAtTier: true },
       { text: 'Carteirinha de Estudante Digital com QR Code de validação (FURB)', icon: 'badge' },
       { text: '10% de desconto automático na Lojinha Oficial CAMBLU', icon: 'shopping_bag' },
-      { text: '10% de desconto na inscrição da SECIMED e workshops', icon: 'confirmation_number' },
+      { text: '10% de desconto na inscrição da SECIMED', icon: 'science' },
       { text: 'Camiseta oficial gratuita exclusiva para calouros', icon: 'checkroom' },
     ],
   },
@@ -186,7 +186,7 @@ export const CLUB_COMPARISON_ROWS: ClubComparisonRow[] = [
   { feature: 'Camiseta oficial grátis para calouros', comum: true, raro: true, epico: true, lendario: true },
   { feature: 'Parcerias acadêmicas Spaiq & Gorit PRO', comum: false, raro: true, epico: true, lendario: true },
   { feature: 'Desconto nos eventos pagos e SECIMED', comum: '10% off', raro: '10% SECIMED', epico: '100% Grátis', lendario: '100% Grátis' },
-  { feature: 'Entrada gratuita em eventos com Coffee', comum: false, raro: true, epico: true, lendario: true },
+  { feature: 'Entrada gratuita em todos os eventos do CAMBLU (com ou sem Coffee)', comum: false, raro: true, epico: true, lendario: true },
   { feature: 'Ingresso gratuito na SECIMED', comum: false, raro: false, epico: true, lendario: true },
   { feature: '1 comida ou bebida grátis por evento CAMBLU', comum: false, raro: false, epico: true, lendario: true },
   { feature: 'Prioridade em novos benefícios exclusivos', comum: false, raro: false, epico: false, lendario: true },
@@ -216,12 +216,11 @@ export function calculateEventTicketPrice(
     };
   }
 
-  const isCoffeeNonSecimed = !event.isSecimed && (event.hasCoffee || event.category === 'camblu_coffee');
-  if (tier === 'raro' && isCoffeeNonSecimed) {
+  if (tier === 'raro' && !event.isSecimed) {
     return {
       finalCents: 0,
       discountCents: basePriceCents,
-      reason: 'Gratuidade Clube Raro (Evento CAMBLU com Coffee)',
+      reason: 'Gratuidade Clube Raro (Evento CAMBLU)',
     };
   }
 

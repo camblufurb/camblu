@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { EventColorWheelPicker } from '../../components/admin/EventColorWheelPicker';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/ToastProvider';
 import { useAppData } from '../../context/AppDataContext';
+import { DEFAULT_EVENT_PALETTE, DEFAULT_SECIMED_PALETTE } from '../../lib/colorHarmony';
 import { slugify } from '../../lib/validators';
-import type { CambluEvent, EventLot, EventQrDefinition } from '../../types/domain';
+import type { CambluEvent, EventLot, EventPaletteConfig, EventQrDefinition } from '../../types/domain';
 
 export function AdminEventCreatePage() {
   const { saveEvent } = useAppData();
@@ -22,6 +24,7 @@ export function AdminEventCreatePage() {
   const [startAt, setStartAt] = useState('2026-12-10T19:00');
   const [isSecimed, setIsSecimed] = useState(false);
   const [hasCoffee, setHasCoffee] = useState(true);
+  const [palette, setPalette] = useState<EventPaletteConfig>(DEFAULT_EVENT_PALETTE);
 
   const [lotName, setLotName] = useState('1º Lote');
   const [lotPriceReais, setLotPriceReais] = useState('35.00');
@@ -34,12 +37,20 @@ export function AdminEventCreatePage() {
     setQrDefs((prev) => [
       ...prev,
       {
-        id: `qr-${prev.length + 1}`,
+        id: `qr-${Date.now().toString(36)}-${prev.length + 1}`,
         label: `Sessão ${prev.length + 1}`,
         dateTime: startAt,
         certificateHours: 2,
       },
     ]);
+  };
+
+  const handleRemoveQrDef = (idx: number) => {
+    if (qrDefs.length <= 1) {
+      notify('O lote precisa manter pelo menos 1 QR Code de presença.', 'info');
+      return;
+    }
+    setQrDefs((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleCreateEvent = async (e: React.FormEvent) => {
@@ -75,6 +86,8 @@ export function AdminEventCreatePage() {
       category: isSecimed ? 'secimed' : hasCoffee ? 'camblu_coffee' : 'academico',
       isSecimed,
       hasCoffee,
+      palette,
+      secimedPalette: isSecimed ? palette : undefined,
       startAt: new Date(startAt).toISOString(),
       endAt: new Date(startAt).toISOString(),
       lots: [lot],
@@ -169,13 +182,21 @@ export function AdminEventCreatePage() {
           </label>
           <label className="m3-chip">
             <input type="checkbox" checked={hasCoffee} onChange={(e) => setHasCoffee(e.target.checked)} />
-            <span>Tem Coffee (Clube Raro grátis)</span>
+            <span>Inclui Coffee Break (informativo)</span>
           </label>
           <label className="m3-chip">
             <input type="checkbox" checked={isSecimed} onChange={(e) => setIsSecimed(e.target.checked)} />
-            <span>SECIMED (Grátis Épico/Lendário)</span>
+            <span>SECIMED (Grátis Épico/Lendário · 10% Raro)</span>
           </label>
         </div>
+
+        <EventColorWheelPicker
+          value={palette}
+          onChange={setPalette}
+          defaultPalette={isSecimed ? DEFAULT_SECIMED_PALETTE : DEFAULT_EVENT_PALETTE}
+          eventTitlePreview={title}
+          hasCoffeePreview={hasCoffee}
+        />
 
         <div className="grid-two">
           <div className="m3-field">
@@ -272,6 +293,16 @@ export function AdminEventCreatePage() {
                   }
                   aria-label="Horas de certificado"
                 />
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--outlined"
+                  aria-label={`Remover QR Code ${q.label || idx + 1}`}
+                  title="Remover QR Code"
+                  style={{ minBlockSize: '42px', padding: '0.35rem 0.65rem' }}
+                  onClick={() => handleRemoveQrDef(idx)}
+                >
+                  <Icon name="delete" size={18} />
+                </button>
               </div>
             ))}
           </div>

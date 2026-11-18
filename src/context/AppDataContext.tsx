@@ -201,6 +201,7 @@ interface AppDataContextValue extends AppDataState {
     warning?: string;
   }>;
   categorizeTransparencyWithGemini: () => Promise<{ count: number; categories: string[]; model: string }>;
+  saveManualTransparencyCategories: (updates: Array<{ id: string; category: string }>) => Promise<void>;
   auditTransparencyMonth: (monthSheet: string) => Promise<GeminiMonthAuditResult>;
   applyTransparencyMonthFix: (
     monthSheet: string,
@@ -267,8 +268,9 @@ function loadState(): AppDataState {
       : DEFAULT_TICKETS;
     const events = (parsed.events || EVENTS_SEED).map((ev) => {
       const seed = EVENTS_SEED.find((s) => s.id === ev.id);
-      return seed && ev.isSecimed && !ev.secimedPalette
-        ? { ...ev, secimedPalette: seed.secimedPalette }
+      const resolvedPalette = ev.palette || ev.secimedPalette || seed?.palette || seed?.secimedPalette;
+      return resolvedPalette && !ev.palette
+        ? { ...ev, palette: resolvedPalette, ...(ev.isSecimed ? { secimedPalette: resolvedPalette } : {}) }
         : ev;
     });
     const transparencyMeta: TransparencyMeta = {
@@ -287,6 +289,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppDataState>(loadState);
   const [fbAdminMembers, setFbAdminMembers] = useState<UserProfile[]>([]);
   const lastAutoSyncUrlRef = useRef<string | null>(null);
+  const backgroundAiAttemptedRef = useRef(false);
 
   const persistDoc = useCallback(async (colName: string, id: string, data: object) => {
     if (isFirebaseConfigured && db) {
@@ -426,6 +429,77 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       model: aiRes.model,
     };
   }, [isAdmin, state.transparencyEntries, state.transparencyMeta]);
+
+  const saveManualTransparencyCategories = useCallback(
+    async (updates: Array<{ id: string; category: string }>) => {
+      if (updates.length === 0) return;
+      const updateMap = new Map<string, string>();
+      for (const item of updates) {
+        const cleanCat = item.category.trim();
+        if (cleanCat) updateMap.set(item.id, cleanCat);
+      }
+      if (updateMap.size === 0) return;
+
+      const updatedEntries = state.transparencyEntries.map((entry) => {
+        const nextCat = updateMap.get(entry.id);
+        return nextCat ? { ...entry, category: nextCat } : entry;
+      });
+      const nextCategories = Array.from(
+        new Set(updatedEntries.map((e) => e.category).filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      const updatedAt = new Date().toISOString();
+
+      setState((p) => ({
+        ...p,
+        transparencyEntries: updatedEntries,
+        transparencyMeta: {
+          ...p.transparencyMeta,
+          savedCategories: nextCategories,
+          aiCategorizedAt: p.transparencyMeta.aiCategorizedAt || updatedAt,
+          updatedAt,
+        },
+      }));
+
+      if (isFirebaseConfigured && db && isAdmin) {
+        const modified = updatedEntries.filter((e) => updateMap.has(e.id));
+        for (let i = 0; i < modified.length; i += 400) {
+          const batch = writeBatch(db);
+          for (const entry of modified.slice(i, i + 400)) {
+            batch.set(doc(db, 'transparencyEntries', entry.id), { category: entry.category }, { merge: true });
+          }
+          batch.set(
+            doc(db, 'transparencyMeta', 'public'),
+            { savedCategories: nextCategories, updatedAt },
+            { merge: true },
+          );
+          batch.set(
+            doc(db, 'transparencyMeta', 'config'),
+            { savedCategories: nextCategories, updatedAt },
+            { merge: true },
+          );
+          await batch.commit();
+        }
+      }
+    },
+    [isAdmin, state.transparencyEntries],
+  );
+
+  // Silent background categorization with Gemini when admin has entries without AI pass yet
+  useEffect(() => {
+    if (!isFirebaseConfigured || !db || !isAdmin) return;
+    if (backgroundAiAttemptedRef.current) return;
+    if (state.transparencyEntries.length === 0) return;
+    if (state.transparencyMeta.aiCategorizedAt) return;
+    backgroundAiAttemptedRef.current = true;
+    void categorizeTransparencyWithGemini().catch((err) => {
+      logWarn('Gemini', 'Categorização automática em segundo plano não pôde ser concluída', err);
+    });
+  }, [
+    categorizeTransparencyWithGemini,
+    isAdmin,
+    state.transparencyEntries.length,
+    state.transparencyMeta.aiCategorizedAt,
+  ]);
 
   const auditTransparencyMonth = useCallback(
     async (monthSheet: string): Promise<GeminiMonthAuditResult> => {
@@ -815,6 +889,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     },
     syncTransparencySheet,
     categorizeTransparencyWithGemini,
+    saveManualTransparencyCategories,
     auditTransparencyMonth,
     applyTransparencyMonthFix,
     saveEdital: async (edital) => {

@@ -69,7 +69,7 @@ export function ClubPage() {
             Clube CAMBLU
           </AnimatedClimateTitle>
           <p className="page-hero-desc">
-            Suba de nível na Medicina FURB: escolha o passe que mais combina com a sua rotina acadêmica e garanta Carteirinha de Estudante digital a partir do Plano Comum, descontos na Lojinha, eventos gratuitos com Coffee e entrada na SECIMED.
+            Suba de nível na Medicina FURB: escolha o passe que mais combina com a sua rotina acadêmica e garanta Carteirinha de Estudante digital a partir do Plano Comum, descontos na Lojinha, eventos gratuitos com ou sem Coffee e entrada na SECIMED.
           </p>
 
           <div className="page-hero-actions">

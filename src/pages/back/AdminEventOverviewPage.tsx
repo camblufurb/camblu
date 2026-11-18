@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { EventColorWheelPicker } from '../../components/admin/EventColorWheelPicker';
 import { useAdminEvent } from '../../components/admin/AdminEventShell';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/ToastProvider';
 import { useAppData } from '../../context/AppDataContext';
-import type { SecimedPaletteConfig } from '../../types/domain';
-
-const DEFAULT_SECIMED_PALETTE: SecimedPaletteConfig = {
-  primary: '#5f2841',
-  secondary1: '#dc8987',
-  secondary2: '#a0af6c',
-  background: '#f2efe6',
-};
+import {
+  DEFAULT_EVENT_PALETTE,
+  DEFAULT_SECIMED_PALETTE,
+  resolveEventPalette,
+} from '../../lib/colorHarmony';
+import type { EventPaletteConfig } from '../../types/domain';
 
 const SECIMED_FEATURE_SLOTS = [
   { id: 'palestras', label: 'Palestras Magnas' },
@@ -52,8 +51,8 @@ export function AdminEventOverviewPage() {
   const [isSecimed, setIsSecimed] = useState(event.isSecimed);
   const [published, setPublished] = useState(event.published);
   const [archived, setArchived] = useState(Boolean(event.archived));
-  const [secimedPalette, setSecimedPalette] = useState<SecimedPaletteConfig>(
-    () => event.secimedPalette || DEFAULT_SECIMED_PALETTE,
+  const [eventPalette, setEventPalette] = useState<EventPaletteConfig>(
+    () => resolveEventPalette(event),
   );
   const [secimedFeaturePhotos, setSecimedFeaturePhotos] = useState<Record<string, string>>(
     () => event.secimedFeaturePhotos || {},
@@ -73,7 +72,7 @@ export function AdminEventOverviewPage() {
     setIsSecimed(event.isSecimed);
     setPublished(event.published);
     setArchived(Boolean(event.archived));
-    setSecimedPalette(event.secimedPalette || DEFAULT_SECIMED_PALETTE);
+    setEventPalette(resolveEventPalette(event));
     setSecimedFeaturePhotos(event.secimedFeaturePhotos || {});
   }, [event]);
 
@@ -104,7 +103,8 @@ export function AdminEventOverviewPage() {
       isSecimed,
       published,
       archived,
-      secimedPalette: isSecimed ? secimedPalette : undefined,
+      palette: eventPalette,
+      secimedPalette: isSecimed ? eventPalette : undefined,
       secimedFeaturePhotos: isSecimed ? secimedFeaturePhotos : undefined,
       startAt: new Date(startAt).toISOString(),
     });
@@ -183,11 +183,11 @@ export function AdminEventOverviewPage() {
           </label>
           <label className="m3-chip">
             <input type="checkbox" checked={hasCoffee} onChange={(e) => setHasCoffee(e.target.checked)} />
-            <span>Tem Coffee (Clube Raro grátis)</span>
+            <span>Inclui Coffee Break (informativo)</span>
           </label>
           <label className="m3-chip">
             <input type="checkbox" checked={isSecimed} onChange={(e) => setIsSecimed(e.target.checked)} />
-            <span>SECIMED (Grátis Épico/Lendário)</span>
+            <span>SECIMED (Grátis Épico/Lendário · 10% Raro)</span>
           </label>
           <label className="m3-chip">
             <input type="checkbox" checked={published} onChange={(e) => setPublished(e.target.checked)} />
@@ -218,55 +218,19 @@ export function AdminEventOverviewPage() {
           )}
         </div>
 
+        <EventColorWheelPicker
+          value={eventPalette}
+          onChange={setEventPalette}
+          defaultPalette={isSecimed ? DEFAULT_SECIMED_PALETTE : DEFAULT_EVENT_PALETTE}
+          eventTitlePreview={title}
+          hasCoffeePreview={hasCoffee}
+        />
+
         {isSecimed && (
           <div className="m3-card m3-card--tonal" style={{ display: 'grid', gap: '1rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-              <div>
-                <h3>Identidade Visual da Página /secimed (4 Cores + Fotos)</h3>
-                <p className="text-muted">Personalize a paleta exclusiva da página oficial da SECIMED.</p>
-              </div>
-              <button
-                type="button"
-                className="m3-btn m3-btn--outlined"
-                onClick={() => setSecimedPalette(DEFAULT_SECIMED_PALETTE)}
-              >
-                Restaurar Padrão
-              </button>
-            </div>
-
-            <div className="grid-cards">
-              {(
-                [
-                  { key: 'primary', label: 'Cor Primária' },
-                  { key: 'secondary1', label: 'Secundária 1' },
-                  { key: 'secondary2', label: 'Secundária 2' },
-                  { key: 'background', label: 'Cor de Fundo' },
-                ] as const
-              ).map((colorItem) => (
-                <div key={colorItem.key} className="m3-field">
-                  <label htmlFor={`secimed-c-${colorItem.key}`}>{colorItem.label}</label>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <input
-                      id={`secimed-c-${colorItem.key}`}
-                      type="color"
-                      value={secimedPalette[colorItem.key]}
-                      onChange={(e) =>
-                        setSecimedPalette((prev) => ({ ...prev, [colorItem.key]: e.target.value }))
-                      }
-                      style={{ inlineSize: '3rem', blockSize: '2.65rem', padding: '0.15rem', borderRadius: '0.5rem' }}
-                    />
-                    <input
-                      type="text"
-                      className="m3-input"
-                      aria-label={`Hex ${colorItem.label}`}
-                      value={secimedPalette[colorItem.key]}
-                      onChange={(e) =>
-                        setSecimedPalette((prev) => ({ ...prev, [colorItem.key]: e.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-              ))}
+            <div>
+              <h3>Fotos dos Destaques na Página /secimed</h3>
+              <p className="text-muted">Envie imagens específicas para cada bloco temático da edição da SECIMED.</p>
             </div>
 
             <div className="grid-two">

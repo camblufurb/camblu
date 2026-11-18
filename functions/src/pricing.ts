@@ -52,12 +52,11 @@ export function computeEventPricing(
       reason: `Gratuidade Clube ${tier === 'lendario' ? 'Lendário' : 'Épico'} (100%)`,
     };
   }
-  const isCoffeeNonSecimed = !event.isSecimed && (event.hasCoffee || event.category === 'camblu_coffee');
-  if (tier === 'raro' && isCoffeeNonSecimed) {
+  if (tier === 'raro' && !event.isSecimed) {
     return {
       finalCents: 0,
       discountCents: baseCents,
-      reason: 'Gratuidade Clube Raro (Evento CAMBLU com Coffee)',
+      reason: 'Gratuidade Clube Raro (Evento CAMBLU)',
     };
   }
   const discountCents = Math.round(baseCents * 0.1);

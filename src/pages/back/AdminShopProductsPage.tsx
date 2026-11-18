@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
+import { M3Dialog } from '../../components/M3Dialog';
+import { M3SplitButton } from '../../components/M3SplitButton';
 import { useToast } from '../../components/ToastProvider';
 import { useAppData } from '../../context/AppDataContext';
 import {
@@ -9,37 +11,89 @@ import {
   getAvailableFurbReferences,
   persistProductGalleryImage,
   requestNanoBananaProductImages,
+  requestProductDescriptionWithGemini,
   type CompressedUploadAsset,
   type GeneratedProductAiImageResult,
   type ProductAiShotType,
 } from '../../lib/productAiStudio';
 import { getProductSlug, slugifyProductName } from '../../lib/shopHelpers';
 import { formatBrlFromCents } from '../../lib/validators';
-import type { ShopProduct } from '../../types/domain';
+import type { ProductSizeStock, ShopProduct, ShopProductImageBlocks } from '../../types/domain';
 
-interface UploadedSourcePhoto {
-  id: string;
-  name: string;
-  asset: CompressedUploadAsset;
-}
+type BlockKey = ProductAiShotType;
 
-const SHOT_OPTIONS: Array<{ type: ProductAiShotType; label: string; helper: string }> = [
-  {
-    type: 'furb_individual',
-    label: 'Individual na FURB',
-    helper: 'Sorteia estudante e foto de referência em src/ai_ref',
-  },
-  {
-    type: 'furb_group',
-    label: 'Grupo na FURB (2–3 pessoas)',
-    helper: 'Sorteia características diversas em ambiente da FURB',
-  },
-  {
-    type: 'studio_gradient',
-    label: 'Fundo simples (gradiente alto contraste)',
-    helper: 'Calcula gradiente suave de alto contraste contra o produto',
-  },
+type BlockImagesMap = Record<BlockKey, string[]>;
+type BlockOptionsMap = Record<BlockKey, GeneratedProductAiImageResult[]>;
+
+const PRESET_SHOP_CATEGORIES = [
+  'Vestuário',
+  'Acessórios',
+  'Jalecos e Scrubs',
+  'Canecas e Garrafas',
+  'Papelaria',
+] as const;
+
+const OTHER_CATEGORY_VALUE = '__other__';
+
+const DEFAULT_PRODUCT_SIZES: ProductSizeStock[] = [
+  { size: 'P', stock: 10 },
+  { size: 'M', stock: 15 },
+  { size: 'G', stock: 10 },
+  { size: 'GG', stock: 5 },
 ];
+
+const SIZE_SUGGESTIONS = [
+  'PP',
+  'P',
+  'M',
+  'G',
+  'GG',
+  'XG',
+  'XXG',
+  'Único',
+  'Baby Look P',
+  'Baby Look M',
+  'Baby Look G',
+];
+
+const BLOCK_SPECS: Array<{ key: BlockKey; title: string }> = [
+  { key: 'furb_individual', title: '1. Estudante sozinho' },
+  { key: 'furb_group', title: '2. Grupo de pessoas' },
+  { key: 'studio_gradient', title: '3. Produto isolado' },
+];
+
+const EMPTY_BLOCKS: BlockImagesMap = {
+  furb_individual: [],
+  furb_group: [],
+  studio_gradient: [],
+};
+
+const EMPTY_OPTIONS: BlockOptionsMap = {
+  furb_individual: [],
+  furb_group: [],
+  studio_gradient: [],
+};
+
+function resolveInitialBlocks(product: ShopProduct): BlockImagesMap {
+  if (product.imageBlocks) {
+    return {
+      furb_individual: [...(product.imageBlocks.furb_individual || [])],
+      furb_group: [...(product.imageBlocks.furb_group || [])],
+      studio_gradient: [...(product.imageBlocks.studio_gradient || [])],
+    };
+  }
+  const blocks: BlockImagesMap = {
+    furb_individual: [],
+    furb_group: [],
+    studio_gradient: [],
+  };
+  for (const url of product.images || []) {
+    if (url.includes('furb_individual')) blocks.furb_individual.push(url);
+    else if (url.includes('furb_group')) blocks.furb_group.push(url);
+    else blocks.studio_gradient.push(url);
+  }
+  return blocks;
+}
 
 export function AdminShopProductsPage() {
   const { products, saveProduct } = useAppData();
@@ -49,37 +103,61 @@ export function AdminShopProductsPage() {
   const [prodName, setProdName] = useState('');
   const [prodDesc, setProdDesc] = useState('');
   const [prodPrice, setProdPrice] = useState('55.00');
-  const [prodCategory, setProdCategory] = useState('Vestuário');
-  const [prodImage, setProdImage] = useState('');
-  const [prodSizesText, setProdSizesText] = useState('P:10,M:15,G:10,GG:5');
+  const [prodCategory, setProdCategory] = useState<string>('Vestuário');
+  const [customCategory, setCustomCategory] = useState<string>('');
+  const [prodSizes, setProdSizes] = useState<ProductSizeStock[]>(() =>
+    DEFAULT_PRODUCT_SIZES.map((item) => ({ ...item })),
+  );
   const [prodDetailsText, setProdDetailsText] = useState('');
 
-  const [sourcePhotos, setSourcePhotos] = useState<UploadedSourcePhoto[]>([]);
-  const [selectedShotTypes, setSelectedShotTypes] = useState<ProductAiShotType[]>([
-    'furb_individual',
-    'furb_group',
-    'studio_gradient',
-  ]);
-  const [aiCustomNotes, setAiCustomNotes] = useState('');
-  const [generatingAi, setGeneratingAi] = useState(false);
+  const [imageBlocks, setImageBlocks] = useState<BlockImagesMap>(EMPTY_BLOCKS);
+  const [coverUrl, setCoverUrl] = useState<string>('');
+  const [blockAiOptions, setBlockAiOptions] = useState<BlockOptionsMap>(EMPTY_OPTIONS);
+  const [generatingBlock, setGeneratingBlock] = useState<BlockKey | null>(null);
+  const [generatingDesc, setGeneratingDesc] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
-  const [generatedResults, setGeneratedResults] = useState<GeneratedProductAiImageResult[]>([]);
+
+  // Auto-loaded product reference image across generations on this product
+  const [aiRefAsset, setAiRefAsset] = useState<CompressedUploadAsset | null>(null);
+  const [aiRefUrl, setAiRefUrl] = useState<string>('');
+  const [refDialogOpen, setRefDialogOpen] = useState(false);
+  const [pendingGenerateBlock, setPendingGenerateBlock] = useState<BlockKey | null>(null);
+
+  const fileInputRefs = useRef<Record<BlockKey, HTMLInputElement | null>>({
+    furb_individual: null,
+    furb_group: null,
+    studio_gradient: null,
+  });
 
   const furbReferences = useMemo(() => getAvailableFurbReferences(), []);
 
-  const galleryImages = useMemo(
-    () =>
-      prodImage
-        .split(/[\n,]+/)
-        .map((u) => u.trim())
-        .filter(Boolean),
-    [prodImage],
-  );
+  const categoryOptions = useMemo(() => {
+    const merged = new Set<string>(PRESET_SHOP_CATEGORIES);
+    for (const p of products) {
+      const cat = p.category?.trim();
+      if (cat) merged.add(cat);
+    }
+    return Array.from(merged);
+  }, [products]);
 
-  const setGalleryImagesList = (next: string[]) => {
-    const unique = Array.from(new Set(next.map((u) => u.trim()).filter(Boolean)));
-    setProdImage(unique.join('\n'));
-  };
+  const effectiveCategory =
+    prodCategory === OTHER_CATEGORY_VALUE ? customCategory.trim() : prodCategory.trim();
+
+  const orderedFlatImages = useMemo(() => {
+    const all = [
+      ...imageBlocks.furb_individual,
+      ...imageBlocks.furb_group,
+      ...imageBlocks.studio_gradient,
+    ];
+    const unique = Array.from(new Set(all.filter(Boolean)));
+    if (coverUrl && unique.includes(coverUrl)) {
+      return [coverUrl, ...unique.filter((u) => u !== coverUrl)];
+    }
+    return unique;
+  }, [coverUrl, imageBlocks]);
+
+  const effectiveCover = orderedFlatImages[0] || '';
+  const activeRefPreview = aiRefAsset?.dataUrl || aiRefUrl;
 
   const resetForm = () => {
     setEditingId(null);
@@ -87,112 +165,222 @@ export function AdminShopProductsPage() {
     setProdDesc('');
     setProdPrice('55.00');
     setProdCategory('Vestuário');
-    setProdImage('');
-    setProdSizesText('P:10,M:15,G:10,GG:5');
+    setCustomCategory('');
+    setProdSizes(DEFAULT_PRODUCT_SIZES.map((item) => ({ ...item })));
     setProdDetailsText('');
-    setSourcePhotos([]);
-    setGeneratedResults([]);
-    setAiCustomNotes('');
+    setImageBlocks({ furb_individual: [], furb_group: [], studio_gradient: [] });
+    setCoverUrl('');
+    setBlockAiOptions({ furb_individual: [], furb_group: [], studio_gradient: [] });
+    setAiRefAsset(null);
+    setAiRefUrl('');
+    setPendingGenerateBlock(null);
+    setRefDialogOpen(false);
   };
 
   const loadForEdit = (product: ShopProduct) => {
+    const resolved = resolveInitialBlocks(product);
     setEditingId(product.id);
     setProdName(product.name);
     setProdDesc(product.description);
     setProdPrice((product.priceCents / 100).toFixed(2));
-    setProdCategory(product.category);
-    setProdImage(product.images.join('\n'));
-    setProdSizesText(product.sizes.map((s) => `${s.size}:${s.stock}`).join(','));
+    const trimmedCategory = product.category?.trim() || 'Vestuário';
+    if (categoryOptions.includes(trimmedCategory)) {
+      setProdCategory(trimmedCategory);
+      setCustomCategory('');
+    } else {
+      setProdCategory(OTHER_CATEGORY_VALUE);
+      setCustomCategory(trimmedCategory);
+    }
+    setProdSizes(
+      product.sizes.length
+        ? product.sizes.map((s) => ({ size: s.size, stock: Number(s.stock) || 0 }))
+        : [{ size: 'Único', stock: 0 }],
+    );
     setProdDetailsText((product.details || []).join('\n'));
-    setSourcePhotos([]);
-    setGeneratedResults([]);
+    setImageBlocks(resolved);
+    setCoverUrl(product.images[0] || '');
+    setBlockAiOptions({ furb_individual: [], furb_group: [], studio_gradient: [] });
+    setAiRefAsset(null);
+    setAiRefUrl(product.aiReferenceImageUrl || '');
+    setPendingGenerateBlock(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleUploadProductFiles = async (files: FileList | null) => {
+  const addImagesToBlock = (blockKey: BlockKey, urls: string[]) => {
+    const clean = urls.map((u) => u.trim()).filter(Boolean);
+    if (clean.length === 0) return;
+    setImageBlocks((prev) => {
+      const nextList = Array.from(new Set([...prev[blockKey], ...clean]));
+      return { ...prev, [blockKey]: nextList };
+    });
+    if (!coverUrl && !orderedFlatImages[0]) {
+      setCoverUrl(clean[0]);
+    }
+  };
+
+  const removeImageFromBlock = (blockKey: BlockKey, targetUrl: string) => {
+    setImageBlocks((prev) => ({
+      ...prev,
+      [blockKey]: prev[blockKey].filter((u) => u !== targetUrl),
+    }));
+    if (coverUrl === targetUrl) {
+      setCoverUrl('');
+    }
+  };
+
+  const handleUploadFilesForBlock = async (blockKey: BlockKey, files: FileList | null) => {
     if (!files || files.length === 0) return;
     try {
-      const uploaded: UploadedSourcePhoto[] = [];
+      const dataUrls: string[] = [];
       for (const file of Array.from(files).slice(0, 6)) {
-        const asset = await compressImageToInlinePayload(file, 1024);
-        uploaded.push({
-          id: `src-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-          name: file.name,
-          asset,
-        });
+        const compressed = await compressImageToInlinePayload(file, 1024);
+        dataUrls.push(compressed.dataUrl);
       }
-      setSourcePhotos((prev) => [...prev, ...uploaded].slice(0, 6));
-      notify(`${uploaded.length} foto(s) carregada(s). Você pode usar direto na galeria ou gerar versões finais com IA!`);
+      addImagesToBlock(blockKey, dataUrls);
+      notify(`${dataUrls.length} imagem(ns) adicionada(s) ao bloco.`);
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Erro ao processar foto enviada.', 'error');
+      notify(err instanceof Error ? err.message : 'Erro ao processar arquivo de imagem.', 'error');
     }
   };
 
-  const toggleShotType = (shotType: ProductAiShotType) => {
-    setSelectedShotTypes((prev) =>
-      prev.includes(shotType) ? prev.filter((item) => item !== shotType) : [...prev, shotType],
-    );
-  };
-
-  const handleGenerateWithAi = async () => {
-    if (sourcePhotos.length === 0) {
-      notify('Faça upload de pelo menos 1 foto base do produto antes de gerar com IA.', 'error');
-      return;
-    }
-    if (selectedShotTypes.length === 0) {
-      notify('Selecione ao menos um tipo de imagem final para gerar.', 'error');
+  const runGenerateForBlock = async (
+    blockKey: BlockKey,
+    overrideAsset?: CompressedUploadAsset,
+  ) => {
+    const assetToUse = overrideAsset || aiRefAsset;
+    const storedRefUrl = aiRefUrl.trim();
+    if (!assetToUse && !storedRefUrl) {
+      setPendingGenerateBlock(blockKey);
+      setRefDialogOpen(true);
       return;
     }
 
-    setGeneratingAi(true);
+    setGeneratingBlock(blockKey);
     try {
-      const avgLuminance =
-        sourcePhotos.reduce((acc, item) => acc + item.asset.avgLuminance, 0) / sourcePhotos.length;
-
+      const avgLuminance = assetToUse?.avgLuminance ?? 0.35;
       const plans = buildDynamicProductShotPlans({
         productName: prodName.trim() || 'Produto Oficial CAMBLU',
         productDescription: prodDesc.trim(),
-        productCategory: prodCategory.trim(),
+        productCategory: effectiveCategory || 'Vestuário',
         avgLuminance,
-        selectedShots: selectedShotTypes,
-        customNotes: aiCustomNotes,
+        selectedShots: [blockKey, blockKey, blockKey],
         furbRefs: furbReferences,
       });
 
       const response = await requestNanoBananaProductImages({
-        productImages: sourcePhotos.map((p) => ({
-          mimeType: p.asset.mimeType,
-          data: p.asset.data,
-        })),
+        productImages: assetToUse
+          ? [{ mimeType: assetToUse.mimeType, data: assetToUse.data }]
+          : undefined,
+        productImageUrls: !assetToUse && storedRefUrl ? [storedRefUrl] : undefined,
         plans,
       });
 
-      setGeneratedResults(response.images);
-      setGalleryImagesList([...galleryImages, ...response.images.map((img) => img.dataUrl)]);
-      notify(`${response.images.length} imagem(ns) gerada(s) com ${response.model} e adicionada(s) à galeria!`);
+      setBlockAiOptions((prev) => ({
+        ...prev,
+        [blockKey]: response.images,
+      }));
+      notify(`3 opções geradas para "${BLOCK_SPECS.find((b) => b.key === blockKey)?.title}". Clique em + para adicionar.`);
     } catch (err) {
       notify(
-        err instanceof Error ? err.message : 'Falha ao gerar imagens com gemini-nano-banana-2.1.',
+        err instanceof Error ? err.message : 'Falha ao gerar opções com gemini-nano-banana-2.1.',
         'error',
       );
     } finally {
-      setGeneratingAi(false);
+      setGeneratingBlock(null);
     }
+  };
+
+  const handleReferenceFileSelected = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const compressed = await compressImageToInlinePayload(file, 1024);
+      setAiRefAsset(compressed);
+      setAiRefUrl('');
+      setRefDialogOpen(false);
+      const targetBlock = pendingGenerateBlock;
+      setPendingGenerateBlock(null);
+      notify('Imagem de referência do produto carregada para este item!');
+      if (targetBlock) {
+        await runGenerateForBlock(targetBlock, compressed);
+      }
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Erro ao ler imagem de referência.', 'error');
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!prodName.trim()) {
+      notify('Informe o nome do produto antes de gerar a descrição com IA.', 'info');
+      return;
+    }
+    setGeneratingDesc(true);
+    try {
+      const details = prodDetailsText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const res = await requestProductDescriptionWithGemini({
+        name: prodName.trim(),
+        category: effectiveCategory || 'Vestuário',
+        sizes: prodSizes,
+        details,
+        currentDescription: prodDesc.trim(),
+        productImages: aiRefAsset ? [{ mimeType: aiRefAsset.mimeType, data: aiRefAsset.data }] : undefined,
+        productImageUrls: !aiRefAsset && aiRefUrl.trim() ? [aiRefUrl.trim()] : undefined,
+      });
+      setProdDesc(res.description);
+      notify(`Descrição gerada com ${res.model}!`);
+    } catch (err) {
+      notify(
+        err instanceof Error ? err.message : 'Falha ao gerar descrição com gemini-flash-lite-latest.',
+        'error',
+      );
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
+
+  const handleAddSizeRow = () => {
+    setProdSizes((prev) => [...prev, { size: '', stock: 0 }]);
+  };
+
+  const handleUpdateSizeRow = (index: number, patch: Partial<ProductSizeStock>) => {
+    setProdSizes((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    );
+  };
+
+  const handleRemoveSizeRow = (index: number) => {
+    setProdSizes((prev) => {
+      if (prev.length <= 1) {
+        return [{ size: '', stock: 0 }];
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prodName.trim()) return;
+    if (prodCategory === OTHER_CATEGORY_VALUE && !customCategory.trim()) {
+      notify('Digite o nome da nova categoria em "outro - escreva".', 'error');
+      return;
+    }
+    const sizes = prodSizes
+      .map((item) => ({
+        size: item.size.trim(),
+        stock: Math.max(0, Math.floor(Number(item.stock) || 0)),
+      }))
+      .filter((s) => s.size);
+
+    if (sizes.length === 0) {
+      notify('Adicione pelo menos um tamanho e estoque para o produto.', 'error');
+      return;
+    }
+
     setSavingProduct(true);
     try {
       const priceCents = Math.max(0, Math.round(Number(prodPrice.replace(',', '.')) * 100));
-      const sizes = prodSizesText
-        .split(',')
-        .map((pair) => {
-          const [sz, st] = pair.split(':').map((x) => x.trim());
-          return { size: sz || 'Único', stock: Number(st) || 0 };
-        })
-        .filter((s) => s.size);
 
       const details = prodDetailsText
         .split('\n')
@@ -201,9 +389,45 @@ export function AdminShopProductsPage() {
 
       const existing = editingId ? products.find((p) => p.id === editingId) : undefined;
       const id = existing?.id || `prod-${Date.now().toString(36)}`;
-      const persistedImages = await Promise.all(
-        galleryImages.map((img, idx) => persistProductGalleryImage(img, id, idx)),
-      );
+
+      const persistSlotList = async (slot: BlockKey, urls: string[]) =>
+        Promise.all(
+          urls.map((u, idx) => persistProductGalleryImage(u, `${id}/${slot}`, idx)),
+        );
+
+      const [soloUrls, groupUrls, isolatedUrls, persistedRefUrl] = await Promise.all([
+        persistSlotList('furb_individual', imageBlocks.furb_individual),
+        persistSlotList('furb_group', imageBlocks.furb_group),
+        persistSlotList('studio_gradient', imageBlocks.studio_gradient),
+        aiRefAsset
+          ? persistProductGalleryImage(aiRefAsset.dataUrl, `${id}/reference`, 0)
+          : Promise.resolve(aiRefUrl || existing?.aiReferenceImageUrl || ''),
+      ]);
+
+      const persistedBlocks: ShopProductImageBlocks = {
+        furb_individual: soloUrls,
+        furb_group: groupUrls,
+        studio_gradient: isolatedUrls,
+      };
+
+      // Map old temporary URLs to newly persisted Storage URLs cleanly to keep cover ordering
+      const urlUpgradeMap = new Map<string, string>();
+      imageBlocks.furb_individual.forEach((orig, i) => {
+        if (soloUrls[i]) urlUpgradeMap.set(orig, soloUrls[i]);
+      });
+      imageBlocks.furb_group.forEach((orig, i) => {
+        if (groupUrls[i]) urlUpgradeMap.set(orig, groupUrls[i]);
+      });
+      imageBlocks.studio_gradient.forEach((orig, i) => {
+        if (isolatedUrls[i]) urlUpgradeMap.set(orig, isolatedUrls[i]);
+      });
+
+      const resolvedCover = coverUrl ? urlUpgradeMap.get(coverUrl) || coverUrl : '';
+      const combined = Array.from(new Set([...soloUrls, ...groupUrls, ...isolatedUrls].filter(Boolean)));
+      const finalImages =
+        resolvedCover && combined.includes(resolvedCover)
+          ? [resolvedCover, ...combined.filter((u) => u !== resolvedCover)]
+          : combined;
 
       const product: ShopProduct = {
         ...(existing || {}),
@@ -212,9 +436,11 @@ export function AdminShopProductsPage() {
         name: prodName.trim(),
         description: prodDesc.trim() || 'Produto oficial CAMBLU.',
         priceCents,
-        images: persistedImages,
+        images: finalImages,
+        imageBlocks: persistedBlocks,
+        aiReferenceImageUrl: persistedRefUrl || undefined,
         details: details.length ? details : undefined,
-        category: prodCategory.trim() || 'Vestuário',
+        category: effectiveCategory || 'Vestuário',
         sizes,
         active: existing ? existing.active : true,
       };
@@ -223,7 +449,7 @@ export function AdminShopProductsPage() {
       resetForm();
       notify(existing ? 'Produto atualizado no catálogo!' : 'Produto publicado na Lojinha!');
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Erro ao salvar imagens/produto no Storage.', 'error');
+      notify(err instanceof Error ? err.message : 'Erro ao salvar imagens/produto.', 'error');
     } finally {
       setSavingProduct(false);
     }
@@ -239,12 +465,11 @@ export function AdminShopProductsPage() {
       <header style={{ display: 'grid', gap: '0.35rem' }}>
         <h1>Produtos da Lojinha</h1>
         <p className="text-muted">
-          Cadastre novos itens com upload direto das fotos, geração de fotos finais em ambientes da FURB e estúdio via{' '}
-          <code>gemini-nano-banana-2.1</code>, grade de estoque e visibilidade.
+          Cadastre novos itens ou edite produtos, fotos por bloco, grade de estoque e visibilidade.
         </p>
       </header>
 
-      <form onSubmit={handleSaveProduct} className="m3-card" style={{ display: 'grid', gap: '1.15rem' }}>
+      <form onSubmit={handleSaveProduct} className="m3-card" style={{ display: 'grid', gap: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <h2>{editingId ? 'Editar Produto Selecionado' : 'Cadastrar Novo Produto'}</h2>
           {editingId && (
@@ -261,255 +486,295 @@ export function AdminShopProductsPage() {
           </div>
           <div className="m3-field">
             <label htmlFor="p-cat">Categoria</label>
-            <input id="p-cat" className="m3-input" value={prodCategory} onChange={(e) => setProdCategory(e.target.value)} />
-          </div>
-        </div>
-        <div className="grid-two">
-          <div className="m3-field">
-            <label htmlFor="p-price">Valor de venda (R$)</label>
-            <input id="p-price" className="m3-input" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} />
-          </div>
-          <div className="m3-field">
-            <label htmlFor="p-sizes">Tamanhos e estoque (ex.: P:10,M:15,G:10)</label>
-            <input id="p-sizes" className="m3-input" value={prodSizesText} onChange={(e) => setProdSizesText(e.target.value)} />
-          </div>
-        </div>
-
-        {/* Upload de fotos base do produto + Estúdio IA Nano Banana 2.1 */}
-        <section
-          aria-label="Upload e Estúdio IA de Imagens"
-          className="m3-card m3-card--tonal"
-          style={{ display: 'grid', gap: '1rem' }}
-        >
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-            <div>
-              <h3 style={{ marginBlockEnd: '0.15rem' }}>Fotos do Produto & Estúdio IA (Nano Banana 2.1)</h3>
-              <p className="text-muted" style={{ fontSize: '0.86rem' }}>
-                Envie fotos reais do item para publicar direto ou gerar imagens finais na FURB e em estúdio de alto contraste.
-              </p>
-            </div>
-            <span className="m3-badge m3-badge--blue">
-              <Icon name="location_on" size={14} />
-              {furbReferences.length > 0
-                ? `${furbReferences.length} referência(s) FURB em src/ai_ref`
-                : 'src/ai_ref sem fotos ainda (usará descrição FURB)'}
-            </span>
-          </div>
-
-          <div className="m3-field">
-            <label htmlFor="p-upload-files">Upload de imagens do produto (PNG, JPG ou WebP)</label>
-            <input
-              id="p-upload-files"
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              multiple
-              onChange={(e) => {
-                void handleUploadProductFiles(e.target.files);
-                e.currentTarget.value = '';
-              }}
-            />
-          </div>
-
-          {sourcePhotos.length > 0 && (
-            <div className="m3-motion-panel" style={{ display: 'grid', gap: '0.65rem' }}>
-              <span className="m3-label-small">Fotos enviadas ({sourcePhotos.length})</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                {sourcePhotos.map((item) => {
-                  const alreadyInGallery = galleryImages.includes(item.asset.dataUrl);
-                  return (
-                    <div
-                      key={item.id}
-                      className="m3-card"
-                      style={{ padding: '0.55rem', inlineSize: '10.5rem', display: 'grid', gap: '0.45rem' }}
-                    >
-                      <img
-                        src={item.asset.dataUrl}
-                        alt={item.name}
-                        style={{
-                          inlineSize: '100%',
-                          aspectRatio: '1 / 1',
-                          objectFit: 'cover',
-                          borderRadius: 'var(--md-sys-shape-corner-sm)',
-                        }}
-                      />
-                      <span style={{ fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.name}
-                      </span>
-                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          className="m3-btn m3-btn--outlined"
-                          style={{ minBlockSize: '30px', padding: '0.2rem 0.5rem', fontSize: '0.74rem', flex: 1 }}
-                          disabled={alreadyInGallery}
-                          onClick={() => setGalleryImagesList([...galleryImages, item.asset.dataUrl])}
-                        >
-                          {alreadyInGallery ? 'Na galeria' : 'Usar na galeria'}
-                        </button>
-                        <button
-                          type="button"
-                          className="m3-icon-btn"
-                          aria-label={`Remover foto base ${item.name}`}
-                          onClick={() =>
-                            setSourcePhotos((prev) => prev.filter((p) => p.id !== item.id))
-                          }
-                        >
-                          <Icon name="close" size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div style={{ display: 'grid', gap: '0.55rem' }}>
-            <span className="m3-label-small">Variações finais para gerar com gemini-nano-banana-2.1</span>
-            <div style={{ display: 'grid', gap: '0.45rem' }}>
-              {SHOT_OPTIONS.map((opt) => (
-                <label
-                  key={opt.type}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', cursor: 'pointer', fontSize: '0.9rem' }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedShotTypes.includes(opt.type)}
-                    onChange={() => toggleShotType(opt.type)}
-                  />
-                  <span>
-                    <strong>{opt.label}</strong>{' '}
-                    <span className="text-muted" style={{ fontSize: '0.82rem' }}>
-                      — {opt.helper}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="m3-field">
-            <label htmlFor="p-ai-notes">Instrução visual adicional para IA (opcional)</label>
-            <input
-              id="p-ai-notes"
-              className="m3-input"
-              placeholder="Ex.: Destacar o bordado frontal dourado e textura do moletom"
-              value={aiCustomNotes}
-              onChange={(e) => setAiCustomNotes(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center' }}>
-            <button
-              type="button"
-              className="m3-btn m3-btn--gold"
-              disabled={generatingAi || savingProduct || sourcePhotos.length === 0}
-              onClick={handleGenerateWithAi}
+            <select
+              id="p-cat"
+              className="m3-select"
+              value={prodCategory}
+              onChange={(e) => setProdCategory(e.target.value)}
             >
-              <Icon name={generatingAi ? 'hourglass_top' : 'auto_awesome'} size={18} />
-              <span>
-                {generatingAi
-                  ? 'Gerando imagens com gemini-nano-banana-2.1...'
-                  : 'Gerar imagens finais com IA (gemini-nano-banana-2.1)'}
-              </span>
-            </button>
-          </div>
-
-          {generatedResults.length > 0 && (
-            <div className="m3-motion-panel" style={{ display: 'grid', gap: '0.65rem' }}>
-              <span className="m3-label-small">Resultados gerados na última rodada ({generatedResults.length})</span>
-              <div className="grid-cards">
-                {generatedResults.map((gen) => (
-                  <div key={gen.id} className="m3-card" style={{ padding: '0.75rem', display: 'grid', gap: '0.45rem' }}>
-                    <img
-                      src={gen.dataUrl}
-                      alt={gen.label}
-                      style={{
-                        inlineSize: '100%',
-                        aspectRatio: '1 / 1',
-                        objectFit: 'cover',
-                        borderRadius: 'var(--md-sys-shape-corner-md)',
-                      }}
-                    />
-                    <strong style={{ fontSize: '0.85rem' }}>{gen.label}</strong>
-                    <details>
-                      <summary style={{ cursor: 'pointer', fontSize: '0.78rem' }} className="text-muted">
-                        Prompt dinâmico sorteado
-                      </summary>
-                      <p className="text-muted" style={{ fontSize: '0.75rem', marginBlockStart: '0.3rem' }}>
-                        {gen.promptUsed}
-                      </p>
-                    </details>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {galleryImages.length > 0 && (
-          <div className="m3-motion-panel" style={{ display: 'grid', gap: '0.55rem' }}>
-            <span className="m3-label-small">Prévia da Galeria Final do Produto ({galleryImages.length})</span>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-              {galleryImages.map((imgUrl, idx) => (
-                <div
-                  key={`${imgUrl.slice(0, 48)}-${idx}`}
-                  className="m3-card m3-card--tonal"
-                  style={{ padding: '0.55rem', inlineSize: '10.5rem', display: 'grid', gap: '0.4rem' }}
-                >
-                  <img
-                    src={imgUrl}
-                    alt={`Imagem ${idx + 1} do produto`}
-                    style={{
-                      inlineSize: '100%',
-                      aspectRatio: '1 / 1',
-                      objectFit: 'cover',
-                      borderRadius: 'var(--md-sys-shape-corner-sm)',
-                    }}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.25rem' }}>
-                    {idx === 0 ? (
-                      <span className="m3-badge m3-badge--blue">Capa</span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="m3-btn m3-btn--outlined"
-                        style={{ minBlockSize: '28px', padding: '0.15rem 0.45rem', fontSize: '0.72rem' }}
-                        onClick={() => {
-                          const reordered = [imgUrl, ...galleryImages.filter((_, i) => i !== idx)];
-                          setGalleryImagesList(reordered);
-                        }}
-                      >
-                        Definir capa
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="m3-icon-btn"
-                      aria-label={`Remover imagem ${idx + 1} da galeria`}
-                      onClick={() => setGalleryImagesList(galleryImages.filter((_, i) => i !== idx))}
-                    >
-                      <Icon name="delete" size={16} />
-                    </button>
-                  </div>
-                </div>
+              {categoryOptions.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
-            </div>
+              <option value={OTHER_CATEGORY_VALUE}>outro - escreva</option>
+            </select>
+          </div>
+        </div>
+
+        {prodCategory === OTHER_CATEGORY_VALUE && (
+          <div className="m3-field m3-motion-panel">
+            <label htmlFor="p-cat-custom">Nova categoria</label>
+            <input
+              id="p-cat-custom"
+              className="m3-input"
+              required
+              placeholder="Escreva o nome da categoria..."
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+            />
           </div>
         )}
 
-        <div className="m3-field">
-          <label htmlFor="p-img">URLs da galeria (opcional — preenchido automaticamente por uploads ou IA)</label>
-          <textarea
-            id="p-img"
-            className="m3-textarea"
-            style={{ minBlockSize: '4.25rem' }}
-            placeholder="https://.../foto1.jpg (uma por linha ou separadas por vírgula)"
-            value={prodImage}
-            onChange={(e) => setProdImage(e.target.value)}
-          />
+        <div className="m3-field" style={{ maxInlineSize: '360px' }}>
+          <label htmlFor="p-price">Valor de venda (R$)</label>
+          <input id="p-price" className="m3-input" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} />
         </div>
+
+        <section aria-label="Tamanhos e estoque" style={{ display: 'grid', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+            <label style={{ fontWeight: 600 }}>Tamanhos e estoque</label>
+            <button
+              type="button"
+              className="m3-btn m3-btn--outlined"
+              style={{ minBlockSize: '36px', padding: '0.35rem 0.85rem', fontSize: '0.84rem' }}
+              onClick={handleAddSizeRow}
+            >
+              <Icon name="add" />
+              Adicionar tamanho
+            </button>
+          </div>
+
+          <div className="m3-surface-soft" style={{ display: 'grid', gap: '0.65rem', padding: '0.85rem' }}>
+            {prodSizes.map((row, index) => (
+              <div
+                key={`size-row-${index}`}
+                className="m3-motion-panel"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(120px, 1.4fr) minmax(90px, 0.8fr) auto',
+                  gap: '0.6rem',
+                  alignItems: 'end',
+                }}
+              >
+                <div className="m3-field" style={{ margin: 0 }}>
+                  <label htmlFor={`p-size-name-${index}`}>Tamanho</label>
+                  <input
+                    id={`p-size-name-${index}`}
+                    className="m3-input"
+                    list="camblu-size-suggestions"
+                    required
+                    placeholder="Ex.: P, M, G, Único"
+                    value={row.size}
+                    onChange={(e) => handleUpdateSizeRow(index, { size: e.target.value })}
+                  />
+                </div>
+                <div className="m3-field" style={{ margin: 0 }}>
+                  <label htmlFor={`p-size-stock-${index}`}>Estoque</label>
+                  <input
+                    id={`p-size-stock-${index}`}
+                    type="number"
+                    min={0}
+                    step={1}
+                    className="m3-input"
+                    required
+                    value={Number.isFinite(row.stock) ? row.stock : 0}
+                    onChange={(e) =>
+                      handleUpdateSizeRow(index, {
+                        stock: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                      })
+                    }
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--outlined"
+                  aria-label={`Remover tamanho ${row.size || index + 1}`}
+                  title="Remover tamanho"
+                  style={{ minBlockSize: '42px', padding: '0.35rem 0.65rem' }}
+                  onClick={() => handleRemoveSizeRow(index)}
+                >
+                  <Icon name="delete" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <datalist id="camblu-size-suggestions">
+            {SIZE_SUGGESTIONS.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </section>
+
+        {/* Sessão Galeria do produto com 3 blocos */}
+        <section aria-label="Galeria do produto" style={{ display: 'grid', gap: '0.9rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+            <h3 style={{ margin: 0 }}>Galeria do produto</h3>
+            {activeRefPreview && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <img
+                  src={activeRefPreview}
+                  alt="Referência base do produto"
+                  style={{
+                    inlineSize: '34px',
+                    blockSize: '34px',
+                    objectFit: 'cover',
+                    borderRadius: 'var(--md-sys-shape-corner-sm)',
+                    border: '1px solid var(--md-sys-color-outline-variant)',
+                  }}
+                />
+                <span className="text-muted" style={{ fontSize: '0.8rem' }}>Referência ativa</span>
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--outlined"
+                  style={{ minBlockSize: '32px', padding: '0.2rem 0.65rem', fontSize: '0.78rem' }}
+                  onClick={() => {
+                    setPendingGenerateBlock(null);
+                    setRefDialogOpen(true);
+                  }}
+                >
+                  Trocar referência
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="gallery-blocks-grid">
+            {BLOCK_SPECS.map((block) => {
+              const blockUrls = imageBlocks[block.key];
+              const aiOptions = blockAiOptions[block.key];
+              const isBusy = generatingBlock === block.key;
+
+              return (
+                <article key={block.key} className="gallery-block-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '0.95rem' }}>{block.title}</strong>
+                      <span className="text-muted" style={{ fontSize: '0.78rem' }}>
+                        {blockUrls.length} imagem(ns)
+                      </span>
+                    </div>
+
+                    <input
+                      ref={(el) => {
+                        fileInputRefs.current[block.key] = el;
+                      }}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      multiple
+                      style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
+                      onChange={(e) => {
+                        void handleUploadFilesForBlock(block.key, e.target.files);
+                        e.currentTarget.value = '';
+                      }}
+                    />
+
+                    <M3SplitButton
+                      primaryLabel={isBusy ? 'Gerando...' : 'Gerar'}
+                      primaryIcon="auto_awesome"
+                      loading={isBusy}
+                      disabled={savingProduct || (generatingBlock !== null && generatingBlock !== block.key)}
+                      menuAriaLabel={`Opções para ${block.title}`}
+                      onPrimaryClick={() => {
+                        void runGenerateForBlock(block.key);
+                      }}
+                      menuItems={[
+                        {
+                          id: `${block.key}-generate`,
+                          label: 'Gerar',
+                          icon: 'auto_awesome',
+                          onClick: () => {
+                            void runGenerateForBlock(block.key);
+                          },
+                        },
+                        {
+                          id: `${block.key}-upload`,
+                          label: 'Upload',
+                          icon: 'upload',
+                          onClick: () => fileInputRefs.current[block.key]?.click(),
+                        },
+                      ]}
+                    />
+                  </div>
+
+                  {blockUrls.length > 0 && (
+                    <div className="gallery-block-thumbs">
+                      {blockUrls.map((url, idx) => {
+                        const isCover = url === effectiveCover;
+                        return (
+                          <div key={`${block.key}-${idx}-${url.slice(0, 32)}`} className="gallery-thumb-card">
+                            <img src={url} alt={`${block.title} — foto ${idx + 1}`} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.2rem' }}>
+                              {isCover ? (
+                                <span className="m3-badge m3-badge--blue" style={{ fontSize: '0.68rem', padding: '0.12rem 0.45rem' }}>
+                                  Capa
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="m3-btn m3-btn--outlined"
+                                  style={{ minBlockSize: '26px', padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}
+                                  onClick={() => setCoverUrl(url)}
+                                >
+                                  Capa
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className="m3-icon-btn"
+                                style={{ inlineSize: '28px', blockSize: '28px' }}
+                                aria-label={`Remover foto ${idx + 1} de ${block.title}`}
+                                onClick={() => removeImageFromBlock(block.key, url)}
+                              >
+                                <Icon name="delete" size={15} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {aiOptions.length > 0 && (
+                    <div className="gallery-ai-options-panel">
+                      <span className="m3-label-small text-muted">3 opções geradas</span>
+                      <div className="gallery-ai-options-grid">
+                        {aiOptions.map((opt) => {
+                          const added = blockUrls.includes(opt.dataUrl);
+                          return (
+                            <div key={opt.id} className="gallery-ai-option-item">
+                              <img src={opt.dataUrl} alt={opt.label} />
+                              <button
+                                type="button"
+                                className="gallery-ai-add-btn"
+                                data-added={added ? 'true' : 'false'}
+                                aria-label={added ? 'Adicionada à galeria' : 'Adicionar opção à galeria'}
+                                title={added ? 'Adicionada à galeria' : 'Adicionar à galeria'}
+                                onClick={() => {
+                                  if (!added) {
+                                    addImagesToBlock(block.key, [opt.dataUrl]);
+                                  }
+                                }}
+                              >
+                                <Icon name={added ? 'check' : 'add'} size={18} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
         <div className="m3-field">
-          <label htmlFor="p-desc">Descrição</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+            <label htmlFor="p-desc" style={{ margin: 0 }}>Descrição</label>
+            <button
+              type="button"
+              className="m3-btn m3-btn--blue"
+              style={{ minBlockSize: '36px', padding: '0.35rem 0.85rem', fontSize: '0.84rem' }}
+              disabled={generatingDesc || savingProduct}
+              onClick={handleGenerateDescription}
+            >
+              <Icon name="auto_awesome" size={16} />
+              <span>{generatingDesc ? 'Gerando descrição...' : 'Gerar descrição com IA'}</span>
+            </button>
+          </div>
           <textarea id="p-desc" className="m3-textarea" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} />
         </div>
         <div className="m3-field">
@@ -520,7 +785,7 @@ export function AdminShopProductsPage() {
           type="submit"
           className="m3-btn m3-btn--filled"
           style={{ justifySelf: 'start' }}
-          disabled={savingProduct || generatingAi}
+          disabled={savingProduct || generatingBlock !== null}
         >
           <Icon name={editingId ? 'save' : 'add_business'} size={18} />
           <span>
@@ -532,6 +797,33 @@ export function AdminShopProductsPage() {
           </span>
         </button>
       </form>
+
+      <M3Dialog
+        open={refDialogOpen}
+        onClose={() => {
+          setRefDialogOpen(false);
+          setPendingGenerateBlock(null);
+        }}
+        title="Imagem de referência do produto"
+      >
+        <div className="m3-motion-panel" style={{ display: 'grid', gap: '1rem' }}>
+          <p className="text-muted" style={{ margin: 0 }}>
+            Envie uma foto real deste produto para servir de base ao modelo. Ela ficará salva e será carregada automaticamente nas próximas gerações deste produto.
+          </p>
+          <div className="m3-field">
+            <label htmlFor="p-ai-ref-upload">Selecionar imagem de referência (PNG, JPG ou WebP)</label>
+            <input
+              id="p-ai-ref-upload"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => {
+                void handleReferenceFileSelected(e.target.files?.[0]);
+                e.currentTarget.value = '';
+              }}
+            />
+          </div>
+        </div>
+      </M3Dialog>
 
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
         <h2>Catálogo Cadastrado ({products.length})</h2>
