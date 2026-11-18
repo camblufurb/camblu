@@ -15,6 +15,10 @@ function buildInitialAvatarSvg(name: string): string {
   )}`;
 }
 
+function pickRandomShape(): M3ShapeVariant {
+  return M3_SHAPE_ROTATION[Math.floor(Math.random() * M3_SHAPE_ROTATION.length)];
+}
+
 /**
  * Bulk member management for student administrations featuring a dropdown term selector,
  * dotted '+' first-slot popup creator, and per-member popup editing/removal.
@@ -31,11 +35,12 @@ export function AdminGestoesPage() {
 
   // Popup modal state for adding or editing a member
   const [modalOpen, setModalOpen] = useState(false);
+  const [savingMember, setSavingMember] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [memberName, setMemberName] = useState('');
   const [memberCargo, setMemberCargo] = useState<GestaoCargo>('Diretoria de Eventos');
   const [memberInsta, setMemberInsta] = useState('');
-  const [memberShape, setMemberShape] = useState<M3ShapeVariant>('squircle');
+  const [memberShape, setMemberShape] = useState<M3ShapeVariant>(() => pickRandomShape());
   const [memberPhoto, setMemberPhoto] = useState('');
 
   const activeGestao = sortedGestoes.find((g) => g.id === selectedGestaoId) || sortedGestoes[0];
@@ -45,7 +50,7 @@ export function AdminGestoesPage() {
     setMemberName('');
     setMemberCargo('Diretoria de Eventos');
     setMemberInsta('');
-    setMemberShape('squircle');
+    setMemberShape(pickRandomShape());
     setMemberPhoto('');
     setModalOpen(true);
   };
@@ -62,13 +67,14 @@ export function AdminGestoesPage() {
 
   const handleSaveMemberPopup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeGestao || !memberName.trim()) return;
+    if (!activeGestao || !memberName.trim() || savingMember) return;
 
+    const cleanInsta = memberInsta.trim();
     const resolvedMember: GestaoMember = {
       id: editingMemberId || `gm-${Date.now().toString(36)}`,
       name: memberName.trim(),
       cargo: memberCargo,
-      instagram: memberInsta.trim() || undefined,
+      ...(cleanInsta ? { instagram: cleanInsta } : {}),
       photoUrl: memberPhoto || buildInitialAvatarSvg(memberName),
       shape: memberShape,
     };
@@ -77,9 +83,16 @@ export function AdminGestoesPage() {
       ? activeGestao.members.map((m) => (m.id === editingMemberId ? resolvedMember : m))
       : [...activeGestao.members, resolvedMember];
 
-    await saveGestao({ ...activeGestao, members: nextMembers });
-    setModalOpen(false);
-    notify(editingMemberId ? 'Integrante atualizado na gestão!' : 'Integrante adicionado com recorte 1:1!');
+    setSavingMember(true);
+    try {
+      await saveGestao({ ...activeGestao, members: nextMembers });
+      setModalOpen(false);
+      notify(editingMemberId ? 'Integrante atualizado na gestão!' : 'Integrante adicionado com recorte 1:1!');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Não foi possível salvar o integrante no Firestore.', 'error');
+    } finally {
+      setSavingMember(false);
+    }
   };
 
   const handleRemoveMember = async (memberId: string) => {
@@ -284,7 +297,7 @@ export function AdminGestoesPage() {
             </div>
           </div>
 
-          <ImageCropper1x1 onCropped={setMemberPhoto} />
+          <ImageCropper1x1 key={editingMemberId || (modalOpen ? 'add' : 'closed')} onCropped={setMemberPhoto} />
           {memberPhoto && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <img
@@ -315,12 +328,12 @@ export function AdminGestoesPage() {
             )}
 
             <div style={{ display: 'flex', gap: '0.55rem' }}>
-              <button type="button" className="m3-btn m3-btn--outlined" onClick={() => setModalOpen(false)}>
+              <button type="button" className="m3-btn m3-btn--outlined" onClick={() => setModalOpen(false)} disabled={savingMember}>
                 Cancelar
               </button>
-              <button type="submit" className="m3-btn m3-btn--filled">
+              <button type="submit" className="m3-btn m3-btn--filled" disabled={savingMember}>
                 <Icon name="save" size={18} />
-                <span>{editingMemberId ? 'Salvar Alterações' : 'Adicionar Integrante'}</span>
+                <span>{savingMember ? 'Salvando...' : editingMemberId ? 'Salvar Alterações' : 'Adicionar Integrante'}</span>
               </button>
             </div>
           </div>

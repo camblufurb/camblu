@@ -65,6 +65,13 @@
         }
       },
       {
+        "source": "/eventos/*",
+        "function": {
+          "functionId": "eventSocialPreview",
+          "region": "southamerica-east1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

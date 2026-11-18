@@ -254,6 +254,22 @@ function loadState(): AppDataState {
   }
 }
 
+function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefinedDeep(item)) as T;
+  }
+  if (value && typeof value === 'object') {
+    const clean: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value)) {
+      if (val !== undefined) {
+        clean[key] = stripUndefinedDeep(val);
+      }
+    }
+    return clean as T;
+  }
+  return value;
+}
+
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const { isAdmin, allDemoUsers, profile } = useAuth();
   const [state, setState] = useState<AppDataState>(loadState);
@@ -262,7 +278,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const persistDoc = useCallback(async (colName: string, id: string, data: object) => {
     if (isFirebaseConfigured && db) {
-      await setDoc(doc(db, colName, id), data, { merge: true });
+      await setDoc(doc(db, colName, id), stripUndefinedDeep(data), { merge: true });
     }
   }, []);
 
