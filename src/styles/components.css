@@ -2233,6 +2233,66 @@
     touch-action: manipulation;
   }
 
+  .member-card-empty-link {
+    display: block;
+    inline-size: min(100%, 27rem);
+    text-decoration: none;
+    color: inherit;
+    border-radius: var(--md-sys-shape-corner-xl);
+  }
+
+  .member-card--empty {
+    inline-size: 100%;
+    box-shadow: none;
+    border: 2px dashed var(--md-sys-color-outline);
+    background: var(--md-sys-color-surface-container-low);
+    color: var(--md-sys-color-on-surface);
+    align-content: center;
+    justify-items: center;
+    text-align: center;
+    gap: 0.55rem;
+    transition:
+      transform 220ms cubic-bezier(0.2, 0, 0, 1),
+      border-color 220ms cubic-bezier(0.2, 0, 0, 1),
+      background-color 220ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .member-card__plus {
+    inline-size: 3.75rem;
+    block-size: 3.75rem;
+    border-radius: var(--md-sys-shape-corner-full);
+    display: grid;
+    place-items: center;
+    background: rgb(59 130 247 / 0.12);
+    color: #3b82f7;
+    border: 1px solid rgb(59 130 247 / 0.25);
+    transition: transform 220ms cubic-bezier(0.2, 0, 0, 1), background-color 220ms ease;
+  }
+
+  .member-card__empty-label {
+    font-size: 1rem;
+    font-weight: 750;
+    color: var(--md-sys-color-on-surface);
+  }
+
+  .member-card__empty-hint {
+    font-size: 0.84rem;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
+  .member-card-empty-link:hover .member-card--empty,
+  .member-card-empty-link:focus-visible .member-card--empty {
+    border-color: #3b82f7;
+    background: rgb(59 130 247 / 0.06);
+    transform: translate3d(0, -2px, 0);
+  }
+
+  .member-card-empty-link:hover .member-card__plus,
+  .member-card-empty-link:focus-visible .member-card__plus {
+    background: rgb(59 130 247 / 0.2);
+    transform: scale(1.06);
+  }
+
   .member-card__shimmer {
     position: absolute;
     inset: -45%;
@@ -2306,6 +2366,8 @@
   @media (prefers-reduced-motion: reduce) {
     .member-card,
     .member-card__shimmer,
+    .member-card--empty,
+    .member-card__plus,
     .member-verify-card {
       transition: none;
       animation: none;

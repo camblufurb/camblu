@@ -411,23 +411,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     );
     unsubs.push(unsubPublicMeta);
 
-    const unsubMeta = onSnapshot(
-      doc(db, 'transparencyMeta', 'config'),
-      (snap) => {
-        if (snap.exists()) {
-          logInfo('Firestore', 'Documento transparencyMeta/config carregado');
-          setState((prev) => ({
-            ...prev,
-            transparencyMeta: { ...prev.transparencyMeta, ...(snap.data() as Partial<TransparencyMeta>) },
-          }));
-        }
-      },
-      (err) => {
-        logError('Firestore', 'AppDataContext.onSnapshot(transparencyMeta/config)', err);
-      },
-    );
-    unsubs.push(unsubMeta);
-
     return () => unsubs.forEach((u) => u());
   }, []);
 
@@ -456,6 +439,23 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     bindAdminCol('certificates', 'certificates');
     bindAdminCol('orders', 'orders');
     bindAdminCol('demands', 'demands');
+
+    const unsubMeta = onSnapshot(
+      doc(db, 'transparencyMeta', 'config'),
+      (snap) => {
+        if (snap.exists()) {
+          logInfo('Firestore', 'Documento transparencyMeta/config carregado');
+          setState((prev) => ({
+            ...prev,
+            transparencyMeta: { ...prev.transparencyMeta, ...(snap.data() as Partial<TransparencyMeta>) },
+          }));
+        }
+      },
+      (err) => {
+        logError('Firestore', 'AppDataContext.onSnapshot(transparencyMeta/config)', err);
+      },
+    );
+    unsubs.push(unsubMeta);
 
     const unsubUsers = onSnapshot(
       collection(db, 'users'),

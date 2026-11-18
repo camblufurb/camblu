@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as fbSignOut, type User } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { deleteField, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ADMIN_EMAIL, auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { logError, logInfo, logWarn } from '../lib/logger';
 import { stripUndefinedDeep } from '../lib/objectUtils';
@@ -164,9 +164,10 @@ function writeRegistry(users: UserProfile[]) {
 function defaultProfileFromFirebase(user: User): UserProfile {
   const email = (user.email || '').toLowerCase();
   const now = new Date().toISOString();
+  const cleanName = (user.displayName || 'Acadêmico(a) CAMBLU').trim().slice(0, 140) || 'Acadêmico(a) CAMBLU';
   return {
     uid: user.uid,
-    name: user.displayName || 'Acadêmico(a) CAMBLU',
+    name: cleanName,
     email,
     photoURL: user.photoURL || undefined,
     cpf: '',
@@ -235,11 +236,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             fbUser.photoURL !== data.photoURL &&
             (data.name || '').trim().length >= 2
           ) {
-            void setDoc(
-              ref,
-              stripUndefinedDeep({ photoURL: fbUser.photoURL, updatedAt: new Date().toISOString() }),
-              { merge: true },
-            ).catch((err) => {
+            void updateDoc(ref, {
+              photoURL: fbUser.photoURL,
+              updatedAt: new Date().toISOString(),
+            }).catch((err) => {
               logWarn('Auth', 'Falha não-crítica ao sincronizar photoURL do Google no Firestore', err);
             });
           }
@@ -341,17 +341,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const saveProfile = async (input: ProfileInput) => {
     if (!profile) return;
+    const now = new Date().toISOString();
+    const cleanName = input.name.trim().slice(0, 140);
+    const cleanTurma = input.affiliation === 'FURB' ? digitsOnly(input.turma || '').slice(0, 12) : undefined;
+    const cleanTshirt = input.isCalouro ? input.tshirtSize : undefined;
     const updated: UserProfile = {
       ...profile,
-      name: input.name.trim(),
-      cpf: digitsOnly(input.cpf),
-      phone: digitsOnly(input.phone),
+      name: cleanName,
+      cpf: digitsOnly(input.cpf).slice(0, 14),
+      phone: digitsOnly(input.phone).slice(0, 20),
       affiliation: input.affiliation,
-      turma: input.affiliation === 'FURB' ? digitsOnly(input.turma || '') : undefined,
+      turma: cleanTurma,
       isCalouro: input.isCalouro,
-      tshirtSize: input.isCalouro ? input.tshirtSize : undefined,
+      tshirtSize: cleanTshirt,
       profileCompleted: true,
-      updatedAt: new Date().toISOString(),
+      updatedAt: now,
     };
 
     if (isFirebaseConfigured && db) {
@@ -361,10 +365,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isCalouro: updated.isCalouro,
       });
       try {
-        await setDoc(doc(db, 'users', profile.uid), stripUndefinedDeep(updated), { merge: true });
+        const userRef = doc(db, 'users', profile.uid);
+        const existingSnap = await getDoc(userRef);
+
+        if (existingSnap.exists()) {
+          // Only touch user-editable fields so Firestore immutableKeys rules never reject updates.
+          await updateDoc(userRef, {
+            name: updated.name,
+            cpf: updated.cpf,
+            phone: updated.phone,
+            affiliation: updated.affiliation,
+            turma: updated.affiliation === 'FURB' ? cleanTurma || '' : deleteField(),
+            isCalouro: updated.isCalouro,
+            tshirtSize: cleanTshirt ?? deleteField(),
+            ...(updated.photoURL ? { photoURL: updated.photoURL } : {}),
+            profileCompleted: true,
+            updatedAt: now,
+          });
+          logInfo('Auth', 'Perfil atualizado via updateDoc em users/{uid}', { uid: profile.uid });
+        } else {
+          const emailLower = (profile.email || '').toLowerCase();
+          const createPayload: UserProfile = {
+            ...updated,
+            email: emailLower,
+            role: emailLower === ADMIN_EMAIL ? 'admin' : 'student',
+            membershipTier: 'none',
+            membershipActive: false,
+            membershipValidUntil: null,
+            createdAt: profile.createdAt || now,
+          };
+          await setDoc(userRef, stripUndefinedDeep(createPayload));
+          logInfo('Auth', 'Documento users/{uid} criado via saveProfile', { uid: profile.uid });
+        }
+
         setProfile(updated);
       } catch (err) {
-        logError('Auth', 'AuthContext.saveProfile -> setDoc users', err, { uid: profile.uid });
+        logError('Auth', 'AuthContext.saveProfile -> setDoc/updateDoc users', err, { uid: profile.uid });
         throw err;
       }
       return;

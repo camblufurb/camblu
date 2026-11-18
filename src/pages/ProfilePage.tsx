@@ -76,6 +76,11 @@ export function ProfilePage() {
     setCpfError('');
     setTurmaError('');
 
+    if (name.trim().length < 2) {
+      notify('Informe seu nome completo (mínimo 2 caracteres).', 'error');
+      return;
+    }
+
     if (!isValidCpf(cpf)) {
       setCpfError('Informe um CPF válido com 11 dígitos.');
       return;

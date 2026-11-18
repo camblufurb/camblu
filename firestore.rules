@@ -45,7 +45,7 @@ service cloud.firestore {
     function isValidEmail(email) {
       return email is string &&
              email.size() <= 160 &&
-             email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$');
+             email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[.][a-zA-Z]{2,}$');
     }
 
     function isValidUserCreate(uid) {
@@ -62,6 +62,8 @@ service cloud.firestore {
              d.cpf is string && d.cpf.size() <= 14 &&
              d.phone is string && d.phone.size() <= 20 &&
              d.affiliation in ['FURB', 'externo'] &&
+             (!('turma' in d) || d.turma == null || (d.turma is string && d.turma.size() <= 12)) &&
+             (!('tshirtSize' in d) || d.tshirtSize == null || (d.tshirtSize is string && d.tshirtSize.size() <= 20)) &&
              d.isCalouro is bool &&
              d.profileCompleted is bool &&
              d.role == 'student' &&
