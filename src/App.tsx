@@ -31,6 +31,7 @@ import { CalendarPage } from './pages/CalendarPage';
 import { EditaisPage } from './pages/EditaisPage';
 import { DemandsPage } from './pages/DemandsPage';
 import { CambluMulherPage } from './pages/CambluMulherPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { Icon } from './components/Icon';
 
 const CertificatesPage = lazy(() =>
@@ -128,6 +129,8 @@ export function App() {
                     <Route path="/editais" element={<EditaisPage />} />
                     <Route path="/demandas" element={<DemandsPage />} />
                     <Route path="/camblu-mulher" element={<CambluMulherPage />} />
+                    <Route path="/privacidade" element={<PrivacyPolicyPage />} />
+                    <Route path="/politica-de-privacidade" element={<Navigate to="/privacidade" replace />} />
                     <Route path="/back/*" element={<AdminBackPage />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>

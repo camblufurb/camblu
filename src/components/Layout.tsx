@@ -419,6 +419,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
                 <li><Link to="/editais">Editais (E-PAF, E-PAATC, E-PAFLIEC)</Link></li>
                 <li><Link to="/demandas">Enviar Demanda / Ajuda</Link></li>
                 <li><Link to="/camblu-mulher">CAMBLU Mulher</Link></li>
+                <li><Link to="/privacidade">Política de Privacidade</Link></li>
                 <li>
                   <a href="mailto:camblufurb@gmail.com">camblufurb@gmail.com</a>
                 </li>
@@ -439,7 +440,12 @@ export function Layout({ children, userSlot }: LayoutProps) {
             }}
           >
             <span>© {new Date().getFullYear()} Centro Acadêmico de Medicina de Blumenau (CAMBLU — FURB)</span>
-            <span>Blumenau, Santa Catarina · Licença MIT</span>
+            <span>
+              Blumenau, Santa Catarina · Licença MIT ·{' '}
+              <Link to="/privacidade" style={{ color: '#d7ebe0' }}>
+                Política de Privacidade
+              </Link>
+            </span>
           </div>
         </div>
       </footer>

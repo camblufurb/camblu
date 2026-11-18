@@ -15,8 +15,7 @@
           "https://camblu.web.app/__/auth/handler",
           "https://camblu.firebaseapp.com/__/auth/handler",
           "https://camblu.org/__/auth/handler",
-          "https://www.camblu.org/__/auth/handler",
-          "http://localhost"
+          "https://www.camblu.org/__/auth/handler"
         ]
       }
     }
