@@ -243,12 +243,7 @@ export function AdminTransparencyPostsPage() {
   return (
     <div className="m3-motion-panel" style={{ display: 'grid', gap: '1.5rem' }}>
       <header style={{ display: 'grid', gap: '0.35rem' }}>
-        <h1>Posts Mensais de Transparência (Instagram 1080×1350)</h1>
-        <p className="text-muted">
-          Gere o carrossel de 3 cards (Resultado do mês + gráficos de pizza de Entradas e Saídas). Ao baixar, o{' '}
-          <code>gemini-flash-lite-latest</code> confere os cálculos da planilha e aciona o{' '}
-          <code>gemini-flash-latest</code> caso encontre qualquer divergência.
-        </p>
+        <h1>Posts Mensais de Transparência</h1>
       </header>
 
       <article className="m3-card" style={{ display: 'grid', gap: '1.15rem' }}>

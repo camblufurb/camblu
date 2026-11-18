@@ -44,11 +44,13 @@ export function buildProductGallery(product: ShopProduct): GallerySlide[] {
   const primaryHex = product.colors?.[0]?.hex || '#0f3325';
   const secondaryHex = product.colors?.[1]?.hex || '#edd16e';
   const icon =
-    product.category === 'Vestuário'
+    product.category === 'Camisetas' || product.category === 'Inverno' || product.category === 'Vestuário'
       ? 'checkroom'
-      : product.category === 'Acessórios'
-        ? 'water_bottle'
-        : 'shopping_bag';
+      : product.category === 'Papelaria'
+        ? 'edit_note'
+        : product.category === 'Acessórios'
+          ? 'water_bottle'
+          : 'shopping_bag';
 
   return [
     {

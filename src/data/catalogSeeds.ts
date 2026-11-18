@@ -192,7 +192,7 @@ export const PRODUCTS_SEED: ShopProduct[] = [
       'Moletom canguru felpado de alta gramatura (3 cabos), bordado dourado frontal CAMBLU e punhos reforçados.',
     priceCents: 16900,
     images: [],
-    category: 'Vestuário',
+    category: 'Inverno',
     active: true,
     colors: [
       { name: 'Verde Botânico', hex: '#0f3325' },
@@ -221,7 +221,7 @@ export const PRODUCTS_SEED: ShopProduct[] = [
       'Malha 100% algodão penteado fio 30.1 na cor verde oficial #0f3325 com estampa dourada em serigrafia de alta durabilidade.',
     priceCents: 5800,
     images: [],
-    category: 'Vestuário',
+    category: 'Camisetas',
     active: true,
     colors: [
       { name: 'Verde CAMBLU', hex: '#0f3325' },

@@ -26,11 +26,10 @@ type BlockImagesMap = Record<BlockKey, string[]>;
 type BlockOptionsMap = Record<BlockKey, GeneratedProductAiImageResult[]>;
 
 const PRESET_SHOP_CATEGORIES = [
-  'Vestuário',
-  'Acessórios',
-  'Jalecos e Scrubs',
-  'Canecas e Garrafas',
+  'Camisetas',
+  'Inverno',
   'Papelaria',
+  'Acessórios',
 ] as const;
 
 const OTHER_CATEGORY_VALUE = '__other__';
@@ -103,7 +102,7 @@ export function AdminShopProductsPage() {
   const [prodName, setProdName] = useState('');
   const [prodDesc, setProdDesc] = useState('');
   const [prodPrice, setProdPrice] = useState('55.00');
-  const [prodCategory, setProdCategory] = useState<string>('Vestuário');
+  const [prodCategory, setProdCategory] = useState<string>('Camisetas');
   const [customCategory, setCustomCategory] = useState<string>('');
   const [prodSizes, setProdSizes] = useState<ProductSizeStock[]>(() =>
     DEFAULT_PRODUCT_SIZES.map((item) => ({ ...item })),
@@ -164,7 +163,7 @@ export function AdminShopProductsPage() {
     setProdName('');
     setProdDesc('');
     setProdPrice('55.00');
-    setProdCategory('Vestuário');
+    setProdCategory('Camisetas');
     setCustomCategory('');
     setProdSizes(DEFAULT_PRODUCT_SIZES.map((item) => ({ ...item })));
     setProdDetailsText('');
@@ -183,7 +182,7 @@ export function AdminShopProductsPage() {
     setProdName(product.name);
     setProdDesc(product.description);
     setProdPrice((product.priceCents / 100).toFixed(2));
-    const trimmedCategory = product.category?.trim() || 'Vestuário';
+    const trimmedCategory = product.category?.trim() || 'Camisetas';
     if (categoryOptions.includes(trimmedCategory)) {
       setProdCategory(trimmedCategory);
       setCustomCategory('');
@@ -261,7 +260,7 @@ export function AdminShopProductsPage() {
       const plans = buildDynamicProductShotPlans({
         productName: prodName.trim() || 'Produto Oficial CAMBLU',
         productDescription: prodDesc.trim(),
-        productCategory: effectiveCategory || 'Vestuário',
+        productCategory: effectiveCategory || 'Camisetas',
         avgLuminance,
         selectedShots: [blockKey, blockKey, blockKey],
         furbRefs: furbReferences,
@@ -321,7 +320,7 @@ export function AdminShopProductsPage() {
         .filter(Boolean);
       const res = await requestProductDescriptionWithGemini({
         name: prodName.trim(),
-        category: effectiveCategory || 'Vestuário',
+        category: effectiveCategory || 'Camisetas',
         sizes: prodSizes,
         details,
         currentDescription: prodDesc.trim(),
@@ -440,7 +439,7 @@ export function AdminShopProductsPage() {
         imageBlocks: persistedBlocks,
         aiReferenceImageUrl: persistedRefUrl || undefined,
         details: details.length ? details : undefined,
-        category: effectiveCategory || 'Vestuário',
+        category: effectiveCategory || 'Camisetas',
         sizes,
         active: existing ? existing.active : true,
       };
@@ -464,9 +463,6 @@ export function AdminShopProductsPage() {
     <div className="m3-motion-panel" style={{ display: 'grid', gap: '1.75rem' }}>
       <header style={{ display: 'grid', gap: '0.35rem' }}>
         <h1>Produtos da Lojinha</h1>
-        <p className="text-muted">
-          Cadastre novos itens ou edite produtos, fotos por bloco, grade de estoque e visibilidade.
-        </p>
       </header>
 
       <form onSubmit={handleSaveProduct} className="m3-card" style={{ display: 'grid', gap: '1.25rem' }}>
