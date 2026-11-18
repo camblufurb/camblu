@@ -692,8 +692,9 @@ async function resolveInlineProductImages(
     ? productImages.slice(0, 4)
     : [];
 
-  if (inlineProducts.length === 0 && Array.isArray(productImageUrls)) {
-    const safeUrls = productImageUrls.filter(isAllowedProductStorageUrl).slice(0, 4);
+  if (inlineProducts.length < 4 && Array.isArray(productImageUrls)) {
+    const remainingSlots = 4 - inlineProducts.length;
+    const safeUrls = productImageUrls.filter(isAllowedProductStorageUrl).slice(0, remainingSlots);
     for (const url of safeUrls) {
       const imgResp = await fetch(url);
       if (!imgResp.ok) continue;

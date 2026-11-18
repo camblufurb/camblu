@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FloatingCartPill } from '../components/FloatingCartPill';
 import { Icon } from '../components/Icon';
+import { M3Dialog } from '../components/M3Dialog';
 import { useToast } from '../components/ToastProvider';
 import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +14,7 @@ import {
   CAMBLU_CLEAN_CREST_URL,
   findProductBySlug,
   getProductSlug,
+  type GallerySlide,
 } from '../lib/shopHelpers';
 import { formatBrlFromCents } from '../lib/validators';
 
@@ -42,23 +44,16 @@ export function ProductDetailPage() {
 
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColorName, setSelectedColorName] = useState('');
-  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [lightboxSlide, setLightboxSlide] = useState<GallerySlide | null>(null);
 
   const gallery = useMemo(() => (product ? buildProductGallery(product) : []), [product]);
-
-  const orderedGallery = useMemo(() => {
-    if (gallery.length <= 1 || activeSlideIndex === 0) return gallery;
-    const active = gallery[activeSlideIndex];
-    const rest = gallery.filter((_, idx) => idx !== activeSlideIndex);
-    return [active, ...rest];
-  }, [gallery, activeSlideIndex]);
 
   useEffect(() => {
     if (!product) return;
     const firstAvailableSize = product.sizes.find((s) => s.stock > 0)?.size || product.sizes[0]?.size || 'Único';
     setSelectedSize(firstAvailableSize);
     setSelectedColorName(product.colors?.[0]?.name || '');
-    setActiveSlideIndex(0);
+    setLightboxSlide(null);
   }, [product]);
 
   if (!product) {
@@ -172,52 +167,45 @@ export function ProductDetailPage() {
       <div className="product-page-grid">
         {/* Coluna Esquerda: Galeria Editorial M3 (swipe horizontal no mobile, empilhada no desktop) */}
         <div className="product-gallery" aria-label={`Galeria de imagens de ${product.name}`}>
-          {orderedGallery.map((slide) => {
-            const originalIndex = gallery.findIndex((g) => g.id === slide.id);
-            const isActive = originalIndex === activeSlideIndex;
-            return (
-              <button
-                key={slide.id}
-                type="button"
-                className="product-gallery__frame"
-                data-active={isActive ? 'true' : 'false'}
-                aria-label={`${slide.label} — ampliar visualização`}
-                aria-pressed={isActive}
-                onClick={() => setActiveSlideIndex(originalIndex >= 0 ? originalIndex : 0)}
-              >
-                {slide.imageUrl ? (
-                  <img
-                    src={slide.imageUrl}
-                    alt={slide.caption}
-                    style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div className="product-gallery__editorial" style={{ background: slide.gradient }}>
-                    <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem' }}>
-                      {slide.showCrest ? (
-                        <img src={CAMBLU_CLEAN_CREST_URL} alt="" className="product-gallery__crest" />
-                      ) : (
-                        <span style={{ color: slide.accentHex || '#0f3325', display: 'inline-flex' }}>
-                          <Icon name={slide.iconName || 'checkroom'} size={64} />
-                        </span>
-                      )}
-                      <span
-                        style={{
-                          fontSize: '0.9rem',
-                          fontWeight: 700,
-                          color: slide.accentHex || '#ffffff',
-                          maxInlineSize: '26ch',
-                        }}
-                      >
-                        {slide.caption}
+          {gallery.map((slide, idx) => (
+            <button
+              key={slide.id}
+              type="button"
+              className="product-gallery__frame"
+              aria-label={`Ampliar foto ${idx + 1} de ${product.name}`}
+              onClick={() => setLightboxSlide(slide)}
+            >
+              {slide.imageUrl ? (
+                <img
+                  src={slide.imageUrl}
+                  alt={`${product.name} — foto ${idx + 1}`}
+                  style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div className="product-gallery__editorial" style={{ background: slide.gradient }}>
+                  <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem' }}>
+                    {slide.showCrest ? (
+                      <img src={CAMBLU_CLEAN_CREST_URL} alt="" className="product-gallery__crest" />
+                    ) : (
+                      <span style={{ color: slide.accentHex || '#0f3325', display: 'inline-flex' }}>
+                        <Icon name={slide.iconName || 'checkroom'} size={64} />
                       </span>
-                    </div>
+                    )}
+                    <span
+                      style={{
+                        fontSize: '0.9rem',
+                        fontWeight: 700,
+                        color: slide.accentHex || '#ffffff',
+                        maxInlineSize: '26ch',
+                      }}
+                    >
+                      {slide.caption}
+                    </span>
                   </div>
-                )}
-                <span className="product-gallery__tag">{slide.label}</span>
-              </button>
-            );
-          })}
+                </div>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Coluna Direita: Breadcrumb + Preço, Título h1, Descrição p, Tamanho, Cor, CTA + Acordeões */}
@@ -371,7 +359,7 @@ export function ProductDetailPage() {
               <div className="product-accordion-body">
                 <p className="text-muted">
                   Após a confirmação do pagamento (PIX ou Cartão), a Diretoria de Patrimônio combina pelo WhatsApp a
-                  retirada presencial na sala do CAMBLU (Campus 1 — Bloco C), sem custo de frete.
+                  retirada presencial.
                 </p>
                 <p className="text-muted">
                   Trocas de tamanho podem ser solicitadas em até 7 dias corridos, mediante disponibilidade em estoque.
@@ -451,6 +439,64 @@ export function ProductDetailPage() {
           </div>
         </section>
       )}
+
+      <M3Dialog
+        open={Boolean(lightboxSlide)}
+        onClose={() => setLightboxSlide(null)}
+        wide
+        title={product.name}
+      >
+        {lightboxSlide && (
+          <div className="m3-motion-panel" style={{ display: 'grid', gap: '1rem', justifyItems: 'center' }}>
+            {lightboxSlide.imageUrl ? (
+              <img
+                src={lightboxSlide.imageUrl}
+                alt={product.name}
+                style={{
+                  maxInlineSize: '100%',
+                  maxBlockSize: '74vh',
+                  objectFit: 'contain',
+                  borderRadius: 'var(--md-sys-shape-corner-md)',
+                }}
+              />
+            ) : (
+              <div
+                className="product-gallery__editorial"
+                style={{
+                  background: lightboxSlide.gradient,
+                  borderRadius: 'var(--md-sys-shape-corner-lg)',
+                  minBlockSize: '20rem',
+                  inlineSize: '100%',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem', textAlign: 'center' }}>
+                  {lightboxSlide.showCrest ? (
+                    <img src={CAMBLU_CLEAN_CREST_URL} alt="" className="product-gallery__crest" />
+                  ) : (
+                    <span style={{ color: lightboxSlide.accentHex || '#0f3325', display: 'inline-flex' }}>
+                      <Icon name={lightboxSlide.iconName || 'checkroom'} size={72} />
+                    </span>
+                  )}
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: lightboxSlide.accentHex || '#ffffff' }}>
+                    {lightboxSlide.caption}
+                  </span>
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', inlineSize: '100%' }}>
+              <button
+                type="button"
+                className="m3-btn m3-btn--outlined"
+                onClick={() => setLightboxSlide(null)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        )}
+      </M3Dialog>
 
       <FloatingCartPill />
     </section>

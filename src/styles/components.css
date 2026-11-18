@@ -1085,7 +1085,7 @@
     border: 1px solid var(--md-sys-color-outline-variant);
     background: var(--md-sys-color-surface-container);
     padding: 0;
-    cursor: pointer;
+    cursor: zoom-in;
     text-align: start;
     transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
   }

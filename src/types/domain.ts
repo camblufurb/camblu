@@ -189,6 +189,7 @@ export interface ShopProduct {
   images: string[];
   imageBlocks?: ShopProductImageBlocks;
   aiReferenceImageUrl?: string;
+  aiReferenceImageUrls?: string[];
   sizes: ProductSizeStock[];
   colors?: ProductColorOption[];
   details?: string[];

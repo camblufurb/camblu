@@ -112,13 +112,17 @@ export function AdminShopProductsPage() {
   const [imageBlocks, setImageBlocks] = useState<BlockImagesMap>(EMPTY_BLOCKS);
   const [coverUrl, setCoverUrl] = useState<string>('');
   const [blockAiOptions, setBlockAiOptions] = useState<BlockOptionsMap>(EMPTY_OPTIONS);
-  const [generatingBlock, setGeneratingBlock] = useState<BlockKey | null>(null);
+  const [generatingBlocks, setGeneratingBlocks] = useState<Record<BlockKey, boolean>>({
+    furb_individual: false,
+    furb_group: false,
+    studio_gradient: false,
+  });
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
 
-  // Auto-loaded product reference image across generations on this product
-  const [aiRefAsset, setAiRefAsset] = useState<CompressedUploadAsset | null>(null);
-  const [aiRefUrl, setAiRefUrl] = useState<string>('');
+  // Auto-loaded product reference images (up to 4) across generations on this product
+  const [aiRefAssets, setAiRefAssets] = useState<CompressedUploadAsset[]>([]);
+  const [aiRefUrls, setAiRefUrls] = useState<string[]>([]);
   const [refDialogOpen, setRefDialogOpen] = useState(false);
   const [pendingGenerateBlock, setPendingGenerateBlock] = useState<BlockKey | null>(null);
   const [previewImage, setPreviewImage] = useState<{
@@ -163,7 +167,14 @@ export function AdminShopProductsPage() {
   }, [coverUrl, imageBlocks]);
 
   const effectiveCover = orderedFlatImages[0] || '';
-  const activeRefPreview = aiRefAsset?.dataUrl || aiRefUrl;
+  const anyBlockGenerating = Object.values(generatingBlocks).some(Boolean);
+  const activeRefItems = useMemo(
+    () => [
+      ...aiRefUrls.map((url, idx) => ({ kind: 'url' as const, index: idx, preview: url })),
+      ...aiRefAssets.map((asset, idx) => ({ kind: 'asset' as const, index: idx, preview: asset.dataUrl })),
+    ],
+    [aiRefAssets, aiRefUrls],
+  );
 
   const resetForm = () => {
     setEditingId(null);
@@ -177,8 +188,8 @@ export function AdminShopProductsPage() {
     setImageBlocks({ furb_individual: [], furb_group: [], studio_gradient: [] });
     setCoverUrl('');
     setBlockAiOptions({ furb_individual: [], furb_group: [], studio_gradient: [] });
-    setAiRefAsset(null);
-    setAiRefUrl('');
+    setAiRefAssets([]);
+    setAiRefUrls([]);
     setPendingGenerateBlock(null);
     setRefDialogOpen(false);
   };
@@ -206,8 +217,13 @@ export function AdminShopProductsPage() {
     setImageBlocks(resolved);
     setCoverUrl(product.images[0] || '');
     setBlockAiOptions({ furb_individual: [], furb_group: [], studio_gradient: [] });
-    setAiRefAsset(null);
-    setAiRefUrl(product.aiReferenceImageUrl || '');
+    setAiRefAssets([]);
+    const loadedRefs = product.aiReferenceImageUrls?.length
+      ? product.aiReferenceImageUrls.filter(Boolean).slice(0, 4)
+      : product.aiReferenceImageUrl
+        ? [product.aiReferenceImageUrl]
+        : [];
+    setAiRefUrls(loadedRefs);
     setPendingGenerateBlock(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -251,19 +267,22 @@ export function AdminShopProductsPage() {
 
   const runGenerateForBlock = async (
     blockKey: BlockKey,
-    overrideAsset?: CompressedUploadAsset,
+    overrideAssets?: CompressedUploadAsset[],
   ) => {
-    const assetToUse = overrideAsset || aiRefAsset;
-    const storedRefUrl = aiRefUrl.trim();
-    if (!assetToUse && !storedRefUrl) {
+    const assetsToUse = overrideAssets || aiRefAssets;
+    const storedRefUrls = aiRefUrls.map((u) => u.trim()).filter(Boolean);
+    if (assetsToUse.length === 0 && storedRefUrls.length === 0) {
       setPendingGenerateBlock(blockKey);
       setRefDialogOpen(true);
       return;
     }
 
-    setGeneratingBlock(blockKey);
+    setGeneratingBlocks((prev) => ({ ...prev, [blockKey]: true }));
     try {
-      const avgLuminance = assetToUse?.avgLuminance ?? 0.35;
+      const avgLuminance =
+        assetsToUse.length > 0
+          ? assetsToUse.reduce((acc, a) => acc + a.avgLuminance, 0) / assetsToUse.length
+          : 0.35;
       const plans = buildDynamicProductShotPlans({
         productName: prodName.trim() || 'Produto Oficial CAMBLU',
         productDescription: prodDesc.trim(),
@@ -274,10 +293,10 @@ export function AdminShopProductsPage() {
       });
 
       const response = await requestNanoBananaProductImages({
-        productImages: assetToUse
-          ? [{ mimeType: assetToUse.mimeType, data: assetToUse.data }]
+        productImages: assetsToUse.length
+          ? assetsToUse.slice(0, 4).map((a) => ({ mimeType: a.mimeType, data: a.data }))
           : undefined,
-        productImageUrls: !assetToUse && storedRefUrl ? [storedRefUrl] : undefined,
+        productImageUrls: storedRefUrls.length ? storedRefUrls.slice(0, 4) : undefined,
         plans,
       });
 
@@ -292,25 +311,35 @@ export function AdminShopProductsPage() {
         'error',
       );
     } finally {
-      setGeneratingBlock(null);
+      setGeneratingBlocks((prev) => ({ ...prev, [blockKey]: false }));
     }
   };
 
-  const handleReferenceFileSelected = async (file: File | undefined) => {
-    if (!file) return;
+  const handleReferenceFilesSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const remainingSlots = Math.max(0, 4 - (aiRefUrls.length + aiRefAssets.length));
+    if (remainingSlots === 0) {
+      notify('Limite máximo de 4 imagens de referência por produto atingido. Remova uma antes de adicionar outra.', 'info');
+      return;
+    }
     try {
-      const compressed = await compressImageToInlinePayload(file, 1024);
-      setAiRefAsset(compressed);
-      setAiRefUrl('');
-      setRefDialogOpen(false);
-      const targetBlock = pendingGenerateBlock;
-      setPendingGenerateBlock(null);
-      notify('Imagem de referência do produto carregada para este item!');
-      if (targetBlock) {
-        await runGenerateForBlock(targetBlock, compressed);
+      const compressedList: CompressedUploadAsset[] = [];
+      for (const file of Array.from(files).slice(0, remainingSlots)) {
+        compressedList.push(await compressImageToInlinePayload(file, 1024));
       }
+      const nextAssets = [...aiRefAssets, ...compressedList].slice(0, 4);
+      setAiRefAssets(nextAssets);
+      notify(`${compressedList.length} imagem(ns) de referência adicionada(s) (${aiRefUrls.length + nextAssets.length}/4).`);
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Erro ao ler imagem de referência.', 'error');
+      notify(err instanceof Error ? err.message : 'Erro ao ler imagem(ns) de referência.', 'error');
+    }
+  };
+
+  const handleRemoveReferenceItem = (kind: 'url' | 'asset', index: number) => {
+    if (kind === 'url') {
+      setAiRefUrls((prev) => prev.filter((_, i) => i !== index));
+    } else {
+      setAiRefAssets((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -331,8 +360,10 @@ export function AdminShopProductsPage() {
         sizes: prodSizes,
         details,
         currentDescription: prodDesc.trim(),
-        productImages: aiRefAsset ? [{ mimeType: aiRefAsset.mimeType, data: aiRefAsset.data }] : undefined,
-        productImageUrls: !aiRefAsset && aiRefUrl.trim() ? [aiRefUrl.trim()] : undefined,
+        productImages: aiRefAssets.length
+          ? aiRefAssets.slice(0, 4).map((a) => ({ mimeType: a.mimeType, data: a.data }))
+          : undefined,
+        productImageUrls: aiRefUrls.length ? aiRefUrls.slice(0, 4) : undefined,
       });
       setProdDesc(res.description);
       notify(`Descrição gerada com ${res.model}!`);
@@ -401,13 +432,17 @@ export function AdminShopProductsPage() {
           urls.map((u, idx) => persistProductGalleryImage(u, `${id}/${slot}`, idx)),
         );
 
-      const [soloUrls, groupUrls, isolatedUrls, persistedRefUrl] = await Promise.all([
+      const [soloUrls, groupUrls, isolatedUrls, persistedRefUrls] = await Promise.all([
         persistSlotList('furb_individual', imageBlocks.furb_individual),
         persistSlotList('furb_group', imageBlocks.furb_group),
         persistSlotList('studio_gradient', imageBlocks.studio_gradient),
-        aiRefAsset
-          ? persistProductGalleryImage(aiRefAsset.dataUrl, `${id}/reference`, 0)
-          : Promise.resolve(aiRefUrl || existing?.aiReferenceImageUrl || ''),
+        Promise.all(
+          aiRefAssets.map((asset, idx) =>
+            persistProductGalleryImage(asset.dataUrl, `${id}/reference`, idx),
+          ),
+        ).then((uploadedUrls) =>
+          Array.from(new Set([...aiRefUrls, ...uploadedUrls].filter(Boolean))).slice(0, 4),
+        ),
       ]);
 
       const persistedBlocks: ShopProductImageBlocks = {
@@ -444,7 +479,8 @@ export function AdminShopProductsPage() {
         priceCents,
         images: finalImages,
         imageBlocks: persistedBlocks,
-        aiReferenceImageUrl: persistedRefUrl || undefined,
+        aiReferenceImageUrl: persistedRefUrls[0] || undefined,
+        aiReferenceImageUrls: persistedRefUrls.length ? persistedRefUrls : undefined,
         details: details.length ? details : undefined,
         category: effectiveCategory || 'Camisetas',
         sizes,
@@ -604,11 +640,12 @@ export function AdminShopProductsPage() {
         <section aria-label="Galeria do produto" style={{ display: 'grid', gap: '0.9rem' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
             <h3 style={{ margin: 0 }}>Galeria do produto</h3>
-            {activeRefPreview && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+              {activeRefItems.map((item, idx) => (
                 <img
-                  src={activeRefPreview}
-                  alt="Referência base do produto"
+                  key={`${item.kind}-${item.index}`}
+                  src={item.preview}
+                  alt={`Referência ${idx + 1} do produto`}
                   style={{
                     inlineSize: '34px',
                     blockSize: '34px',
@@ -617,27 +654,31 @@ export function AdminShopProductsPage() {
                     border: '1px solid var(--md-sys-color-outline-variant)',
                   }}
                 />
-                <span className="text-muted" style={{ fontSize: '0.8rem' }}>Referência ativa</span>
-                <button
-                  type="button"
-                  className="m3-btn m3-btn--outlined"
-                  style={{ minBlockSize: '32px', padding: '0.2rem 0.65rem', fontSize: '0.78rem' }}
-                  onClick={() => {
-                    setPendingGenerateBlock(null);
-                    setRefDialogOpen(true);
-                  }}
-                >
-                  Trocar referência
-                </button>
-              </div>
-            )}
+              ))}
+              {activeRefItems.length > 0 && (
+                <span className="text-muted" style={{ fontSize: '0.8rem' }}>
+                  {activeRefItems.length}/4 referência(s) ativa(s)
+                </span>
+              )}
+              <button
+                type="button"
+                className="m3-btn m3-btn--outlined"
+                style={{ minBlockSize: '32px', padding: '0.2rem 0.65rem', fontSize: '0.78rem' }}
+                onClick={() => {
+                  setPendingGenerateBlock(null);
+                  setRefDialogOpen(true);
+                }}
+              >
+                {activeRefItems.length > 0 ? 'Gerenciar referências' : 'Adicionar referências'}
+              </button>
+            </div>
           </div>
 
           <div className="gallery-blocks-grid">
             {BLOCK_SPECS.map((block) => {
               const blockUrls = imageBlocks[block.key];
               const aiOptions = blockAiOptions[block.key];
-              const isBusy = generatingBlock === block.key;
+              const isBusy = generatingBlocks[block.key];
 
               return (
                 <article key={block.key} className="gallery-block-card">
@@ -667,7 +708,7 @@ export function AdminShopProductsPage() {
                       primaryLabel={isBusy ? 'Gerando...' : 'Gerar'}
                       primaryIcon="auto_awesome"
                       loading={isBusy}
-                      disabled={savingProduct || (generatingBlock !== null && generatingBlock !== block.key)}
+                      disabled={savingProduct}
                       menuAriaLabel={`Opções para ${block.title}`}
                       onPrimaryClick={() => {
                         void runGenerateForBlock(block.key);
@@ -824,7 +865,7 @@ export function AdminShopProductsPage() {
           type="submit"
           className="m3-btn m3-btn--filled"
           style={{ justifySelf: 'start' }}
-          disabled={savingProduct || generatingBlock !== null}
+          disabled={savingProduct || anyBlockGenerating}
         >
           <Icon name={editingId ? 'save' : 'add_business'} size={18} />
           <span>
@@ -843,23 +884,73 @@ export function AdminShopProductsPage() {
           setRefDialogOpen(false);
           setPendingGenerateBlock(null);
         }}
-        title="Imagem de referência do produto"
+        title="Imagens de referência do produto (até 4)"
       >
         <div className="m3-motion-panel" style={{ display: 'grid', gap: '1rem' }}>
           <p className="text-muted" style={{ margin: 0 }}>
-            Envie uma foto real deste produto para servir de base ao modelo. Ela ficará salva e será carregada automaticamente nas próximas gerações deste produto.
+            Envie uma ou mais fotos reais deste produto (frente, costas, detalhes) para servir de base ao modelo. Elas ficam salvas e são carregadas automaticamente em todas as gerações deste item.
           </p>
+
+          {activeRefItems.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+              {activeRefItems.map((item, idx) => (
+                <div key={`ref-dlg-${item.kind}-${item.index}`} className="gallery-thumb-card" style={{ inlineSize: '92px' }}>
+                  <img src={item.preview} alt={`Referência ${idx + 1}`} />
+                  <button
+                    type="button"
+                    className="m3-icon-btn"
+                    style={{ inlineSize: '28px', blockSize: '28px', justifySelf: 'end' }}
+                    aria-label={`Remover referência ${idx + 1}`}
+                    onClick={() => handleRemoveReferenceItem(item.kind, item.index)}
+                  >
+                    <Icon name="delete" size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="m3-field">
-            <label htmlFor="p-ai-ref-upload">Selecionar imagem de referência (PNG, JPG ou WebP)</label>
+            <label htmlFor="p-ai-ref-upload">Adicionar imagens de referência (PNG, JPG ou WebP — máx. 4)</label>
             <input
               id="p-ai-ref-upload"
               type="file"
               accept="image/png,image/jpeg,image/webp"
+              multiple
+              disabled={activeRefItems.length >= 4}
               onChange={(e) => {
-                void handleReferenceFileSelected(e.target.files?.[0]);
+                void handleReferenceFilesSelected(e.target.files);
                 e.currentTarget.value = '';
               }}
             />
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="m3-btn m3-btn--outlined"
+              onClick={() => {
+                setRefDialogOpen(false);
+                setPendingGenerateBlock(null);
+              }}
+            >
+              Fechar
+            </button>
+            {pendingGenerateBlock && activeRefItems.length > 0 && (
+              <button
+                type="button"
+                className="m3-btn m3-btn--blue"
+                onClick={() => {
+                  const target = pendingGenerateBlock;
+                  setPendingGenerateBlock(null);
+                  setRefDialogOpen(false);
+                  void runGenerateForBlock(target);
+                }}
+              >
+                <Icon name="auto_awesome" size={18} />
+                <span>Gerar imagem agora</span>
+              </button>
+            )}
           </div>
         </div>
       </M3Dialog>

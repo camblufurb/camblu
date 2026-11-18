@@ -227,16 +227,18 @@ export function buildDynamicProductShotPlans(params: {
   const extra = customNotes?.trim() ? ` Detalhe adicional prioritário: ${customNotes.trim()}.` : '';
   const productAnchor =
     `Fidelidade absoluta ao produto "${productName || productCategory}" mostrado na(s) foto(s) de referência do produto: ` +
-    'preserve exatamente as cores reais, tecido/material, modelagem, logotipo, bordado, estampa ou gravação sem inventar alterações na peça. ' +
+    'O design do produto não pode ser alterado sob hipótese alguma — nunca modifique, redesenhe, simplifique, remova ou invente estampas, logotipos, bordados, textos, cores, costuras, cortes ou proporções da peça/objeto. ' +
     (productDescription ? `Contexto do item: ${productDescription.slice(0, 220)}.` : '');
+  const spacePreservationDirective =
+    'NÃO adicione novos móveis, cadeiras, mesas, balcões, estantes, sofás ou objetos decorativos extras ao espaço — preserve exatamente o mobiliário, paredes, piso e arquitetura originais do ambiente.';
 
   return selectedShots.map((shotType, idx) => {
     if (shotType === 'furb_individual') {
       const refAsset = drawnRefs[campusCursor++];
       const person = sampleRandomPersonDescription(rng);
       const envDirective = refAsset
-        ? `Ambientado fielmente no local da foto de referência do campus FURB fornecida ("${refAsset.label}"), mantendo a arquitetura, piso, vegetação e iluminação natural desse ambiente.`
-        : `Ambientado em ${pick(FURB_FALLBACK_ENVIRONMENTS, rng)}.`;
+        ? `Ambientado fielmente no local da foto de referência do campus FURB fornecida ("${refAsset.label}"), mantendo a arquitetura, piso, vegetação e iluminação natural desse ambiente. ${spacePreservationDirective}`
+        : `Ambientado em ${pick(FURB_FALLBACK_ENVIRONMENTS, rng)}. ${spacePreservationDirective}`;
 
       return {
         id: `shot-${idx + 1}-individual`,
@@ -262,8 +264,8 @@ export function buildDynamicProductShotPlans(params: {
       const groupSize = rng() >= 0.45 ? 3 : 2;
       const people = Array.from({ length: groupSize }, (_, pIdx) => `Pessoa ${pIdx + 1}: ${sampleRandomPersonDescription(rng)}`).join('; ');
       const envDirective = refAsset
-        ? `Ambientado fielmente no cenário da foto de referência do campus FURB fornecida ("${refAsset.label}"), preservando a ambientação, luz e estrutura do local.`
-        : `Ambientado em ${pick(FURB_FALLBACK_ENVIRONMENTS, rng)}.`;
+        ? `Ambientado fielmente no cenário da foto de referência do campus FURB fornecida ("${refAsset.label}"), preservando a ambientação, luz e estrutura do local. ${spacePreservationDirective}`
+        : `Ambientado em ${pick(FURB_FALLBACK_ENVIRONMENTS, rng)}. ${spacePreservationDirective}`;
 
       return {
         id: `shot-${idx + 1}-grupo`,
@@ -273,9 +275,9 @@ export function buildDynamicProductShotPlans(params: {
         referenceAsset: refAsset,
         referenceLabel: refAsset?.label,
         prompt: [
-          'Fotografia editorial realista espontânea de grupo universitário (câmera full-frame, profundidade de campo natural, iluminação diurna autêntica, zero texto ou bordas).',
+          'Fotografia documental espontânea de rotina universitária (câmera 35mm, enquadramento natural e não posado, iluminação diurna autêntica, zero texto ou bordas).',
           productAnchor,
-          `Cena em grupo com ${groupSize} estudantes de medicina interagindo naturalmente lado a lado (${people}). Todos ou o membro em primeiro plano utilizam o produto em destaque claro.`,
+          `Cena cotidiana e natural com ${groupSize} estudantes de medicina conversando, caminhando ou estudando juntos no campus (${people}). Insira o produto de forma sutil, orgânica e cotidiana no uso real do dia a dia (por um ou mais integrantes, ou apoiado naturalmente no ambiente), sem pose publicitária nem destaque forçado.`,
           envDirective,
           extra,
         ]

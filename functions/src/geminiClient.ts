@@ -1,5 +1,4 @@
 const AI_STUDIO_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const VERTEX_AI_BASE = 'https://aiplatform.googleapis.com/v1';
 
 export type GeminiAuthInput =
   | string
@@ -45,26 +44,53 @@ async function getDefaultVertexAccessToken(): Promise<string> {
 }
 
 /**
- * Maps generic Gemini model aliases to their canonical Vertex AI publisher model candidates.
+ * Maps generic Gemini model aliases to their canonical Vertex AI publisher model candidates,
+ * prioritizing active Gemini 3.x models (enabled on newly provisioned Vertex AI projects)
+ * followed by Gemini 2.5 / alias IDs.
  */
 export function resolveVertexModelCandidates(requestedModel: string): string[] {
   if (requestedModel === 'gemini-flash-lite-latest') {
-    return ['gemini-2.5-flash-lite', 'gemini-2.0-flash-lite-001', 'gemini-2.0-flash-lite'];
+    return [
+      'gemini-flash-lite-latest',
+      'gemini-3.1-flash-lite',
+      'gemini-3.1-flash-lite-preview',
+      'gemini-3.5-flash-lite',
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-flash',
+    ];
   }
   if (requestedModel === 'gemini-flash-latest') {
-    return ['gemini-2.5-flash', 'gemini-2.0-flash-001', 'gemini-2.0-flash', 'gemini-3-flash-preview'];
+    return [
+      'gemini-flash-latest',
+      'gemini-3-flash-preview',
+      'gemini-3-flash',
+      'gemini-3.5-flash',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash-001',
+    ];
   }
   if (requestedModel === 'gemini-nano-banana-2.1') {
-    return ['gemini-nano-banana-2.1', 'gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image', 'gemini-2.5-flash-image-preview'];
+    return [
+      'gemini-nano-banana-2.1',
+      'gemini-3.1-flash-image-preview',
+      'gemini-2.5-flash-image',
+      'gemini-2.5-flash-image-preview',
+    ];
   }
   return [requestedModel];
 }
 
-export function buildVertexEndpointUrl(projectId: string, location: string, modelId: string): string {
+export function buildVertexEndpointUrl(
+  projectId: string,
+  location: string,
+  modelId: string,
+  apiVersion: 'v1' | 'v1beta1' = 'v1',
+): string {
   const host =
     location === 'global'
-      ? VERTEX_AI_BASE
-      : `https://${location}-aiplatform.googleapis.com/v1`;
+      ? `https://aiplatform.googleapis.com/${apiVersion}`
+      : `https://${location}-aiplatform.googleapis.com/${apiVersion}`;
   return `${host}/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(modelId)}:generateContent`;
 }
 
@@ -113,12 +139,21 @@ export async function callGeminiGenerateContent(params: {
   const accessToken = auth.getAccessToken ? await auth.getAccessToken() : await getDefaultVertexAccessToken();
 
   const candidates = resolveVertexModelCandidates(model);
-  const locations = ['us-central1', 'global'] as const;
+  const attempts: Array<{ location: string; apiVersion: 'v1' | 'v1beta1' }> = [
+    { location: 'global', apiVersion: 'v1' },
+    { location: 'us-central1', apiVersion: 'v1' },
+    { location: 'global', apiVersion: 'v1beta1' },
+  ];
   const attemptErrors: string[] = [];
 
   for (const candidateModel of candidates) {
-    for (const location of locations) {
-      const endpoint = buildVertexEndpointUrl(projectId, location, candidateModel);
+    for (const attempt of attempts) {
+      const endpoint = buildVertexEndpointUrl(
+        projectId,
+        attempt.location,
+        candidateModel,
+        attempt.apiVersion,
+      );
       const response = await fetchImpl(endpoint, {
         method: 'POST',
         headers: {
@@ -137,7 +172,7 @@ export async function callGeminiGenerateContent(params: {
       }
 
       const errText = await response.text().catch(() => '');
-      const msg = `Vertex AI (${candidateModel} @ ${location}) HTTP ${response.status}: ${errText.slice(0, 220)}`;
+      const msg = `Vertex AI (${candidateModel} @ ${attempt.location}/${attempt.apiVersion}) HTTP ${response.status}: ${errText.slice(0, 180)}`;
       attemptErrors.push(msg);
 
       // Try next location/model only when model ID or regional availability returned 404;
@@ -148,5 +183,5 @@ export async function callGeminiGenerateContent(params: {
     }
   }
 
-  throw new Error(attemptErrors.slice(0, 3).join(' | ') || 'Nenhum endpoint Vertex AI respondeu com sucesso.');
+  throw new Error(attemptErrors.slice(0, 4).join(' | ') || 'Nenhum endpoint Vertex AI respondeu com sucesso.');
 }

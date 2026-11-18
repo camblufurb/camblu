@@ -51,14 +51,19 @@ describe('productAiStudio & gemini-nano-banana-2.1 generator', () => {
     expect(plans[0].shotType).toBe('furb_individual');
     expect(plans[0].referenceLabel).toBeTruthy();
     expect(plans[0].prompt).toContain('Destacar capuz');
+    expect(plans[0].prompt).toMatch(/design do produto não pode ser alterado sob hipótese alguma/i);
+    expect(plans[0].prompt).toMatch(/não adicione novos móveis/i);
 
     expect(plans[1].shotType).toBe('furb_group');
     expect(plans[1].prompt).toContain('Pessoa 1:');
     expect(plans[1].prompt).toContain('Pessoa 2:');
+    expect(plans[1].prompt).toMatch(/sutil, orgânica e cotidiana/i);
+    expect(plans[1].prompt).toMatch(/não adicione novos móveis/i);
 
     expect(plans[2].shotType).toBe('studio_gradient');
     expect(plans[2].referenceAsset).toBeUndefined();
     expect(plans[2].prompt).toMatch(/gradiente/i);
+    expect(plans[2].prompt).toMatch(/design do produto não pode ser alterado sob hipótese alguma/i);
 
     const studio3 = buildDynamicProductShotPlans({
       productName: 'Garrafa Térmica',
