@@ -53,6 +53,7 @@ service cloud.firestore {
       return hasOnlyAllowedFields([
                'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
                'affiliation', 'turma', 'isCalouro', 'tshirtSize',
+               'enrollmentSummaryUrl', 'enrollmentSummaryFileName', 'enrollmentSummaryUploadedAt',
                'membershipTier', 'membershipCycle', 'membershipValidUntil',
                'membershipActive', 'role', 'profileCompleted', 'createdAt', 'updatedAt'
              ]) &&
@@ -64,6 +65,9 @@ service cloud.firestore {
              d.affiliation in ['FURB', 'externo'] &&
              (!('turma' in d) || d.turma == null || (d.turma is string && d.turma.size() <= 12)) &&
              (!('tshirtSize' in d) || d.tshirtSize == null || (d.tshirtSize is string && d.tshirtSize.size() <= 20)) &&
+             (!('enrollmentSummaryUrl' in d) || d.enrollmentSummaryUrl == null || (d.enrollmentSummaryUrl is string && d.enrollmentSummaryUrl.size() <= 1500)) &&
+             (!('enrollmentSummaryFileName' in d) || d.enrollmentSummaryFileName == null || (d.enrollmentSummaryFileName is string && d.enrollmentSummaryFileName.size() <= 180)) &&
+             (!('enrollmentSummaryUploadedAt' in d) || d.enrollmentSummaryUploadedAt == null || (d.enrollmentSummaryUploadedAt is string && d.enrollmentSummaryUploadedAt.size() <= 50)) &&
              d.isCalouro is bool &&
              d.profileCompleted is bool &&
              d.role == 'student' &&
@@ -81,6 +85,7 @@ service cloud.firestore {
       return hasOnlyAllowedFields([
                'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
                'affiliation', 'turma', 'isCalouro', 'tshirtSize',
+               'enrollmentSummaryUrl', 'enrollmentSummaryFileName', 'enrollmentSummaryUploadedAt',
                'membershipTier', 'membershipCycle', 'membershipValidUntil',
                'membershipActive', 'stripeCustomerId', 'stripeSubscriptionId',
                'role', 'profileCompleted', 'createdAt', 'updatedAt'
@@ -93,6 +98,9 @@ service cloud.firestore {
              d.affiliation in ['FURB', 'externo'] &&
              (!('turma' in d) || d.turma == null || (d.turma is string && d.turma.size() <= 12)) &&
              (!('tshirtSize' in d) || d.tshirtSize == null || (d.tshirtSize is string && d.tshirtSize.size() <= 20)) &&
+             (!('enrollmentSummaryUrl' in d) || d.enrollmentSummaryUrl == null || (d.enrollmentSummaryUrl is string && d.enrollmentSummaryUrl.size() <= 1500)) &&
+             (!('enrollmentSummaryFileName' in d) || d.enrollmentSummaryFileName == null || (d.enrollmentSummaryFileName is string && d.enrollmentSummaryFileName.size() <= 180)) &&
+             (!('enrollmentSummaryUploadedAt' in d) || d.enrollmentSummaryUploadedAt == null || (d.enrollmentSummaryUploadedAt is string && d.enrollmentSummaryUploadedAt.size() <= 50)) &&
              d.isCalouro is bool &&
              d.profileCompleted is bool;
     }

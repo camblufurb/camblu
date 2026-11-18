@@ -22,11 +22,8 @@ export function EventDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (event) {
-      document.title = `${event.title} | CAMBLU Eventos`;
-      if (!selectedLotId && event.lots[0]) {
-        setSelectedLotId(event.lots[0].id);
-      }
+    if (event && !selectedLotId && event.lots[0]) {
+      setSelectedLotId(event.lots[0].id);
     }
   }, [event, selectedLotId]);
 

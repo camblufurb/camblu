@@ -10,21 +10,36 @@
     <title>CAMBLU — Centro Acadêmico de Medicina de Blumenau | FURB</title>
     <meta
       name="description"
-      content="Portal oficial do CAMBLU (Centro Acadêmico de Medicina de Blumenau - FURB): eventos, ingressos, certificados, Lojinha, Clube CAMBLU, Transparência, Ligas Acadêmicas, SECIMED e Manual do Calouro."
+      content="Portal oficial do CAMBLU (Centro Acadêmico de Medicina de Blumenau - FURB): eventos, ingressos, certificados, Lojinha Oficial, Clube CAMBLU, Transparência, SECIMED e Manual do Calouro."
     />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://camblu.web.app/" />
 
-    <!-- Social Preview (Default / Substituído dinamicamente em /eventos/:slug via Cloud Function) -->
+    <!-- Social Preview (Substituído dinamicamente por rota via Cloud Function e RouteSeoManager) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="CAMBLU — Medicina FURB" />
-    <meta property="og:title" content="CAMBLU — Centro Acadêmico de Medicina de Blumenau" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="CAMBLU — Centro Acadêmico de Medicina de Blumenau | FURB" />
     <meta
       property="og:description"
       content="Representação estudantil desde 1990. Eventos, Clube CAMBLU, Lojinha, Transparência, Ligas Acadêmicas, SECIMED e apoio ao estudante de Medicina da FURB."
     />
-    <meta property="og:locale" content="pt_BR" />
-    <meta property="og:image" content="/logo-camblu.png" />
+    <meta property="og:url" content="https://camblu.web.app/" />
+    <meta property="og:image" content="https://camblu.web.app/og-cover.png" />
+    <meta property="og:image:alt" content="CAMBLU — Centro Acadêmico de Medicina de Blumenau (FURB)" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="/logo-camblu.png" />
+    <meta name="twitter:title" content="CAMBLU — Centro Acadêmico de Medicina de Blumenau | FURB" />
+    <meta
+      name="twitter:description"
+      content="Portal oficial do CAMBLU (Medicina FURB): eventos, SECIMED, Clube CAMBLU, Lojinha Oficial, Transparência e atendimento discente."
+    />
+    <meta name="twitter:image" content="https://camblu.web.app/og-cover.png" />
+    <meta name="twitter:image:alt" content="CAMBLU — Centro Acadêmico de Medicina de Blumenau (FURB)" />
+    <script id="camblu-structured-data" type="application/ld+json">
+      {"@context":"https://schema.org","@type":"EducationalOrganization","name":"CAMBLU — Centro Acadêmico de Medicina de Blumenau","alternateName":"CAMBLU MEDFURB","url":"https://camblu.web.app","logo":"https://camblu.web.app/logo-camblu.png","foundingDate":"1990","parentOrganization":{"@type":"CollegeOrUniversity","name":"FURB — Universidade Regional de Blumenau"},"address":{"@type":"PostalAddress","addressLocality":"Blumenau","addressRegion":"SC","addressCountry":"BR"}}
+    </script>
 
     <link rel="icon" type="image/png" href="/logo-camblu.png" />
 
@@ -37,6 +52,10 @@
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,-50..200"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
       rel="stylesheet"
     />
     <link

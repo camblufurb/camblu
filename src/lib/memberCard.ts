@@ -128,6 +128,7 @@ export interface MemberCardVerificationResult {
   institution: string;
   course: string;
   turma?: string;
+  enrollmentSummaryUrl?: string;
   profileCompleted: boolean;
   reason?: string;
   verifiedAt: string;
@@ -254,6 +255,10 @@ export function buildMemberCardVerificationFromProfile(
     institution: academic.institution,
     course: academic.course,
     turma: academic.isFurbStudent && user.turma ? user.turma.trim() : '',
+    enrollmentSummaryUrl:
+      academic.isFurbStudent && user.enrollmentSummaryUrl?.trim()
+        ? user.enrollmentSummaryUrl.trim()
+        : undefined,
     profileCompleted: Boolean(user.profileCompleted),
     reason: academic.isFurbStudent
       ? undefined

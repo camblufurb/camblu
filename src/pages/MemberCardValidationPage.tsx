@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { Icon } from '../components/Icon';
+import { M3Dialog } from '../components/M3Dialog';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL, isFirebaseConfigured } from '../lib/firebase';
 import { logError, logInfo, logWarn } from '../lib/logger';
@@ -37,9 +38,11 @@ export function MemberCardValidationPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [result, setResult] = useState<MemberCardVerificationResult | null>(null);
   const [photoError, setPhotoError] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
 
   useEffect(() => {
     setSearchInput(normalizedRouteUid);
+    setPdfModalOpen(false);
   }, [normalizedRouteUid]);
 
   const verifyUid = useCallback(
@@ -288,17 +291,31 @@ export function MemberCardValidationPage() {
       {!loading && !errorMsg && result?.found && result.active && (
         <article className="m3-card member-verify-card">
           <header className="member-verify-card__header">
-            {isFurbValidStudentCard ? (
-              <span className="m3-badge m3-badge--success">
-                <Icon name="verified" filled size={17} />
-                Carteirinha de Estudante Autêntica e Válida
-              </span>
-            ) : (
-              <span className="m3-badge m3-badge--gold">
-                <Icon name="info" size={17} />
-                Assinatura Ativa · Cadastro Externo (sem vínculo FURB)
-              </span>
-            )}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
+              {isFurbValidStudentCard ? (
+                <span className="m3-badge m3-badge--success">
+                  <Icon name="verified" filled size={17} />
+                  Carteirinha de Estudante Autêntica e Válida
+                </span>
+              ) : (
+                <span className="m3-badge m3-badge--gold">
+                  <Icon name="badge" size={17} />
+                  Cartão de membro externo · Clube CAMBLU
+                </span>
+              )}
+
+              {isFurbValidStudentCard && result.enrollmentSummaryUrl ? (
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--filled"
+                  style={{ minBlockSize: '34px', paddingBlock: '0.35rem', paddingInline: '0.85rem' }}
+                  onClick={() => setPdfModalOpen(true)}
+                >
+                  <Icon name="verified" variant="outlined" size={18} />
+                  <span>Matrícula verificada</span>
+                </button>
+              ) : null}
+            </div>
 
             <span
               className="m3-badge"
@@ -308,7 +325,6 @@ export function MemberCardValidationPage() {
                   : undefined
               }
             >
-              <Icon name="workspace_premium" filled size={15} />
               Clube {result.tierName} · Nível {result.tierCode}
             </span>
           </header>
@@ -407,6 +423,41 @@ export function MemberCardValidationPage() {
           </footer>
         </article>
       )}
+
+      {isFurbValidStudentCard && result?.enrollmentSummaryUrl ? (
+        <M3Dialog
+          wide
+          open={pdfModalOpen}
+          onClose={() => setPdfModalOpen(false)}
+          title="Matrícula verificada — Resumo de Matrícula (FURB)"
+        >
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            <iframe
+              src={result.enrollmentSummaryUrl}
+              title={`Resumo de matrícula de ${result.name || 'estudante'}`}
+              className="member-verify-pdf-frame"
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <a
+                href={result.enrollmentSummaryUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="m3-btn m3-btn--blue"
+              >
+                <Icon name="open_in_new" size={18} />
+                <span>Abrir PDF em nova aba</span>
+              </a>
+              <button
+                type="button"
+                className="m3-btn m3-btn--outlined"
+                onClick={() => setPdfModalOpen(false)}
+              >
+                <span>Fechar</span>
+              </button>
+            </div>
+          </div>
+        </M3Dialog>
+      ) : null}
     </section>
   );
 }

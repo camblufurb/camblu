@@ -91,9 +91,23 @@ describe('memberCard helpers', () => {
       course: 'Medicina',
       turma: '63',
     });
+    expect(validRes.enrollmentSummaryUrl).toBeUndefined();
+
+    const verifiedFurbRes = buildMemberCardVerificationFromProfile(
+      { ...baseUser, enrollmentSummaryUrl: 'https://firebasestorage.googleapis.com/resumo.pdf' },
+      nowMs,
+    );
+    expect(verifiedFurbRes.enrollmentSummaryUrl).toBe(
+      'https://firebasestorage.googleapis.com/resumo.pdf',
+    );
 
     const inactiveRes = buildMemberCardVerificationFromProfile(
-      { ...baseUser, membershipActive: false, membershipTier: 'none' },
+      {
+        ...baseUser,
+        membershipActive: false,
+        membershipTier: 'none',
+        enrollmentSummaryUrl: 'https://firebasestorage.googleapis.com/resumo.pdf',
+      },
       nowMs,
     );
     expect(inactiveRes).toMatchObject({
@@ -103,9 +117,15 @@ describe('memberCard helpers', () => {
       tierCode: 0,
       cpf: '',
     });
+    expect(inactiveRes.enrollmentSummaryUrl).toBeUndefined();
 
     const externalRes = buildMemberCardVerificationFromProfile(
-      { ...baseUser, affiliation: 'externo', membershipTier: 'raro' },
+      {
+        ...baseUser,
+        affiliation: 'externo',
+        membershipTier: 'raro',
+        enrollmentSummaryUrl: 'https://firebasestorage.googleapis.com/resumo.pdf',
+      },
       nowMs,
     );
     expect(externalRes).toMatchObject({
@@ -116,6 +136,7 @@ describe('memberCard helpers', () => {
       tierCode: 2,
       institution: 'Externo (sem vínculo FURB)',
     });
+    expect(externalRes.enrollmentSummaryUrl).toBeUndefined();
 
     expect(buildMemberCardVerificationFromProfile(null, nowMs)).toMatchObject({
       found: false,

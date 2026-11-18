@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /back/
+Disallow: /api/
+Disallow: /perfil
+Disallow: /meus-ingressos
+Disallow: /meus-pedidos
+Disallow: /clube/cartao
+
+Sitemap: https://camblu.web.app/sitemap.xml
+Sitemap: https://www.camblu.org/sitemap.xml

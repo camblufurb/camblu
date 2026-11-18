@@ -216,7 +216,7 @@ export function MemberCardPage() {
               style={{
                 transform: prefersReducedMotion
                   ? 'none'
-                  : `translate3d(${tilt.x * 1.45}%, ${tilt.y * 1.45}%, 0)`,
+                  : `translate3d(${tilt.x * 1.15}%, ${tilt.y * 1.15}%, 0)`,
               }}
             />
 
@@ -225,13 +225,21 @@ export function MemberCardPage() {
                 <span style={{ fontSize: '0.72rem', fontWeight: 750, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>
                   {profile.affiliation === 'FURB'
                     ? 'Carteirinha de Estudante · Medicina FURB'
-                    : 'Clube CAMBLU · Medicina FURB'}
+                    : 'Cartão de membro externo'}
                 </span>
                 <strong style={{ fontSize: 'clamp(1.05rem, 3.2vw, 1.25rem)' }}>
                   {`Membro ${plan.name}`}
                 </strong>
               </div>
-              <Icon name="workspace_premium" filled size={30} />
+              {profile.affiliation === 'FURB' && profile.enrollmentSummaryUrl?.trim() ? (
+                <Icon
+                  name="verified"
+                  variant="outlined"
+                  size={24}
+                  className="member-card__verified-icon"
+                  label="Matrícula verificada"
+                />
+              ) : null}
             </div>
 
             <div className="member-card__footer">

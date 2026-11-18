@@ -64,6 +64,13 @@
         }
       },
       {
+        "source": "/sitemap.xml",
+        "function": {
+          "functionId": "api",
+          "region": "southamerica-east1"
+        }
+      },
+      {
         "source": "/eventos/*",
         "function": {
           "functionId": "eventSocialPreview",
@@ -72,7 +79,10 @@
       },
       {
         "source": "**",
-        "destination": "/index.html"
+        "function": {
+          "functionId": "socialPreview",
+          "region": "southamerica-east1"
+        }
       }
     ]
   }

@@ -17,6 +17,9 @@ export interface UserProfile {
   turma?: string; // digits only when affiliation === 'FURB'
   isCalouro: boolean;
   tshirtSize?: TShirtSize;
+  enrollmentSummaryUrl?: string;
+  enrollmentSummaryFileName?: string;
+  enrollmentSummaryUploadedAt?: string;
   membershipTier: MembershipTier;
   membershipCycle?: MembershipCycle;
   membershipValidUntil?: string | null;

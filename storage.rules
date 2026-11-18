@@ -19,6 +19,17 @@ service firebase.storage {
       allow read, write: if isAdmin();
     }
 
+    // Resumo de matrícula opcional em PDF enviado pelo acadêmico FURB (máx. 10 MB)
+    match /enrollment-summaries/{uid}/{fileName} {
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow write: if (isAdmin() && request.resource == null) ||
+                      (request.auth != null &&
+                       request.auth.uid == uid &&
+                       (request.resource == null ||
+                        (request.resource.size <= 10 * 1024 * 1024 &&
+                         request.resource.contentType == 'application/pdf')));
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

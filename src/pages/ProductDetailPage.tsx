@@ -55,7 +55,6 @@ export function ProductDetailPage() {
 
   useEffect(() => {
     if (!product) return;
-    document.title = `${product.name} | Lojinha CAMBLU`;
     const firstAvailableSize = product.sizes.find((s) => s.stock > 0)?.size || product.sizes[0]?.size || 'Único';
     setSelectedSize(firstAvailableSize);
     setSelectedColorName(product.colors?.[0]?.name || '');

@@ -1,13 +1,22 @@
 interface IconProps {
   name: string;
   filled?: boolean;
+  variant?: 'rounded' | 'outlined';
   className?: string;
   size?: number;
   label?: string;
 }
 
-export function Icon({ name, filled = false, className = '', size, label }: IconProps) {
-  const classes = ['material-symbols-rounded', filled ? 'is-filled' : '', className]
+export function Icon({
+  name,
+  filled = false,
+  variant = 'rounded',
+  className = '',
+  size,
+  label,
+}: IconProps) {
+  const familyClass = variant === 'outlined' ? 'material-symbols-outlined' : 'material-symbols-rounded';
+  const classes = [familyClass, variant === 'rounded' && filled ? 'is-filled' : '', className]
     .filter(Boolean)
     .join(' ');
 

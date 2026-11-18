@@ -16,6 +16,16 @@ import {
   type MembershipCycle,
   type MembershipTier,
 } from './pricing.js';
+import {
+  buildEventSeoMeta,
+  buildProductSeoMeta,
+  escapeHtml,
+  injectSeoIntoHtml,
+  normalizePathname,
+  PUBLIC_ROUTE_SEO_LIST,
+  resolveStaticRouteSeo,
+  type SeoMetaPayload,
+} from './seo.js';
 
 initializeApp();
 const db = getFirestore();
@@ -58,15 +68,6 @@ function getStripeClient(): Stripe {
 
 function digitsOnly(v: string): string {
   return String(v || '').replace(/\D+/g, '');
-}
-
-function escapeHtml(str: string): string {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 async function verifyBearerToken(req: Request): Promise<DecodedIdToken | null> {
@@ -293,6 +294,72 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'camblu-api' });
 });
 
+app.get('/sitemap.xml', async (req, res) => {
+  const siteOrigin = resolveSiteOrigin(req);
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const [eventsSnap, productsSnap] = await Promise.all([
+      db.collection('events').where('published', '==', true).get(),
+      db.collection('products').where('active', '==', true).get(),
+    ]);
+
+    const urls: Array<{ loc: string; changefreq: string; priority: string; lastmod?: string }> =
+      PUBLIC_ROUTE_SEO_LIST.filter((entry) => entry.indexable).map((entry) => ({
+        loc: entry.path === '/' ? `${siteOrigin}/` : `${siteOrigin}${entry.path}`,
+        changefreq: entry.changefreq,
+        priority: entry.priority,
+        lastmod: today,
+      }));
+
+    eventsSnap.docs.forEach((docSnap) => {
+      const d = docSnap.data();
+      const slug = String(d.slug || docSnap.id).trim();
+      if (!slug) return;
+      urls.push({
+        loc: `${siteOrigin}/eventos/${encodeURIComponent(slug)}`,
+        changefreq: 'weekly',
+        priority: '0.8',
+        lastmod: typeof d.updatedAt === 'string' ? d.updatedAt.slice(0, 10) : today,
+      });
+    });
+
+    productsSnap.docs.forEach((docSnap) => {
+      const d = docSnap.data();
+      const slug = String(d.slug || docSnap.id).trim();
+      if (!slug) return;
+      urls.push({
+        loc: `${siteOrigin}/lojinha/${encodeURIComponent(slug)}`,
+        changefreq: 'weekly',
+        priority: '0.8',
+        lastmod: typeof d.updatedAt === 'string' ? d.updatedAt.slice(0, 10) : today,
+      });
+    });
+
+    const xmlBody = urls
+      .map(
+        (u) =>
+          `  <url><loc>${escapeHtml(u.loc)}</loc><lastmod>${escapeHtml(
+            u.lastmod || today,
+          )}</lastmod><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority></url>`,
+      )
+      .join('\n');
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=300, s-maxage=900');
+    res.status(200).send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${xmlBody}\n</urlset>`,
+    );
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro ao gerar /sitemap.xml', {
+      origin: 'functions -> /sitemap.xml',
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(500).type('text/plain').send('Erro ao gerar sitemap.xml');
+  }
+});
+
 // Item 4.2 — API aberta do Clube CAMBLU (retorna status não sensível e tierCode 0..4)
 app.get('/api/clube/status', async (req, res) => {
   const rawCpf = typeof req.query.cpf === 'string' ? digitsOnly(req.query.cpf) : '';
@@ -421,10 +488,14 @@ app.get('/api/clube/cartao/verify', async (req, res) => {
       institution: isFurbStudent ? 'FURB' : 'Externo (sem vínculo FURB)',
       course: isFurbStudent ? 'Medicina' : 'Visitante / Externo',
       turma: isFurbStudent && u.turma ? String(u.turma).trim() : '',
+      enrollmentSummaryUrl:
+        isFurbStudent && typeof u.enrollmentSummaryUrl === 'string' && u.enrollmentSummaryUrl.trim()
+          ? u.enrollmentSummaryUrl.trim()
+          : undefined,
       profileCompleted: Boolean(u.profileCompleted),
       reason: isFurbStudent
         ? undefined
-        : 'Plano ativo no Clube CAMBLU, porém este cadastro possui vínculo Externo (não vinculado ao curso de Medicina FURB).',
+        : 'Cartão de membro externo ativo no Clube CAMBLU (não vinculado ao curso de Medicina FURB).',
       verifiedAt: new Date().toISOString(),
     });
   } catch (err) {
@@ -943,57 +1014,111 @@ export const api = onRequest(
   app,
 );
 
-// Item 1.1 — Social Preview dinâmico (OpenGraph) para links compartilhados /eventos/:slug
-export const eventSocialPreview = onRequest({ region: 'southamerica-east1' }, async (req, res) => {
-  const siteOrigin = resolveSiteOrigin(req);
-  const slug = req.path.replace(/^\/eventos\//, '').replace(/\/$/, '');
-  let title = 'CAMBLU — Eventos Medicina FURB';
-  let description =
-    'Confira programação, lotes, ingressos e certificação oficial no portal do CAMBLU.';
-  let image = `${siteOrigin}/logo-camblu.png`;
+const INDEX_HTML_CACHE_TTL_MS = 60_000;
+const indexHtmlCache = new Map<string, { html: string; fetchedAt: number }>();
 
-  if (slug) {
-    const snap = await db.collection('events').where('slug', '==', slug).limit(1).get();
-    if (!snap.empty) {
-      const ev = snap.docs[0].data();
-      title = `${ev.title} | CAMBLU Eventos`;
-      description = String(ev.description || description).slice(0, 220);
-      if (ev.imageUrl) image = String(ev.imageUrl);
-    }
+async function getCachedIndexHtml(siteOrigin: string): Promise<string> {
+  const cached = indexHtmlCache.get(siteOrigin);
+  if (cached && Date.now() - cached.fetchedAt < INDEX_HTML_CACHE_TTL_MS && cached.html) {
+    return cached.html;
   }
-
-  let indexHtml = '';
   try {
     const upstream = await fetch(`${siteOrigin}/index.html`);
-    if (upstream.ok) indexHtml = await upstream.text();
+    if (upstream.ok) {
+      const html = await upstream.text();
+      if (html) {
+        indexHtmlCache.set(siteOrigin, { html, fetchedAt: Date.now() });
+        return html;
+      }
+    }
   } catch (err) {
-    console.warn('[CAMBLU-API] Falha ao buscar index.html para OpenGraph', {
-      origin: 'functions -> eventSocialPreview -> fetch',
+    console.warn('[CAMBLU-API] Falha ao buscar index.html para OpenGraph/SEO', {
+      origin: 'functions -> handleSocialPreviewRequest -> fetch',
       siteOrigin,
       message: (err as Error)?.message,
     });
-    indexHtml = '';
+  }
+  return cached?.html || '';
+}
+
+async function resolveDynamicSocialMeta(path: string, siteOrigin: string): Promise<SeoMetaPayload> {
+  const normalizedPath = normalizePathname(path);
+
+  const eventMatch = normalizedPath.match(/^\/eventos\/([^/]+)$/);
+  if (eventMatch?.[1]) {
+    const rawSlug = decodeURIComponent(eventMatch[1]).trim();
+    if (rawSlug) {
+      let snap = await db.collection('events').where('slug', '==', rawSlug).limit(1).get();
+      let evData = snap.empty ? null : snap.docs[0].data();
+      if (!evData) {
+        const docSnap = await db.collection('events').doc(rawSlug).get();
+        if (docSnap.exists) evData = docSnap.data() || null;
+      }
+      if (evData) {
+        return buildEventSeoMeta(evData, rawSlug, siteOrigin);
+      }
+    }
+    return {
+      ...resolveStaticRouteSeo('/eventos', siteOrigin),
+      canonicalUrl: `${siteOrigin}${normalizedPath}`,
+    };
   }
 
-  const ogTags = `
-    <title>${escapeHtml(title)}</title>
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:image" content="${escapeHtml(image)}" />
-    <meta property="og:url" content="${escapeHtml(`${siteOrigin}/eventos/${slug}`)}" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${escapeHtml(title)}" />
-    <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />
-  `;
-
-  if (indexHtml) {
-    const injected = indexHtml.replace(/<title>.*?<\/title>/is, ogTags);
-    res.set('Cache-Control', 'public, max-age=120, s-maxage=300');
-    res.status(200).send(injected);
-    return;
+  const productMatch = normalizedPath.match(/^\/lojinha\/([^/]+)$/);
+  if (productMatch?.[1]) {
+    const rawSlug = decodeURIComponent(productMatch[1]).trim();
+    if (rawSlug) {
+      const snap = await db.collection('products').where('slug', '==', rawSlug).limit(1).get();
+      let productData = snap.empty ? null : snap.docs[0].data();
+      if (!productData) {
+        const docSnap = await db.collection('products').doc(rawSlug).get();
+        if (docSnap.exists) productData = docSnap.data() || null;
+      }
+      if (productData) {
+        return buildProductSeoMeta(productData, rawSlug, siteOrigin);
+      }
+    }
+    return {
+      ...resolveStaticRouteSeo('/lojinha', siteOrigin),
+      canonicalUrl: `${siteOrigin}${normalizedPath}`,
+    };
   }
 
-  res.status(200).send(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">${ogTags}</head><body><script>location.replace('/eventos/${escapeHtml(slug)}');</script></body></html>`);
-});
+  return resolveStaticRouteSeo(normalizedPath, siteOrigin);
+}
+
+async function handleSocialPreviewRequest(
+  req: { path: string; headers: Record<string, string | string[] | undefined> },
+  res: {
+    set(field: string, value: string): unknown;
+    status(code: number): { send(body: string): unknown };
+  },
+) {
+  const siteOrigin = resolveSiteOrigin(req);
+  const targetPath = normalizePathname(req.path || '/');
+  let meta = resolveStaticRouteSeo(targetPath, siteOrigin);
+
+  try {
+    meta = await resolveDynamicSocialMeta(targetPath, siteOrigin);
+  } catch (err) {
+    console.warn('[CAMBLU-API] Falha ao resolver metadados dinâmicos SEO/OG; usando estáticos', {
+      origin: 'functions -> handleSocialPreviewRequest',
+      path: targetPath,
+      message: (err as Error)?.message,
+    });
+  }
+
+  const indexHtml = await getCachedIndexHtml(siteOrigin);
+  const renderedHtml = injectSeoIntoHtml(indexHtml, meta);
+  const cacheControl = meta.robots.startsWith('noindex')
+    ? 'private, no-store'
+    : 'public, max-age=120, s-maxage=300';
+
+  res.set('Cache-Control', cacheControl);
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  res.status(200).send(renderedHtml);
+}
+
+// Item 1.1 — Social Preview e SEO dinâmico para links compartilhados e indexação
+export const eventSocialPreview = onRequest({ region: 'southamerica-east1' }, handleSocialPreviewRequest);
+export const socialPreview = onRequest({ region: 'southamerica-east1' }, handleSocialPreviewRequest);

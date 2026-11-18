@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as fbSignOut, type User } from 'firebase/auth';
 import { deleteField, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { ADMIN_EMAIL, auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
+import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
+import { ADMIN_EMAIL, auth, db, googleProvider, isFirebaseConfigured, storage } from '../lib/firebase';
 import { logError, logInfo, logWarn } from '../lib/logger';
 import { stripUndefinedDeep } from '../lib/objectUtils';
 import { digitsOnly } from '../lib/validators';
@@ -10,6 +11,8 @@ import type { MembershipCycle, MembershipTier, TShirtSize, UserAffiliation, User
 const DEMO_USER_STORAGE = 'camblu.demo.user';
 const DEMO_REGISTRY_STORAGE = 'camblu.demo.userRegistry';
 const DEMO_AVATAR_URL = '/demo-google-avatar.svg';
+const ENROLLMENT_PDF_MAX_BYTES = 10 * 1024 * 1024;
+const DEMO_PDF_MAX_BYTES = 2 * 1024 * 1024;
 
 export interface ProfileInput {
   name: string;
@@ -19,6 +22,15 @@ export interface ProfileInput {
   turma?: string;
   isCalouro: boolean;
   tshirtSize?: TShirtSize;
+  enrollmentSummaryUrl?: string | null;
+  enrollmentSummaryFileName?: string | null;
+  enrollmentSummaryUploadedAt?: string | null;
+}
+
+export interface EnrollmentUploadResult {
+  url: string;
+  fileName: string;
+  uploadedAt: string;
 }
 
 interface AuthContextValue {
@@ -29,6 +41,8 @@ interface AuthContextValue {
   signInWithGoogle: (demoRole?: 'student' | 'admin') => Promise<void>;
   signOut: () => Promise<void>;
   saveProfile: (input: ProfileInput) => Promise<void>;
+  uploadEnrollmentSummaryPdf: (file: File) => Promise<EnrollmentUploadResult>;
+  removeEnrollmentSummaryPdf: () => Promise<void>;
   updateMembershipLocal: (tier: MembershipTier, cycle: MembershipCycle) => Promise<void>;
   findDemoUserByCpf: (cpf: string) => UserProfile | null;
   allDemoUsers: UserProfile[];
@@ -343,8 +357,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!profile) return;
     const now = new Date().toISOString();
     const cleanName = input.name.trim().slice(0, 140);
-    const cleanTurma = input.affiliation === 'FURB' ? digitsOnly(input.turma || '').slice(0, 12) : undefined;
+    const isFurb = input.affiliation === 'FURB';
+    const cleanTurma = isFurb ? digitsOnly(input.turma || '').slice(0, 12) : undefined;
     const cleanTshirt = input.isCalouro ? input.tshirtSize : undefined;
+
+    const resolvedEnrollmentUrl = !isFurb
+      ? undefined
+      : input.enrollmentSummaryUrl === null
+        ? undefined
+        : input.enrollmentSummaryUrl !== undefined
+          ? input.enrollmentSummaryUrl
+          : profile.enrollmentSummaryUrl;
+    const resolvedEnrollmentFileName =
+      resolvedEnrollmentUrl && isFurb
+        ? input.enrollmentSummaryFileName ?? profile.enrollmentSummaryFileName
+        : undefined;
+    const resolvedEnrollmentUploadedAt =
+      resolvedEnrollmentUrl && isFurb
+        ? input.enrollmentSummaryUploadedAt ?? profile.enrollmentSummaryUploadedAt
+        : undefined;
+
     const updated: UserProfile = {
       ...profile,
       name: cleanName,
@@ -354,6 +386,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       turma: cleanTurma,
       isCalouro: input.isCalouro,
       tshirtSize: cleanTshirt,
+      enrollmentSummaryUrl: resolvedEnrollmentUrl,
+      enrollmentSummaryFileName: resolvedEnrollmentFileName,
+      enrollmentSummaryUploadedAt: resolvedEnrollmentUploadedAt,
       profileCompleted: true,
       updatedAt: now,
     };
@@ -363,6 +398,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         uid: profile.uid,
         affiliation: updated.affiliation,
         isCalouro: updated.isCalouro,
+        hasEnrollmentPdf: Boolean(updated.enrollmentSummaryUrl),
       });
       try {
         const userRef = doc(db, 'users', profile.uid);
@@ -375,9 +411,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             cpf: updated.cpf,
             phone: updated.phone,
             affiliation: updated.affiliation,
-            turma: updated.affiliation === 'FURB' ? cleanTurma || '' : deleteField(),
+            turma: isFurb ? cleanTurma || '' : deleteField(),
             isCalouro: updated.isCalouro,
             tshirtSize: cleanTshirt ?? deleteField(),
+            enrollmentSummaryUrl: resolvedEnrollmentUrl ?? deleteField(),
+            enrollmentSummaryFileName: resolvedEnrollmentFileName ?? deleteField(),
+            enrollmentSummaryUploadedAt: resolvedEnrollmentUploadedAt ?? deleteField(),
             ...(updated.photoURL ? { photoURL: updated.photoURL } : {}),
             profileCompleted: true,
             updatedAt: now,
@@ -398,6 +437,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           logInfo('Auth', 'Documento users/{uid} criado via saveProfile', { uid: profile.uid });
         }
 
+        if (!isFurb && profile.enrollmentSummaryUrl && storage) {
+          void deleteObject(
+            storageRef(storage, `enrollment-summaries/${profile.uid}/resumo-matricula.pdf`),
+          ).catch(() => {
+            // Ignora ausência do arquivo no bucket ao alternar para vínculo externo.
+          });
+        }
+
         setProfile(updated);
       } catch (err) {
         logError('Auth', 'AuthContext.saveProfile -> setDoc/updateDoc users', err, { uid: profile.uid });
@@ -406,6 +453,142 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     persistDemoProfile(updated);
+  };
+
+  const uploadEnrollmentSummaryPdf = async (file: File): Promise<EnrollmentUploadResult> => {
+    if (!profile) {
+      throw new Error('Faça login para enviar o resumo de matrícula.');
+    }
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      throw new Error('Envie um arquivo em formato PDF válido (.pdf).');
+    }
+    if (file.size > ENROLLMENT_PDF_MAX_BYTES) {
+      throw new Error('O PDF do resumo de matrícula deve ter no máximo 10 MB.');
+    }
+
+    const cleanFileName = (file.name || 'resumo-matricula.pdf').trim().slice(0, 140) || 'resumo-matricula.pdf';
+    const uploadedAt = new Date().toISOString();
+
+    if (isFirebaseConfigured && storage && db) {
+      logInfo('Perfil', 'Enviando resumo de matrícula PDF para Firebase Storage', {
+        uid: profile.uid,
+        fileName: cleanFileName,
+        bytes: file.size,
+      });
+      try {
+        const fileRef = storageRef(storage, `enrollment-summaries/${profile.uid}/resumo-matricula.pdf`);
+        await uploadBytes(fileRef, file, {
+          contentType: 'application/pdf',
+          contentDisposition: 'inline; filename="resumo-matricula.pdf"',
+        });
+        const url = await getDownloadURL(fileRef);
+
+        const userRef = doc(db, 'users', profile.uid);
+        const existingSnap = await getDoc(userRef);
+        if (existingSnap.exists()) {
+          await updateDoc(userRef, {
+            enrollmentSummaryUrl: url,
+            enrollmentSummaryFileName: cleanFileName,
+            enrollmentSummaryUploadedAt: uploadedAt,
+            updatedAt: uploadedAt,
+          });
+        }
+
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                enrollmentSummaryUrl: url,
+                enrollmentSummaryFileName: cleanFileName,
+                enrollmentSummaryUploadedAt: uploadedAt,
+              }
+            : prev,
+        );
+        logInfo('Perfil', 'Resumo de matrícula PDF salvo com sucesso', { uid: profile.uid });
+        return { url, fileName: cleanFileName, uploadedAt };
+      } catch (err) {
+        logError('Perfil', 'AuthContext.uploadEnrollmentSummaryPdf -> Storage/Firestore', err, {
+          uid: profile.uid,
+        });
+        throw err;
+      }
+    }
+
+    if (file.size > DEMO_PDF_MAX_BYTES) {
+      throw new Error('No modo demonstração local, o PDF deve ter até 2 MB.');
+    }
+
+    const url = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Não foi possível ler o PDF selecionado.'));
+      reader.readAsDataURL(file);
+    });
+
+    persistDemoProfile({
+      ...profile,
+      enrollmentSummaryUrl: url,
+      enrollmentSummaryFileName: cleanFileName,
+      enrollmentSummaryUploadedAt: uploadedAt,
+      updatedAt: uploadedAt,
+    });
+    return { url, fileName: cleanFileName, uploadedAt };
+  };
+
+  const removeEnrollmentSummaryPdf = async () => {
+    if (!profile) return;
+    const now = new Date().toISOString();
+
+    if (isFirebaseConfigured && storage && db) {
+      logInfo('Perfil', 'Removendo resumo de matrícula PDF do perfil', { uid: profile.uid });
+      try {
+        const fileRef = storageRef(storage, `enrollment-summaries/${profile.uid}/resumo-matricula.pdf`);
+        await deleteObject(fileRef).catch((err) => {
+          const code = (err as { code?: string })?.code;
+          if (code !== 'storage/object-not-found') {
+            throw err;
+          }
+        });
+
+        const userRef = doc(db, 'users', profile.uid);
+        const existingSnap = await getDoc(userRef);
+        if (existingSnap.exists()) {
+          await updateDoc(userRef, {
+            enrollmentSummaryUrl: deleteField(),
+            enrollmentSummaryFileName: deleteField(),
+            enrollmentSummaryUploadedAt: deleteField(),
+            updatedAt: now,
+          });
+        }
+
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                enrollmentSummaryUrl: undefined,
+                enrollmentSummaryFileName: undefined,
+                enrollmentSummaryUploadedAt: undefined,
+              }
+            : prev,
+        );
+        logInfo('Perfil', 'Resumo de matrícula PDF removido com sucesso', { uid: profile.uid });
+      } catch (err) {
+        logError('Perfil', 'AuthContext.removeEnrollmentSummaryPdf -> Storage/Firestore', err, {
+          uid: profile.uid,
+        });
+        throw err;
+      }
+      return;
+    }
+
+    persistDemoProfile({
+      ...profile,
+      enrollmentSummaryUrl: undefined,
+      enrollmentSummaryFileName: undefined,
+      enrollmentSummaryUploadedAt: undefined,
+      updatedAt: now,
+    });
   };
 
   const updateMembershipLocal = async (tier: MembershipTier, cycle: MembershipCycle) => {
@@ -460,6 +643,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGoogle,
         signOut,
         saveProfile,
+        uploadEnrollmentSummaryPdf,
+        removeEnrollmentSummaryPdf,
         updateMembershipLocal,
         findDemoUserByCpf,
         allDemoUsers: registry,

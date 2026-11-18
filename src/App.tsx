@@ -7,6 +7,7 @@ import { AppDataProvider } from './context/AppDataContext';
 import { ShopCartProvider } from './context/ShopCartContext';
 import { Layout } from './components/Layout';
 import { AccountMenuButton } from './components/AccountMenuButton';
+import { RouteSeoManager } from './components/RouteSeoManager';
 import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AboutSpacesPage } from './pages/AboutSpacesPage';
@@ -87,7 +88,8 @@ export function App() {
           <AppDataProvider>
             <ShopCartProvider>
               <BrowserRouter>
-              <Layout userSlot={<AccountMenuButton />}>
+                <RouteSeoManager />
+                <Layout userSlot={<AccountMenuButton />}>
                 <ProfileIncompleteBanner />
                 <Suspense
                   fallback={

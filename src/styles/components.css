@@ -2224,6 +2224,8 @@
     padding: clamp(1rem, 3.6vw, 1.45rem);
     position: relative;
     overflow: hidden;
+    isolation: isolate;
+    backface-visibility: hidden;
     box-shadow: var(--elevation-3);
     display: grid;
     align-content: space-between;
@@ -2295,10 +2297,14 @@
 
   .member-card__shimmer {
     position: absolute;
-    inset: -45%;
+    inset: -120%;
     pointer-events: none;
-    background: radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.48), transparent 52%);
-    mix-blend-mode: overlay;
+    background: radial-gradient(
+      circle closest-side at 50% 50%,
+      rgb(255 255 255 / 0.34) 0%,
+      rgb(255 255 255 / 0.14) 36%,
+      rgb(255 255 255 / 0) 68%
+    );
     transition: transform 140ms ease-out;
     will-change: transform;
   }
@@ -2313,6 +2319,20 @@
 
   .member-card__top {
     align-items: center;
+  }
+
+  .member-card__verified-icon {
+    color: #ffffff;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.28));
+  }
+
+  .member-verify-pdf-frame {
+    inline-size: 100%;
+    block-size: min(65dvh, 38rem);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: var(--md-sys-shape-corner-md);
+    background: var(--md-sys-color-surface-container-low);
   }
 
   .member-card__footer {

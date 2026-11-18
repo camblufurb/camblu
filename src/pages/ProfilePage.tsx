@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
@@ -21,9 +21,17 @@ const TSHIRT_SIZES: TShirtSize[] = [
 ];
 
 export function ProfilePage() {
-  const { profile, saveProfile, signInWithGoogle, isDemoMode } = useAuth();
+  const {
+    profile,
+    saveProfile,
+    uploadEnrollmentSummaryPdf,
+    removeEnrollmentSummaryPdf,
+    signInWithGoogle,
+    isDemoMode,
+  } = useAuth();
   const { notify } = useToast();
 
+  const pdfInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
@@ -31,6 +39,10 @@ export function ProfilePage() {
   const [turma, setTurma] = useState('');
   const [isCalouro, setIsCalouro] = useState(false);
   const [tshirtSize, setTshirtSize] = useState<TShirtSize>('M');
+  const [enrollmentUrl, setEnrollmentUrl] = useState<string | undefined>(undefined);
+  const [enrollmentFileName, setEnrollmentFileName] = useState<string | undefined>(undefined);
+  const [enrollmentUploadedAt, setEnrollmentUploadedAt] = useState<string | undefined>(undefined);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
   const [cpfError, setCpfError] = useState('');
   const [turmaError, setTurmaError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -44,6 +56,9 @@ export function ProfilePage() {
     setTurma(profile.turma || '');
     setIsCalouro(Boolean(profile.isCalouro));
     setTshirtSize(profile.tshirtSize || 'M');
+    setEnrollmentUrl(profile.enrollmentSummaryUrl);
+    setEnrollmentFileName(profile.enrollmentSummaryFileName);
+    setEnrollmentUploadedAt(profile.enrollmentSummaryUploadedAt);
   }, [profile]);
 
   if (!profile) {
@@ -102,6 +117,9 @@ export function ProfilePage() {
         turma: affiliation === 'FURB' ? turma : undefined,
         isCalouro,
         tshirtSize: isCalouro ? tshirtSize : undefined,
+        enrollmentSummaryUrl: affiliation === 'FURB' ? enrollmentUrl ?? null : null,
+        enrollmentSummaryFileName: affiliation === 'FURB' ? enrollmentFileName ?? null : null,
+        enrollmentSummaryUploadedAt: affiliation === 'FURB' ? enrollmentUploadedAt ?? null : null,
       });
       notify('Cadastro acadêmico atualizado com sucesso!');
     } catch (err) {
@@ -243,29 +261,136 @@ export function ProfilePage() {
             </div>
 
             {affiliation === 'FURB' && (
-              <div className="m3-field">
-                <label htmlFor="profile-turma">Qual turma? (apenas números)</label>
-                <span className="m3-field-hint">Exemplo: 63 para Turma LXIII, 62 para LXII.</span>
-                <input
-                  id="profile-turma"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]+"
-                  className="m3-input"
-                  required
-                  aria-invalid={turmaError ? 'true' : 'false'}
-                  aria-describedby={turmaError ? 'profile-turma-error' : undefined}
-                  value={turma}
-                  onChange={(e) => {
-                    setTurma(e.target.value.replace(/\D+/g, ''));
-                    setTurmaError('');
+              <>
+                <div className="m3-field">
+                  <label htmlFor="profile-turma">Qual turma? (apenas números)</label>
+                  <span className="m3-field-hint">Exemplo: 63 para Turma LXIII, 62 para LXII.</span>
+                  <input
+                    id="profile-turma"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]+"
+                    className="m3-input"
+                    required
+                    aria-invalid={turmaError ? 'true' : 'false'}
+                    aria-describedby={turmaError ? 'profile-turma-error' : undefined}
+                    value={turma}
+                    onChange={(e) => {
+                      setTurma(e.target.value.replace(/\D+/g, ''));
+                      setTurmaError('');
+                    }}
+                  />
+                  <span id="profile-turma-error" className="m3-error-msg" data-visible={Boolean(turmaError)}>
+                    <Icon name="error" size={16} />
+                    {turmaError}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    padding: '0.85rem 0.95rem',
+                    borderRadius: 'var(--md-sys-shape-corner-md)',
+                    background: 'var(--md-sys-color-surface-container-low)',
+                    border: '1px solid var(--md-sys-color-outline-variant)',
+                    display: 'grid',
+                    gap: '0.55rem',
                   }}
-                />
-                <span id="profile-turma-error" className="m3-error-msg" data-visible={Boolean(turmaError)}>
-                  <Icon name="error" size={16} />
-                  {turmaError}
-                </span>
-              </div>
+                >
+                  <label htmlFor="profile-enrollment-pdf" style={{ fontSize: '0.9rem', fontWeight: 700 }}>
+                    Resumo de matrícula da FURB (opcional, PDF)
+                  </label>
+                  <span className="m3-field-hint" style={{ margin: 0 }}>
+                    Envie o PDF do seu resumo de matrícula para exibir o selo de verificação na carteirinha.
+                  </span>
+
+                  <input
+                    ref={pdfInputRef}
+                    id="profile-enrollment-pdf"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, overflow: 'hidden' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file) return;
+                      setUploadingPdf(true);
+                      try {
+                        const uploaded = await uploadEnrollmentSummaryPdf(file);
+                        setEnrollmentUrl(uploaded.url);
+                        setEnrollmentFileName(uploaded.fileName);
+                        setEnrollmentUploadedAt(uploaded.uploadedAt);
+                        notify('Resumo de matrícula anexado com sucesso!');
+                      } catch (err) {
+                        logError('Perfil', 'ProfilePage -> uploadEnrollmentSummaryPdf', err);
+                        notify(
+                          err instanceof Error ? err.message : 'Erro ao enviar resumo de matrícula.',
+                          'error',
+                        );
+                      } finally {
+                        setUploadingPdf(false);
+                      }
+                    }}
+                  />
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="m3-btn m3-btn--outlined"
+                      style={{ minBlockSize: '38px' }}
+                      disabled={uploadingPdf}
+                      onClick={() => pdfInputRef.current?.click()}
+                    >
+                      <Icon name="upload_file" size={18} />
+                      <span>
+                        {uploadingPdf
+                          ? 'Enviando PDF...'
+                          : enrollmentUrl
+                            ? 'Substituir PDF'
+                            : 'Anexar Resumo em PDF'}
+                      </span>
+                    </button>
+
+                    {enrollmentUrl && (
+                      <>
+                        <a
+                          href={enrollmentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="m3-btn m3-btn--text"
+                          style={{ minBlockSize: '36px' }}
+                        >
+                          <Icon name="picture_as_pdf" size={18} />
+                          <span>{enrollmentFileName || 'Ver PDF'}</span>
+                        </a>
+                        <button
+                          type="button"
+                          className="m3-btn m3-btn--text"
+                          style={{ minBlockSize: '36px', color: 'var(--md-sys-color-error)' }}
+                          disabled={uploadingPdf}
+                          onClick={async () => {
+                            setUploadingPdf(true);
+                            try {
+                              await removeEnrollmentSummaryPdf();
+                              setEnrollmentUrl(undefined);
+                              setEnrollmentFileName(undefined);
+                              setEnrollmentUploadedAt(undefined);
+                              notify('Resumo de matrícula removido.');
+                            } catch (err) {
+                              logError('Perfil', 'ProfilePage -> removeEnrollmentSummaryPdf', err);
+                              notify('Não foi possível remover o PDF.', 'error');
+                            } finally {
+                              setUploadingPdf(false);
+                            }
+                          }}
+                        >
+                          <Icon name="delete" size={18} />
+                          <span>Remover</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
           </fieldset>
 
