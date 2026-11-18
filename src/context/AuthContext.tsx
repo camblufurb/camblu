@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signOut as fbSignOut, type User } from 'firebase/auth';
 import { deleteField, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'firebase/storage';
-import { ADMIN_EMAIL, auth, db, googleProvider, isFirebaseConfigured, storage } from '../lib/firebase';
+import { ADMIN_EMAIL, API_BASE_URL, auth, db, getAuthHeaders, googleProvider, isFirebaseConfigured, storage } from '../lib/firebase';
 import { logError, logInfo, logWarn } from '../lib/logger';
 import { stripUndefinedDeep } from '../lib/objectUtils';
 import { digitsOnly } from '../lib/validators';
@@ -44,6 +44,7 @@ interface AuthContextValue {
   uploadEnrollmentSummaryPdf: (file: File) => Promise<EnrollmentUploadResult>;
   removeEnrollmentSummaryPdf: () => Promise<void>;
   updateMembershipLocal: (tier: MembershipTier, cycle: MembershipCycle) => Promise<void>;
+  cancelClubMembership: () => Promise<void>;
   findDemoUserByCpf: (cpf: string) => UserProfile | null;
   allDemoUsers: UserProfile[];
 }
@@ -626,6 +627,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persistDemoProfile(updated);
   };
 
+  const cancelClubMembership = async () => {
+    if (!profile) return;
+    const updatedAt = new Date().toISOString();
+
+    if (isFirebaseConfigured && db) {
+      logInfo('Auth', 'Cancelando assinatura do Clube CAMBLU via /api/club/cancel', { uid: profile.uid });
+      try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/club/cancel`, {
+          method: 'POST',
+          headers,
+        });
+        if (!res.ok) {
+          const payload = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(payload.error || `HTTP ${res.status} ao cancelar assinatura.`);
+        }
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                membershipActive: false,
+                membershipTier: 'none',
+                membershipCycle: undefined,
+                membershipValidUntil: null,
+                updatedAt,
+              }
+            : prev,
+        );
+      } catch (err) {
+        logError('Auth', 'AuthContext.cancelClubMembership -> POST /api/club/cancel', err, {
+          uid: profile.uid,
+        });
+        throw err;
+      }
+      return;
+    }
+
+    persistDemoProfile({
+      ...profile,
+      membershipActive: false,
+      membershipTier: 'none',
+      membershipCycle: undefined,
+      membershipValidUntil: null,
+      updatedAt,
+    });
+  };
+
   const findDemoUserByCpf = (cpf: string) => {
     const target = digitsOnly(cpf);
     return registry.find((u) => digitsOnly(u.cpf) === target) || null;
@@ -646,6 +694,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         uploadEnrollmentSummaryPdf,
         removeEnrollmentSummaryPdf,
         updateMembershipLocal,
+        cancelClubMembership,
         findDemoUserByCpf,
         allDemoUsers: registry,
       }}

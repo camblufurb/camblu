@@ -1,7 +1,9 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppData } from '../context/AppDataContext';
 import { Icon } from '../components/Icon';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
+import { buildCalendarMilestones } from '../lib/calendarMilestones';
 
 export function CalendarPage() {
   const { events, editais } = useAppData();
@@ -11,24 +13,10 @@ export function CalendarPage() {
   const googleCalEmbedUrl =
     'https://calendar.google.com/calendar/embed?src=camblufurb%40gmail.com&ctz=America%2FSao_Paulo&showTitle=0&showPrint=0';
 
-  const agendaItems = [
-    ...events
-      .filter((e) => e.published)
-      .map((e) => ({
-        id: e.id,
-        date: e.startAt.slice(0, 10),
-        title: e.title,
-        kind: 'Evento CAMBLU',
-        to: `/eventos/${e.slug}`,
-      })),
-    ...editais.map((ed) => ({
-      id: ed.id,
-      date: ed.deadline,
-      title: `Prazo: ${ed.title}`,
-      kind: `Edital ${ed.program}`,
-      to: '/editais',
-    })),
-  ].sort((a, b) => a.date.localeCompare(b.date));
+  const agendaItems = useMemo(
+    () => buildCalendarMilestones(events, editais),
+    [events, editais],
+  );
 
   const downloadIcs = () => {
     const lines = [
@@ -93,25 +81,36 @@ export function CalendarPage() {
         </div>
 
         <div className="m3-card" style={{ display: 'grid', gap: '0.9rem', alignContent: 'start' }}>
-          <h2>Próximos Marcos no Portal</h2>
-          <div style={{ display: 'grid', gap: '0.65rem' }}>
-            {agendaItems.map((item) => (
-              <Link
-                key={item.id}
-                to={item.to}
-                className="m3-card m3-card--tonal m3-card--interactive"
-                style={{ textDecoration: 'none', color: 'inherit', padding: '0.9rem 1rem', display: 'grid', gap: '0.25rem' }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center' }}>
-                  <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
-                    {item.kind}
-                  </span>
-                  <strong style={{ fontSize: '0.85rem' }}>{item.date}</strong>
-                </div>
-                <strong>{item.title}</strong>
-              </Link>
-            ))}
+          <div>
+            <h2>Próximos Marcos no Portal</h2>
+            <p className="text-muted" style={{ fontSize: '0.84rem' }}>
+              Ordenados do mais próximo ao mais distante (marcos encerrados há 3 dias ou mais são ocultados).
+            </p>
           </div>
+          {agendaItems.length === 0 ? (
+            <div className="m3-card m3-card--tonal" style={{ padding: '1rem' }}>
+              <span className="text-muted">Nenhum marco próximo cadastrado no momento.</span>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '0.65rem' }}>
+              {agendaItems.map((item) => (
+                <Link
+                  key={item.id}
+                  to={item.to}
+                  className="m3-card m3-card--tonal m3-card--interactive"
+                  style={{ textDecoration: 'none', color: 'inherit', padding: '0.9rem 1rem', display: 'grid', gap: '0.25rem' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="m3-label-small" style={{ color: 'var(--camblu-action-blue)' }}>
+                      {item.kind} · {item.relativeLabel}
+                    </span>
+                    <strong style={{ fontSize: '0.85rem' }}>{item.displayDate}</strong>
+                  </div>
+                  <strong>{item.title}</strong>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

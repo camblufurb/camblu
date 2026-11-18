@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
+import { M3Dialog } from '../components/M3Dialog';
 import { formatCpf, formatPhoneBr, isDigitsOnlyString, isValidCpf } from '../lib/validators';
 import { logError, logInfo } from '../lib/logger';
 import type { TShirtSize, UserAffiliation } from '../types/domain';
@@ -26,6 +27,7 @@ export function ProfilePage() {
     saveProfile,
     uploadEnrollmentSummaryPdf,
     removeEnrollmentSummaryPdf,
+    cancelClubMembership,
     signInWithGoogle,
     isDemoMode,
   } = useAuth();
@@ -43,6 +45,8 @@ export function ProfilePage() {
   const [enrollmentFileName, setEnrollmentFileName] = useState<string | undefined>(undefined);
   const [enrollmentUploadedAt, setEnrollmentUploadedAt] = useState<string | undefined>(undefined);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelingClub, setCancelingClub] = useState(false);
   const [cpfError, setCpfError] = useState('');
   const [turmaError, setTurmaError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -452,13 +456,73 @@ export function ProfilePage() {
                 ? `Seus descontos na Lojinha e benefícios em eventos são aplicados automaticamente.`
                 : 'Assine a partir de R$ 3,50/mês para apoiar o CAMBLU e desbloquear descontos e eventos gratuitos.'}
             </p>
-            <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <Link to={profile.membershipActive ? '/clube/cartao' : '/clube'} className="m3-btn m3-btn--gold">
                 <Icon name="badge" size={18} />
                 <span>{profile.membershipActive ? 'Abrir Cartão Digital' : 'Ver Planos do Clube'}</span>
               </Link>
+              {profile.membershipActive && (
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--outlined"
+                  style={{ color: '#ffffff', borderColor: 'rgb(255 255 255 / 0.4)' }}
+                  disabled={cancelingClub}
+                  onClick={() => setCancelDialogOpen(true)}
+                >
+                  <Icon name="cancel" size={18} />
+                  <span>Cancelar Clube CAMBLU</span>
+                </button>
+              )}
             </div>
           </div>
+
+          <M3Dialog
+            open={cancelDialogOpen}
+            onClose={() => !cancelingClub && setCancelDialogOpen(false)}
+            title="Cancelar assinatura do Clube CAMBLU?"
+          >
+            <div className="m3-motion-panel" style={{ display: 'grid', gap: '1rem' }}>
+              <p style={{ margin: 0 }}>
+                Ao confirmar, sua assinatura do plano <strong>{profile.membershipTier.toUpperCase()}</strong> será encerrada
+                imediatamente, interrompendo eventuais cobranças recorrentes no Stripe e desativando o cartão digital e
+                os descontos do Clube.
+              </p>
+              <div style={{ display: 'flex', gap: '0.65rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--outlined"
+                  disabled={cancelingClub}
+                  onClick={() => setCancelDialogOpen(false)}
+                >
+                  Manter assinatura
+                </button>
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--filled"
+                  style={{ background: 'var(--md-sys-color-error)', color: '#ffffff' }}
+                  disabled={cancelingClub}
+                  onClick={async () => {
+                    setCancelingClub(true);
+                    try {
+                      await cancelClubMembership();
+                      setCancelDialogOpen(false);
+                      notify('Assinatura do Clube CAMBLU cancelada.');
+                    } catch (err) {
+                      notify(
+                        err instanceof Error ? err.message : 'Erro ao cancelar assinatura do Clube CAMBLU.',
+                        'error',
+                      );
+                    } finally {
+                      setCancelingClub(false);
+                    }
+                  }}
+                >
+                  <Icon name="cancel" size={18} />
+                  <span>{cancelingClub ? 'Cancelando...' : 'Confirmar Cancelamento'}</span>
+                </button>
+              </div>
+            </div>
+          </M3Dialog>
 
           <div className="m3-card m3-card--tonal">
             <h3 style={{ marginBlockEnd: '0.5rem' }}>

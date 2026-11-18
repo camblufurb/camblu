@@ -1319,6 +1319,68 @@ app.post('/api/checkout/membership', async (req, res) => {
   }
 });
 
+app.post('/api/club/cancel', async (req, res) => {
+  const decoded = await verifyBearerToken(req);
+  if (!decoded) {
+    res.status(401).json({ error: 'Autenticação Google obrigatória.' });
+    return;
+  }
+
+  try {
+    const userRef = db.collection('users').doc(decoded.uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) {
+      res.status(404).json({ error: 'Perfil do usuário não encontrado.' });
+      return;
+    }
+
+    const userData = userSnap.data()!;
+    const subId =
+      typeof userData.stripeSubscriptionId === 'string'
+        ? userData.stripeSubscriptionId.trim()
+        : '';
+
+    let stripeCanceled = false;
+    if (subId) {
+      try {
+        const stripe = getStripeClient();
+        const existingSub = await stripe.subscriptions.retrieve(subId);
+        if (existingSub && existingSub.status !== 'canceled') {
+          await stripe.subscriptions.cancel(subId);
+          stripeCanceled = true;
+        }
+      } catch (stripeErr) {
+        const code = (stripeErr as { code?: string })?.code;
+        if (code !== 'resource_missing') {
+          throw stripeErr;
+        }
+      }
+    }
+
+    const updatedAt = new Date().toISOString();
+    await userRef.set(
+      {
+        membershipActive: false,
+        membershipTier: 'none',
+        membershipCycle: null,
+        membershipValidUntil: null,
+        stripeSubscriptionId: null,
+        updatedAt,
+      },
+      { merge: true },
+    );
+
+    res.json({ ok: true, stripeCanceled, updatedAt });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/club/cancel', {
+      origin: 'functions -> /api/club/cancel',
+      uid: decoded.uid,
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ error: 'Não foi possível cancelar a assinatura do Clube CAMBLU.' });
+  }
+});
+
 // Item 1.5 — Transferência atômica de ingresso por CPF
 app.post('/api/tickets/transfer', async (req, res) => {
   const decoded = await verifyBearerToken(req);
