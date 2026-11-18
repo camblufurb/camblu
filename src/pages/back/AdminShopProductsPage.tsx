@@ -121,6 +121,13 @@ export function AdminShopProductsPage() {
   const [aiRefUrl, setAiRefUrl] = useState<string>('');
   const [refDialogOpen, setRefDialogOpen] = useState(false);
   const [pendingGenerateBlock, setPendingGenerateBlock] = useState<BlockKey | null>(null);
+  const [previewImage, setPreviewImage] = useState<{
+    blockKey: BlockKey;
+    blockTitle: string;
+    dataUrl: string;
+    label: string;
+    canAdd: boolean;
+  } | null>(null);
 
   const fileInputRefs = useRef<Record<BlockKey, HTMLInputElement | null>>({
     furb_individual: null,
@@ -262,7 +269,7 @@ export function AdminShopProductsPage() {
         productDescription: prodDesc.trim(),
         productCategory: effectiveCategory || 'Camisetas',
         avgLuminance,
-        selectedShots: [blockKey, blockKey, blockKey],
+        selectedShots: [blockKey],
         furbRefs: furbReferences,
       });
 
@@ -278,7 +285,7 @@ export function AdminShopProductsPage() {
         ...prev,
         [blockKey]: response.images,
       }));
-      notify(`3 opções geradas para "${BLOCK_SPECS.find((b) => b.key === blockKey)?.title}". Clique em + para adicionar.`);
+      notify(`Exemplo gerado para "${BLOCK_SPECS.find((b) => b.key === blockKey)?.title}". Clique na imagem para ampliar ou em + para adicionar.`);
     } catch (err) {
       notify(
         err instanceof Error ? err.message : 'Falha ao gerar opções com gemini-nano-banana-2.1.',
@@ -690,7 +697,22 @@ export function AdminShopProductsPage() {
                         const isCover = url === effectiveCover;
                         return (
                           <div key={`${block.key}-${idx}-${url.slice(0, 32)}`} className="gallery-thumb-card">
-                            <img src={url} alt={`${block.title} — foto ${idx + 1}`} />
+                            <button
+                              type="button"
+                              className="gallery-ai-zoom-trigger"
+                              aria-label={`Ampliar ${block.title} — foto ${idx + 1}`}
+                              onClick={() =>
+                                setPreviewImage({
+                                  blockKey: block.key,
+                                  blockTitle: block.title,
+                                  dataUrl: url,
+                                  label: `${block.title} — foto ${idx + 1}`,
+                                  canAdd: false,
+                                })
+                              }
+                            >
+                              <img src={url} alt={`${block.title} — foto ${idx + 1}`} />
+                            </button>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.2rem' }}>
                               {isCover ? (
                                 <span className="m3-badge m3-badge--blue" style={{ fontSize: '0.68rem', padding: '0.12rem 0.45rem' }}>
@@ -724,13 +746,34 @@ export function AdminShopProductsPage() {
 
                   {aiOptions.length > 0 && (
                     <div className="gallery-ai-options-panel">
-                      <span className="m3-label-small text-muted">3 opções geradas</span>
+                      <span className="m3-label-small text-muted">
+                        Exemplo gerado (clique para ampliar)
+                      </span>
                       <div className="gallery-ai-options-grid">
                         {aiOptions.map((opt) => {
                           const added = blockUrls.includes(opt.dataUrl);
                           return (
                             <div key={opt.id} className="gallery-ai-option-item">
-                              <img src={opt.dataUrl} alt={opt.label} />
+                              <button
+                                type="button"
+                                className="gallery-ai-zoom-trigger"
+                                aria-label={`Ampliar imagem gerada: ${opt.label}`}
+                                title="Clique para ampliar"
+                                onClick={() =>
+                                  setPreviewImage({
+                                    blockKey: block.key,
+                                    blockTitle: block.title,
+                                    dataUrl: opt.dataUrl,
+                                    label: opt.label,
+                                    canAdd: !added,
+                                  })
+                                }
+                              >
+                                <img src={opt.dataUrl} alt={opt.label} />
+                                <span className="gallery-ai-zoom-hint" aria-hidden="true">
+                                  <Icon name="zoom_in" size={15} />
+                                </span>
+                              </button>
                               <button
                                 type="button"
                                 className="gallery-ai-add-btn"
@@ -819,6 +862,52 @@ export function AdminShopProductsPage() {
             />
           </div>
         </div>
+      </M3Dialog>
+
+      <M3Dialog
+        open={Boolean(previewImage)}
+        onClose={() => setPreviewImage(null)}
+        wide
+        title={previewImage ? `${previewImage.blockTitle} · ${previewImage.label}` : 'Visualizar imagem'}
+      >
+        {previewImage && (
+          <div className="m3-motion-panel" style={{ display: 'grid', gap: '1rem', justifyItems: 'center' }}>
+            <img
+              src={previewImage.dataUrl}
+              alt={previewImage.label}
+              style={{
+                maxInlineSize: '100%',
+                maxBlockSize: '68vh',
+                objectFit: 'contain',
+                borderRadius: 'var(--md-sys-shape-corner-md)',
+                border: '1px solid var(--md-sys-color-outline-variant)',
+              }}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', justifyContent: 'flex-end', inlineSize: '100%' }}>
+              <button
+                type="button"
+                className="m3-btn m3-btn--outlined"
+                onClick={() => setPreviewImage(null)}
+              >
+                Fechar
+              </button>
+              {previewImage.canAdd && (
+                <button
+                  type="button"
+                  className="m3-btn m3-btn--blue"
+                  onClick={() => {
+                    addImagesToBlock(previewImage.blockKey, [previewImage.dataUrl]);
+                    setPreviewImage(null);
+                    notify(`Imagem adicionada ao bloco "${previewImage.blockTitle}".`);
+                  }}
+                >
+                  <Icon name="add" size={18} />
+                  <span>Adicionar à galeria</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </M3Dialog>
 
       <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>

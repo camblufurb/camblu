@@ -3451,7 +3451,8 @@
     .sobre-member-btn:hover,
     .shop-mosaic-tile:hover,
     .matriz-bar:hover,
-    .matriz-phase-btn:hover {
+    .matriz-phase-btn:hover,
+    .gallery-ai-zoom-trigger:hover img {
       transform: none;
     }
   }
@@ -3610,8 +3611,8 @@
 
   .gallery-ai-options-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(128px, 168px));
+    gap: 0.55rem;
   }
 
   .gallery-ai-option-item {
@@ -3622,11 +3623,39 @@
     background: var(--md-sys-color-surface);
   }
 
-  .gallery-ai-option-item img {
+  .gallery-ai-zoom-trigger {
+    display: block;
+    inline-size: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: zoom-in;
+  }
+
+  .gallery-ai-zoom-trigger img {
     inline-size: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
     display: block;
+    transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .gallery-ai-zoom-trigger:hover img {
+    transform: scale(1.03);
+  }
+
+  .gallery-ai-zoom-hint {
+    position: absolute;
+    inset-block-start: 0.35rem;
+    inset-inline-start: 0.35rem;
+    inline-size: 26px;
+    block-size: 26px;
+    border-radius: var(--md-sys-shape-corner-full);
+    display: grid;
+    place-items: center;
+    background: rgba(17, 28, 22, 0.64);
+    color: #ffffff;
+    pointer-events: none;
   }
 
   .gallery-ai-add-btn {
