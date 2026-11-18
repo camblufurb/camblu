@@ -74,7 +74,6 @@ export function Layout({ children, userSlot }: LayoutProps) {
     { to: '/calendario', label: t('nav.calendar'), icon: 'calendar_month' },
     { to: '/editais', label: t('nav.editais'), icon: 'description' },
     { to: '/ligas', label: t('nav.ligas'), icon: 'biotech' },
-    { to: '/secimed', label: t('nav.secimed'), icon: 'science' },
     { to: '/secimed/anais-secimed', label: t('nav.anais'), icon: 'menu_book' },
     { to: '/manual-do-calouro', label: t('nav.freshman'), icon: 'school' },
   ];
@@ -165,6 +164,9 @@ export function Layout({ children, userSlot }: LayoutProps) {
             <nav ref={navRef} className="primary-nav" aria-label="Navegação principal">
               <NavLink to="/" end className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
                 {t('nav.home')}
+              </NavLink>
+              <NavLink to="/secimed" end className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
+                {t('nav.secimed')}
               </NavLink>
               <NavLink to="/eventos" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
                 {t('nav.events')}
@@ -315,6 +317,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
         <nav aria-label="Links móveis" style={{ display: 'grid', gap: '0.25rem' }}>
           {[
             { to: '/', label: t('nav.home'), icon: 'home' },
+            { to: '/secimed', label: t('nav.secimed'), icon: 'science' },
             { to: '/eventos', label: t('nav.events'), icon: 'confirmation_number' },
             { to: '/lojinha', label: t('nav.shop'), icon: 'shopping_bag' },
             { to: '/clube', label: t('nav.club'), icon: 'workspace_premium' },
@@ -324,7 +327,7 @@ export function Layout({ children, userSlot }: LayoutProps) {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/' || item.to === '/secimed'}
               className={({ isActive }) => `dropdown-item ${isActive ? 'is-active' : ''}`}
               onClick={() => setDrawerOpen(false)}
               style={({ isActive }) =>
