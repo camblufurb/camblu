@@ -38,6 +38,7 @@ import {
   type InlineImagePayload,
   type ProductAiShotRequest,
 } from './productImageGenerator.js';
+import type { GeminiAuthInput } from './geminiClient.js';
 
 initializeApp();
 const db = getFirestore();
@@ -333,6 +334,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'camblu-api' });
 });
 
+function getServerGeminiAuth(): GeminiAuthInput {
+  return {
+    mode: 'vertex-adc',
+    projectId: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || 'camblu',
+  };
+}
+
 app.post('/api/transparency/categorize', async (req, res) => {
   const decoded = await verifyBearerToken(req);
   if (!decoded || decoded.email?.toLowerCase() !== ADMIN_EMAIL || !decoded.email_verified) {
@@ -340,11 +348,7 @@ app.post('/api/transparency/categorize', async (req, res) => {
     return;
   }
 
-  const key = geminiApiKey.value();
-  if (!key) {
-    res.status(500).json({ error: 'Segredo GEMINI_API_KEY não configurado no Firebase.' });
-    return;
-  }
+  const geminiAuth = getServerGeminiAuth();
 
   const body = (req.body || {}) as {
     entries?: Array<{
@@ -436,7 +440,7 @@ app.post('/api/transparency/categorize', async (req, res) => {
       category: e.category,
     }));
 
-    const aiResult = await categorizeTransparencyEntriesWithGemini(categorizable, key);
+    const aiResult = await categorizeTransparencyEntriesWithGemini(categorizable, geminiAuth);
     const categorizedEntries = sourceDocs.map((entry) => ({
       ...entry,
       category: aiResult.assignments[entry.id] || entry.category || 'Administrativo & Financeiro',
@@ -583,11 +587,7 @@ app.post('/api/transparency/audit-month', async (req, res) => {
     return;
   }
 
-  const key = geminiApiKey.value();
-  if (!key) {
-    res.status(500).json({ error: 'Segredo GEMINI_API_KEY não configurado no Firebase.' });
-    return;
-  }
+  const geminiAuth = getServerGeminiAuth();
 
   const body = (req.body || {}) as {
     monthSheet?: string;
@@ -656,7 +656,7 @@ app.post('/api/transparency/audit-month', async (req, res) => {
 
     const result = await runTransparencyMonthAudit(
       { monthSheet, entries, overviewCsv, monthCsv },
-      key,
+      geminiAuth,
     );
 
     res.json({ ok: true, ...result });
@@ -680,11 +680,7 @@ app.post('/api/shop/generate-images', async (req, res) => {
     return;
   }
 
-  const key = geminiApiKey.value();
-  if (!key) {
-    res.status(500).json({ error: 'Segredo GEMINI_API_KEY não configurado no Firebase.' });
-    return;
-  }
+  const geminiAuth = getServerGeminiAuth();
 
   const body = (req.body || {}) as {
     productImages?: InlineImagePayload[];
@@ -704,7 +700,7 @@ app.post('/api/shop/generate-images', async (req, res) => {
     const result = await generateProductImagesWithNanoBanana({
       productImages: body.productImages.slice(0, 4),
       shots: body.shots.slice(0, 4),
-      apiKey: key,
+      apiKey: geminiAuth,
     });
     res.json({ ok: true, ...result });
   } catch (err) {

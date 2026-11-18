@@ -3,11 +3,10 @@ import {
   type CategorizableTransparencyEntry,
   type TransparencyEntryDirection,
 } from './transparencyCategorizer.js';
+import { callGeminiGenerateContent, type GeminiAuthInput } from './geminiClient.js';
 
 export const AUDIT_FLASH_LITE_MODEL = 'gemini-flash-lite-latest';
 export const FIXER_FLASH_MODEL = 'gemini-flash-latest';
-
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export interface MonthCalculationSnapshot {
   totalInCents: number;
@@ -73,34 +72,26 @@ function parseJsonResponse<T>(rawText: string): T {
 
 async function callGeminiStructuredJson<T>(params: {
   model: string;
-  apiKey: string;
+  auth: GeminiAuthInput;
   prompt: string;
   schema: Record<string, unknown>;
   temperature?: number;
   fetchImpl?: typeof fetch;
-}): Promise<T> {
+}): Promise<{ data: T; resolvedModel: string }> {
   const {
     model,
-    apiKey,
+    auth,
     prompt,
     schema,
     temperature = 0,
     fetchImpl = fetch,
   } = params;
 
-  const cleanKey = apiKey.trim();
-  if (!cleanKey) {
-    throw new Error('GEMINI_API_KEY não configurada no servidor.');
-  }
-
-  const endpoint = `${GEMINI_API_BASE}/${encodeURIComponent(model)}:generateContent`;
-  const response = await fetchImpl(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': cleanKey,
-    },
-    body: JSON.stringify({
+  const { payload, resolvedModel } = await callGeminiGenerateContent({
+    model,
+    auth,
+    fetchImpl,
+    body: {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature,
@@ -108,17 +99,9 @@ async function callGeminiStructuredJson<T>(params: {
         responseMimeType: 'application/json',
         responseSchema: schema,
       },
-    }),
+    },
   });
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => '');
-    throw new Error(`Gemini (${model}) HTTP ${response.status}: ${errText.slice(0, 240)}`);
-  }
-
-  const payload = (await response.json()) as {
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
   const text = payload.candidates?.[0]?.content?.parts
     ?.map((p) => p.text || '')
     .join('')
@@ -128,7 +111,7 @@ async function callGeminiStructuredJson<T>(params: {
     throw new Error(`Resposta vazia do modelo ${model}.`);
   }
 
-  return parseJsonResponse<T>(text);
+  return { data: parseJsonResponse<T>(text), resolvedModel };
 }
 
 /**
@@ -183,9 +166,9 @@ function formatCentsReais(cents: number): string {
  */
 export async function auditMonthWithFlashLite(
   input: MonthAuditInput,
-  apiKey: string,
+  auth: GeminiAuthInput,
   fetchImpl: typeof fetch = fetch,
-): Promise<{ snapshot: MonthCalculationSnapshot; report: FlashLiteAuditReport }> {
+): Promise<{ snapshot: MonthCalculationSnapshot; report: FlashLiteAuditReport; resolvedModel: string }> {
   const snapshot = computeMonthSnapshot(input.entries);
   const compactEntries = buildCompactImportedView(input.entries);
 
@@ -225,9 +208,9 @@ export async function auditMonthWithFlashLite(
     required: ['isAccurate', 'severity', 'summary', 'discrepancies'],
   };
 
-  const raw = await callGeminiStructuredJson<FlashLiteAuditReport>({
+  const { data: raw, resolvedModel } = await callGeminiStructuredJson<FlashLiteAuditReport>({
     model: AUDIT_FLASH_LITE_MODEL,
-    apiKey,
+    auth,
     prompt,
     schema,
     temperature: 0,
@@ -239,6 +222,7 @@ export async function auditMonthWithFlashLite(
 
   return {
     snapshot,
+    resolvedModel,
     report: {
       isAccurate,
       severity: isAccurate ? 'ok' : raw.severity === 'warning' ? 'warning' : 'error',
@@ -256,9 +240,9 @@ export async function proposeMonthFixWithFlashLatest(
   input: MonthAuditInput,
   snapshot: MonthCalculationSnapshot,
   audit: FlashLiteAuditReport,
-  apiKey: string,
+  auth: GeminiAuthInput,
   fetchImpl: typeof fetch = fetch,
-): Promise<MonthFixProposal> {
+): Promise<{ proposal: MonthFixProposal; resolvedModel: string }> {
   const compactEntries = buildCompactImportedView(input.entries);
   const existingCategories = Array.from(
     new Set(input.entries.map((e) => normalizeCategoryLabel(e.category)).filter(Boolean)),
@@ -336,7 +320,7 @@ export async function proposeMonthFixWithFlashLatest(
     ],
   };
 
-  const raw = await callGeminiStructuredJson<{
+  const { data: raw, resolvedModel } = await callGeminiStructuredJson<{
     errorLocation: string;
     explanation: string;
     proposedSolution: string;
@@ -352,7 +336,7 @@ export async function proposeMonthFixWithFlashLatest(
     }>;
   }>({
     model: FIXER_FLASH_MODEL,
-    apiKey,
+    auth,
     prompt,
     schema,
     temperature: 0.1,
@@ -386,21 +370,24 @@ export async function proposeMonthFixWithFlashLatest(
   const fixedSnapshot = computeMonthSnapshot(normalizedEntries);
 
   return {
-    errorLocation: String(raw.errorLocation || 'Importação e classificação de lançamentos').trim(),
-    explanation: String(raw.explanation || audit.summary).trim(),
-    proposedSolution: String(raw.proposedSolution || 'Ajustar classificação e fontes conforme a planilha.').trim(),
-    dataSourceChanges: (raw.dataSourceChanges || []).map((s) => String(s).trim()).filter(Boolean),
-    formulaChanges: {
-      inflowsFormula: String(raw.formulaChanges?.inflowsFormula || 'Soma de receitas operacionais do mês'),
-      outflowsFormula: String(raw.formulaChanges?.outflowsFormula || 'Soma de despesas operacionais do mês'),
-      netResultFormula: String(raw.formulaChanges?.netResultFormula || 'Entradas - Saídas'),
-      notes: String(raw.formulaChanges?.notes || ''),
-    },
-    proposedEntries: normalizedEntries,
-    proposedTotals: {
-      totalInCents: fixedSnapshot.totalInCents,
-      totalOutCents: fixedSnapshot.totalOutCents,
-      netResultCents: fixedSnapshot.netResultCents,
+    resolvedModel,
+    proposal: {
+      errorLocation: String(raw.errorLocation || 'Importação e classificação de lançamentos').trim(),
+      explanation: String(raw.explanation || audit.summary).trim(),
+      proposedSolution: String(raw.proposedSolution || 'Ajustar classificação e fontes conforme a planilha.').trim(),
+      dataSourceChanges: (raw.dataSourceChanges || []).map((s) => String(s).trim()).filter(Boolean),
+      formulaChanges: {
+        inflowsFormula: String(raw.formulaChanges?.inflowsFormula || 'Soma de receitas operacionais do mês'),
+        outflowsFormula: String(raw.formulaChanges?.outflowsFormula || 'Soma de despesas operacionais do mês'),
+        netResultFormula: String(raw.formulaChanges?.netResultFormula || 'Entradas - Saídas'),
+        notes: String(raw.formulaChanges?.notes || ''),
+      },
+      proposedEntries: normalizedEntries,
+      proposedTotals: {
+        totalInCents: fixedSnapshot.totalInCents,
+        totalOutCents: fixedSnapshot.totalOutCents,
+        netResultCents: fixedSnapshot.netResultCents,
+      },
     },
   };
 }
@@ -413,23 +400,28 @@ export async function proposeMonthFixWithFlashLatest(
  */
 export async function runTransparencyMonthAudit(
   input: MonthAuditInput,
-  apiKey: string,
+  auth: GeminiAuthInput,
   fetchImpl: typeof fetch = fetch,
 ): Promise<MonthAuditResponse> {
-  const { snapshot, report } = await auditMonthWithFlashLite(input, apiKey, fetchImpl);
+  const { snapshot, report, resolvedModel: auditModel } = await auditMonthWithFlashLite(
+    input,
+    auth,
+    fetchImpl,
+  );
 
   let proposal: MonthFixProposal | null = null;
   let fixerModel: string | null = null;
 
   if (!report.isAccurate) {
-    proposal = await proposeMonthFixWithFlashLatest(input, snapshot, report, apiKey, fetchImpl);
-    fixerModel = FIXER_FLASH_MODEL;
+    const fixRes = await proposeMonthFixWithFlashLatest(input, snapshot, report, auth, fetchImpl);
+    proposal = fixRes.proposal;
+    fixerModel = fixRes.resolvedModel;
   }
 
   return {
     status: report.isAccurate ? 'ok' : 'discrepancy_found',
     monthSheet: input.monthSheet,
-    auditModel: AUDIT_FLASH_LITE_MODEL,
+    auditModel,
     fixerModel,
     checkedAt: new Date().toISOString(),
     currentSnapshot: snapshot,

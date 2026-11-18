@@ -1,6 +1,7 @@
+import { callGeminiGenerateContent, type GeminiAuthInput } from './geminiClient.js';
+
 export const GEMINI_IMAGE_MODEL = 'gemini-nano-banana-2.1';
 
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const ALLOWED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
 export interface InlineImagePayload {
@@ -47,14 +48,10 @@ function assertValidImage(img: InlineImagePayload, label: string): InlineImagePa
 export async function generateSingleProductShotWithNanoBanana(params: {
   productImages: InlineImagePayload[];
   shot: ProductAiShotRequest;
-  apiKey: string;
+  apiKey: GeminiAuthInput;
   fetchImpl?: typeof fetch;
 }): Promise<GeneratedProductAiImage> {
-  const { productImages, shot, apiKey, fetchImpl = fetch } = params;
-  const cleanKey = apiKey.trim();
-  if (!cleanKey) {
-    throw new Error('GEMINI_API_KEY não configurada no servidor.');
-  }
+  const { productImages, shot, apiKey: auth, fetchImpl = fetch } = params;
   if (!Array.isArray(productImages) || productImages.length === 0) {
     throw new Error('Envie pelo menos uma foto base do produto para gerar as imagens com IA.');
   }
@@ -72,14 +69,11 @@ export async function generateSingleProductShotWithNanoBanana(params: {
   }
   parts.push({ text: shot.prompt.trim().slice(0, 4000) });
 
-  const endpoint = `${GEMINI_API_BASE}/${encodeURIComponent(GEMINI_IMAGE_MODEL)}:generateContent`;
-  const response = await fetchImpl(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': cleanKey,
-    },
-    body: JSON.stringify({
+  const { payload } = await callGeminiGenerateContent({
+    model: GEMINI_IMAGE_MODEL,
+    auth,
+    fetchImpl,
+    body: {
       contents: [{ role: 'user', parts }],
       generationConfig: {
         responseModalities: ['IMAGE'],
@@ -87,24 +81,8 @@ export async function generateSingleProductShotWithNanoBanana(params: {
           aspectRatio: shot.aspectRatio || '1:1',
         },
       },
-    }),
+    },
   });
-
-  if (!response.ok) {
-    const errText = await response.text().catch(() => '');
-    throw new Error(`Gemini (${GEMINI_IMAGE_MODEL}) HTTP ${response.status}: ${errText.slice(0, 260)}`);
-  }
-
-  const payload = (await response.json()) as {
-    candidates?: Array<{
-      content?: {
-        parts?: Array<{
-          text?: string;
-          inlineData?: { mimeType?: string; data?: string };
-        }>;
-      };
-    }>;
-  };
 
   const imagePart = payload.candidates?.[0]?.content?.parts?.find(
     (part) => part.inlineData?.data,
@@ -128,7 +106,7 @@ export async function generateSingleProductShotWithNanoBanana(params: {
 export async function generateProductImagesWithNanoBanana(params: {
   productImages: InlineImagePayload[];
   shots: ProductAiShotRequest[];
-  apiKey: string;
+  apiKey: GeminiAuthInput;
   fetchImpl?: typeof fetch;
 }): Promise<{ model: string; images: GeneratedProductAiImage[] }> {
   const { productImages, shots, apiKey, fetchImpl = fetch } = params;

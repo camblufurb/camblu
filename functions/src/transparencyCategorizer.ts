@@ -1,6 +1,7 @@
+import { callGeminiGenerateContent, type GeminiAuthInput } from './geminiClient.js';
+
 export const GEMINI_CATEGORIZER_MODEL = 'gemini-flash-lite-latest';
 
-const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 const DEFAULT_BATCH_SIZE = 150;
 const MAX_CATEGORY_LENGTH = 36;
 
@@ -157,12 +158,11 @@ function parseGeminiJsonPayload(text: string): GeminiStructuredPayload {
  */
 export async function categorizeTransparencyEntriesWithGemini(
   entries: CategorizableTransparencyEntry[],
-  apiKey: string,
+  auth: GeminiAuthInput,
   fetchImpl: typeof fetch = fetch,
   batchSize = DEFAULT_BATCH_SIZE,
 ): Promise<GeminiCategorizationResult> {
-  const cleanKey = apiKey.trim();
-  if (!cleanKey) {
+  if (typeof auth === 'string' && !auth.trim()) {
     throw new Error('GEMINI_API_KEY não configurada no servidor.');
   }
   if (entries.length === 0) {
@@ -172,18 +172,15 @@ export async function categorizeTransparencyEntriesWithGemini(
   const canonicalByKey = new Map<string, string>();
   const assignments: Record<string, string> = {};
   const lockedCategories: string[] = [];
+  let effectiveModel = GEMINI_CATEGORIZER_MODEL;
 
   for (let start = 0; start < entries.length; start += batchSize) {
     const batch = entries.slice(start, start + batchSize);
-    const endpoint = `${GEMINI_API_BASE}/${encodeURIComponent(GEMINI_CATEGORIZER_MODEL)}:generateContent`;
-
-    const response = await fetchImpl(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': cleanKey,
-      },
-      body: JSON.stringify({
+    const { payload, resolvedModel } = await callGeminiGenerateContent({
+      model: GEMINI_CATEGORIZER_MODEL,
+      auth,
+      fetchImpl,
+      body: {
         contents: [
           {
             role: 'user',
@@ -216,19 +213,9 @@ export async function categorizeTransparencyEntriesWithGemini(
             required: ['categories', 'assignments'],
           },
         },
-      }),
+      },
     });
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      throw new Error(`Gemini API HTTP ${response.status}: ${errText.slice(0, 240)}`);
-    }
-
-    const payload = (await response.json()) as {
-      candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> };
-      }>;
-    };
+    effectiveModel = resolvedModel;
 
     const rawText = payload.candidates?.[0]?.content?.parts
       ?.map((p) => p.text || '')
@@ -271,7 +258,7 @@ export async function categorizeTransparencyEntriesWithGemini(
   );
 
   return {
-    model: GEMINI_CATEGORIZER_MODEL,
+    model: effectiveModel,
     categories: usedCategories,
     assignments,
   };
