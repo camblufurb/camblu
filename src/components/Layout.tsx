@@ -10,6 +10,13 @@ import { M3ShapeDefs } from './ExpressiveShapeFrame';
 import goritIconUrl from '../../assets/icons/gorit.svg';
 import spaiqIconUrl from '../../assets/icons/spaiq.svg';
 
+interface NavItem {
+  to: string;
+  label: string;
+  icon: string;
+  end?: boolean;
+}
+
 interface LayoutProps {
   children: React.ReactNode;
   userSlot?: React.ReactNode;
@@ -70,7 +77,15 @@ export function Layout({ children, userSlot }: LayoutProps) {
     };
   }, []);
 
-  const academicLinks = [
+  const primaryLinks: NavItem[] = [
+    { to: '/', label: t('nav.home'), icon: 'home', end: true },
+    { to: '/secimed', label: t('nav.secimed'), icon: 'science', end: true },
+    { to: '/eventos', label: t('nav.events'), icon: 'confirmation_number' },
+    { to: '/lojinha', label: t('nav.shop'), icon: 'shopping_bag' },
+    { to: '/clube', label: t('nav.club'), icon: 'workspace_premium' },
+  ];
+
+  const academicLinks: NavItem[] = [
     { to: '/calendario', label: t('nav.calendar'), icon: 'calendar_month' },
     { to: '/editais', label: t('nav.editais'), icon: 'description' },
     { to: '/ligas', label: t('nav.ligas'), icon: 'biotech' },
@@ -78,14 +93,20 @@ export function Layout({ children, userSlot }: LayoutProps) {
     { to: '/manual-do-calouro', label: t('nav.freshman'), icon: 'school' },
   ];
 
-  const institutionalLinks = [
+  const institutionalLinks: NavItem[] = [
     { to: '/sobre', label: t('nav.about'), icon: 'apartment' },
-    { to: '/medfurb', label: t('nav.medfurb'), icon: 'medical_services' },
+    { to: '/medfurb', label: t('nav.medfurb'), icon: 'medical_services', end: true },
     { to: '/medfurb/instituicoes', label: 'Instituições Estudantis', icon: 'handshake' },
     { to: '/gestoes', label: t('nav.gestoes'), icon: 'groups' },
     { to: '/transparencia', label: t('nav.transparency'), icon: 'monitoring' },
     { to: '/demandas', label: t('nav.demands'), icon: 'support_agent' },
     { to: '/camblu-mulher', label: t('nav.cambluMulher'), icon: 'shield_with_heart' },
+  ];
+
+  const drawerSections = [
+    { id: 'primary', label: t('nav.primary'), items: primaryLinks },
+    { id: 'academic', label: t('nav.academic'), items: academicLinks },
+    { id: 'institutional', label: t('nav.more'), items: institutionalLinks },
   ];
 
   const appLinks = [
@@ -162,21 +183,16 @@ export function Layout({ children, userSlot }: LayoutProps) {
             </Link>
 
             <nav ref={navRef} className="primary-nav" aria-label="Navegação principal">
-              <NavLink to="/" end className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-                {t('nav.home')}
-              </NavLink>
-              <NavLink to="/secimed" end className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-                {t('nav.secimed')}
-              </NavLink>
-              <NavLink to="/eventos" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-                {t('nav.events')}
-              </NavLink>
-              <NavLink to="/lojinha" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-                {t('nav.shop')}
-              </NavLink>
-              <NavLink to="/clube" className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}>
-                {t('nav.club')}
-              </NavLink>
+              {primaryLinks.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  className={({ isActive }) => `nav-pill ${isActive ? 'is-active' : ''}`}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
 
               <div className="nav-dropdown">
                 <button
@@ -314,54 +330,39 @@ export function Layout({ children, userSlot }: LayoutProps) {
           </button>
         </div>
 
-        <nav aria-label="Links móveis" style={{ display: 'grid', gap: '0.25rem' }}>
-          {[
-            { to: '/', label: t('nav.home'), icon: 'home' },
-            { to: '/secimed', label: t('nav.secimed'), icon: 'science' },
-            { to: '/eventos', label: t('nav.events'), icon: 'confirmation_number' },
-            { to: '/lojinha', label: t('nav.shop'), icon: 'shopping_bag' },
-            { to: '/clube', label: t('nav.club'), icon: 'workspace_premium' },
-            ...academicLinks,
-            ...institutionalLinks,
-          ].map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/' || item.to === '/secimed'}
-              className={({ isActive }) => `dropdown-item ${isActive ? 'is-active' : ''}`}
-              onClick={() => setDrawerOpen(false)}
-              style={({ isActive }) =>
-                isActive
-                  ? {
-                      background: 'var(--md-sys-color-primary-container)',
-                      color: 'var(--md-sys-color-on-primary-container)',
+        <nav aria-label="Links móveis" className="m3-drawer-nav">
+          {drawerSections.map((section) => {
+            const headingId = `drawer-section-${section.id}`;
+            return (
+              <div key={section.id} role="group" aria-labelledby={headingId} className="m3-drawer-section">
+                <span id={headingId} className="m3-drawer-section-title">
+                  {section.label}
+                </span>
+                {section.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) => `dropdown-item ${isActive ? 'is-active' : ''}`}
+                    onClick={() => setDrawerOpen(false)}
+                    style={({ isActive }) =>
+                      isActive
+                        ? {
+                            background: 'var(--md-sys-color-primary-container)',
+                            color: 'var(--md-sys-color-on-primary-container)',
+                          }
+                        : undefined
                     }
-                  : undefined
-              }
-            >
-              <Icon name={item.icon} size={20} />
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-          <div
-            style={{
-              borderBlockStart: '1px solid var(--md-sys-color-outline-variant)',
-              marginBlockStart: '0.4rem',
-              paddingBlockStart: '0.55rem',
-              display: 'grid',
-              gap: '0.25rem',
-            }}
-          >
-            <span
-              style={{
-                paddingInline: '0.85rem',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.07em',
-                color: 'var(--md-sys-color-on-surface-variant)',
-              }}
-            >
+                  >
+                    <Icon name={item.icon} size={20} />
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            );
+          })}
+          <div role="group" aria-labelledby="drawer-section-apps" className="m3-drawer-section">
+            <span id="drawer-section-apps" className="m3-drawer-section-title">
               {t('nav.apps')}
             </span>
             {renderAppLinks(() => setDrawerOpen(false))}

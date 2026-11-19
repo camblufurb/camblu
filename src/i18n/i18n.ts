@@ -7,6 +7,7 @@ const dictionary = {
     'app.title': 'CAMBLU',
     'skip.toContent': 'Pular para o conteúdo principal',
     'nav.home': 'Início',
+    'nav.primary': 'Principal',
     'nav.events': 'Eventos',
     'nav.shop': 'Lojinha',
     'nav.club': 'Clube CAMBLU',

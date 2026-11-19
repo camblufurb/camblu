@@ -1012,6 +1012,31 @@
     overscroll-behavior: contain;
   }
 
+  .m3-drawer-nav {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .m3-drawer-section {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .m3-drawer-section + .m3-drawer-section {
+    border-block-start: 1px solid var(--md-sys-color-outline-variant);
+    padding-block-start: 0.65rem;
+  }
+
+  .m3-drawer-section-title {
+    padding-inline: 0.85rem;
+    padding-block: 0.2rem 0.15rem;
+    font-size: 0.72rem;
+    font-weight: 760;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--md-sys-color-on-surface-variant);
+  }
+
   /* Toast region */
   .m3-toast-viewport {
     position: fixed;
