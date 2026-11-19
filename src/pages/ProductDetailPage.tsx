@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FloatingCartPill } from '../components/FloatingCartPill';
 import { Icon } from '../components/Icon';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useShopCart } from '../context/ShopCartContext';
 import { PRODUCTS_SEED } from '../data/catalogSeeds';
 import { calculateShopPrice } from '../lib/clubPricing';
+import { computeInfiniteMultiBrowseMetrics } from '../lib/m3MultiBrowseCarousel';
 import {
   buildProductGallery,
   CAMBLU_CLEAN_CREST_URL,
@@ -45,8 +46,130 @@ export function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColorName, setSelectedColorName] = useState('');
   const [lightboxSlide, setLightboxSlide] = useState<GallerySlide | null>(null);
+  const [isMobileCarousel, setIsMobileCarousel] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 57.99rem)').matches : false,
+  );
+  const [scrollerWidth, setScrollerWidth] = useState(360);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false,
+  );
+
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
+  const initializedProductLoopRef = useRef<string | null>(null);
 
   const gallery = useMemo(() => (product ? buildProductGallery(product) : []), [product]);
+  const isMobileLooped = isMobileCarousel && gallery.length >= 2;
+  const displayTrackItems = useMemo(() => {
+    if (!isMobileLooped) {
+      return gallery.map((slide, idx) => ({ key: slide.id, slide, realIdx: idx }));
+    }
+    return [0, 1, 2].flatMap((cycle) =>
+      gallery.map((slide, idx) => ({
+        key: `${slide.id}-loop-${cycle}`,
+        slide,
+        realIdx: idx,
+      })),
+    );
+  }, [gallery, isMobileLooped]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mobileQuery = window.matchMedia('(max-width: 57.99rem)');
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncQueries = () => {
+      setIsMobileCarousel(mobileQuery.matches);
+      setPrefersReducedMotion(motionQuery.matches);
+    };
+    syncQueries();
+    mobileQuery.addEventListener('change', syncQueries);
+    motionQuery.addEventListener('change', syncQueries);
+    return () => {
+      mobileQuery.removeEventListener('change', syncQueries);
+      motionQuery.removeEventListener('change', syncQueries);
+    };
+  }, []);
+
+  const snapStepPx = Math.max(110, Math.round(scrollerWidth * 0.45));
+
+  const syncMobileScrollMetrics = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el || !isMobileCarousel) return;
+    const width = el.clientWidth || 360;
+    const step = Math.max(110, Math.round(width * 0.45));
+    setScrollerWidth(width);
+
+    const baseCount = gallery.length;
+    if (baseCount < 2) {
+      setScrollProgress(0);
+      return;
+    }
+
+    const rawP = el.scrollLeft / step;
+    if (rawP < baseCount * 0.5) {
+      const shifted = el.scrollLeft + baseCount * step;
+      el.style.scrollSnapType = 'none';
+      el.scrollLeft = shifted;
+      window.requestAnimationFrame(() => {
+        el.style.scrollSnapType = '';
+      });
+      setScrollProgress(shifted / step);
+      return;
+    }
+    if (rawP >= baseCount * 2.5) {
+      const shifted = el.scrollLeft - baseCount * step;
+      el.style.scrollSnapType = 'none';
+      el.scrollLeft = shifted;
+      window.requestAnimationFrame(() => {
+        el.style.scrollSnapType = '';
+      });
+      setScrollProgress(shifted / step);
+      return;
+    }
+
+    setScrollProgress(Math.max(0, Math.min(baseCount * 3 - 1, rawP)));
+  }, [gallery.length, isMobileCarousel]);
+
+  useEffect(() => {
+    if (!isMobileCarousel) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    const width = el.clientWidth || 360;
+    const step = Math.max(110, Math.round(width * 0.45));
+    if (gallery.length >= 2) {
+      const initKey = `${product?.id || ''}:${gallery.length}`;
+      if (initializedProductLoopRef.current !== initKey) {
+        initializedProductLoopRef.current = initKey;
+        el.style.scrollSnapType = 'none';
+        el.scrollLeft = gallery.length * step;
+        window.requestAnimationFrame(() => {
+          el.style.scrollSnapType = '';
+        });
+      }
+    }
+    syncMobileScrollMetrics();
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => syncMobileScrollMetrics());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [gallery.length, isMobileCarousel, product?.id, syncMobileScrollMetrics]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+      }
+    };
+  }, []);
+
+  const mobileMetrics = useMemo(() => {
+    if (!isMobileCarousel || displayTrackItems.length === 0) return null;
+    return computeInfiniteMultiBrowseMetrics(displayTrackItems.length, scrollProgress, scrollerWidth, 8);
+  }, [displayTrackItems.length, isMobileCarousel, scrollProgress, scrollerWidth]);
 
   useEffect(() => {
     if (!product) return;
@@ -54,7 +177,20 @@ export function ProductDetailPage() {
     setSelectedSize(firstAvailableSize);
     setSelectedColorName(product.colors?.[0]?.name || '');
     setLightboxSlide(null);
-  }, [product]);
+    initializedProductLoopRef.current = null;
+    if (scrollerRef.current && isMobileCarousel && gallery.length >= 2) {
+      const width = scrollerRef.current.clientWidth || 360;
+      const step = Math.max(110, Math.round(width * 0.45));
+      scrollerRef.current.style.scrollSnapType = 'none';
+      scrollerRef.current.scrollLeft = gallery.length * step;
+      window.requestAnimationFrame(() => {
+        if (scrollerRef.current) scrollerRef.current.style.scrollSnapType = '';
+      });
+      setScrollProgress(gallery.length);
+    } else {
+      setScrollProgress(0);
+    }
+  }, [gallery.length, isMobileCarousel, product]);
 
   if (!product) {
     return (
@@ -165,47 +301,137 @@ export function ProductDetailPage() {
 
       {/* Grade principal 2 colunas no Desktop (Galeria à esquerda / Compra & Acordeões à direita) */}
       <div className="product-page-grid">
-        {/* Coluna Esquerda: Galeria Editorial M3 (swipe horizontal no mobile, empilhada no desktop) */}
-        <div className="product-gallery" aria-label={`Galeria de imagens de ${product.name}`}>
-          {gallery.map((slide, idx) => (
-            <button
-              key={slide.id}
-              type="button"
-              className="product-gallery__frame"
-              aria-label={`Ampliar foto ${idx + 1} de ${product.name}`}
-              onClick={() => setLightboxSlide(slide)}
+        {/* Coluna Esquerda: M3 Multi-Browse Carousel no mobile (<58rem) e pilha editorial no desktop */}
+        <div className="product-gallery-mobile-wrap">
+          <div
+            ref={scrollerRef}
+            className="product-gallery-scroller"
+            onScroll={() => {
+              if (!isMobileCarousel) return;
+              if (scrollRafRef.current !== null) return;
+              scrollRafRef.current = window.requestAnimationFrame(() => {
+                scrollRafRef.current = null;
+                syncMobileScrollMetrics();
+              });
+            }}
+          >
+            <div
+              className="product-gallery-stage"
+              style={
+                isMobileLooped
+                  ? { inlineSize: `${scrollerWidth + (displayTrackItems.length - 1) * snapStepPx}px` }
+                  : undefined
+              }
             >
-              {slide.imageUrl ? (
-                <img
-                  src={slide.imageUrl}
-                  alt={`${product.name} — foto ${idx + 1}`}
-                  style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <div className="product-gallery__editorial" style={{ background: slide.gradient }}>
-                  <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem' }}>
-                    {slide.showCrest ? (
-                      <img src={CAMBLU_CLEAN_CREST_URL} alt="" className="product-gallery__crest" />
-                    ) : (
-                      <span style={{ color: slide.accentHex || '#0f3325', display: 'inline-flex' }}>
-                        <Icon name={slide.iconName || 'checkroom'} size={64} />
-                      </span>
-                    )}
-                    <span
-                      style={{
-                        fontSize: '0.9rem',
-                        fontWeight: 700,
-                        color: slide.accentHex || '#ffffff',
-                        maxInlineSize: '26ch',
-                      }}
+              <div
+                className="product-gallery"
+                aria-label={`Galeria de imagens de ${product.name}`}
+                style={isMobileCarousel ? { inlineSize: `${scrollerWidth}px` } : undefined}
+              >
+                {displayTrackItems.map((item, idx) => {
+                  const metric = mobileMetrics?.[idx];
+                  const frameStyle: CSSProperties | undefined = metric
+                    ? {
+                        flex: `0 0 ${metric.widthPx}px`,
+                        marginInlineEnd: `${metric.marginEndPx}px`,
+                        opacity: metric.opacity,
+                        transform: prefersReducedMotion ? 'none' : `scale(${metric.scale})`,
+                        pointerEvents: metric.isHidden ? 'none' : 'auto',
+                        borderWidth: metric.isHidden ? '0px' : undefined,
+                      }
+                    : undefined;
+
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className="product-gallery__frame"
+                      data-size-role={metric?.sizeRole}
+                      tabIndex={metric?.isHidden ? -1 : 0}
+                      aria-hidden={metric?.isHidden || undefined}
+                      style={frameStyle}
+                      aria-label={`Ampliar foto ${item.realIdx + 1} de ${product.name}`}
+                      onClick={() => setLightboxSlide(item.slide)}
                     >
-                      {slide.caption}
-                    </span>
-                  </div>
+                      {item.slide.imageUrl ? (
+                        <img
+                          src={item.slide.imageUrl}
+                          alt={`${product.name} — foto ${item.realIdx + 1}`}
+                          style={{ inlineSize: '100%', blockSize: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div className="product-gallery__editorial" style={{ background: item.slide.gradient }}>
+                          <div style={{ display: 'grid', placeItems: 'center', gap: '0.75rem' }}>
+                            {item.slide.showCrest ? (
+                              <img src={CAMBLU_CLEAN_CREST_URL} alt="" className="product-gallery__crest" />
+                            ) : (
+                              <span style={{ color: item.slide.accentHex || '#0f3325', display: 'inline-flex' }}>
+                                <Icon name={item.slide.iconName || 'checkroom'} size={64} />
+                              </span>
+                            )}
+                            <span
+                              style={{
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                color: item.slide.accentHex || '#ffffff',
+                                maxInlineSize: '26ch',
+                              }}
+                            >
+                              {item.slide.caption}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isMobileLooped && (
+                <div className="product-gallery-snap-rail" aria-hidden="true">
+                  {displayTrackItems.map((item, idx) => (
+                    <span
+                      key={`snap-${item.key}`}
+                      className="product-gallery-snap-stop"
+                      style={{
+                        inlineSize:
+                          idx === displayTrackItems.length - 1 ? `${scrollerWidth}px` : `${snapStepPx}px`,
+                      }}
+                    />
+                  ))}
                 </div>
               )}
-            </button>
-          ))}
+            </div>
+          </div>
+
+          {gallery.length > 1 && (
+            <div className="product-gallery-mobile-dots" role="tablist" aria-label="Selecionar imagem da galeria">
+              {gallery.map((slide, idx) => {
+                const currentIdx = ((Math.round(scrollProgress) % gallery.length) + gallery.length) % gallery.length;
+                const activeDot = currentIdx === idx;
+                return (
+                  <button
+                    key={`dot-${slide.id}`}
+                    type="button"
+                    className="m3-carousel-marker"
+                    aria-label={`Ir para imagem ${idx + 1} de ${gallery.length}`}
+                    aria-current={activeDot ? 'true' : undefined}
+                    onClick={() => {
+                      const base = gallery.length;
+                      let delta = idx - currentIdx;
+                      if (delta > base / 2) delta -= base;
+                      if (delta < -base / 2) delta += base;
+                      const targetStep = Math.round(scrollProgress) + delta;
+                      scrollerRef.current?.scrollTo({
+                        left: targetStep * snapStepPx,
+                        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+                      });
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Coluna Direita: Breadcrumb + Preço, Título h1, Descrição p, Tamanho, Cor, CTA + Acordeões */}

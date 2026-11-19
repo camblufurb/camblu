@@ -222,6 +222,7 @@ export const MEDFURB_DATA = {
         'Linha de financiamento acadêmico oferecida pela Unicred, patrocinadora institucional do CAMBLU, com condições diferenciadas para estudantes de Medicina.',
       url: 'https://www.unicred.com.br/',
       linkLabel: 'Site do patrocinador',
+      badge: 'AD',
     },
     {
       name: 'FlexFURB',

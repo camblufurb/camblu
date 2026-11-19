@@ -242,7 +242,18 @@ export function MedfurbPage() {
               }
             >
               <div style={{ display: 'grid', gap: '0.45rem' }}>
-                <h3>{aid.name}</h3>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <h3>{aid.name}</h3>
+                  {aid.badge && (
+                    <span
+                      className="m3-badge m3-badge--gold"
+                      style={{ flexShrink: 0 }}
+                      title="Patrocinador institucional"
+                    >
+                      {aid.badge}
+                    </span>
+                  )}
+                </div>
                 <p className="text-muted">{aid.summary}</p>
               </div>
               <a

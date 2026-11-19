@@ -811,6 +811,143 @@
     outline-offset: 1px;
   }
 
+  /* M3 Infinite Multi-Browse Carousel (Home showcase — mobile & desktop) */
+  .m3-mb-carousel {
+    display: grid;
+    gap: 0.9rem;
+    min-inline-size: 0;
+  }
+
+  .m3-mb-scroller {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    inline-size: 100%;
+    border-radius: var(--md-sys-shape-corner-xl);
+  }
+
+  .m3-mb-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .m3-mb-stage {
+    position: relative;
+    min-inline-size: 100%;
+  }
+
+  .m3-mb-viewport {
+    position: sticky;
+    inset-inline-start: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    block-size: clamp(320px, 84vw, 390px);
+    overflow: hidden;
+    z-index: 2;
+  }
+
+  .m3-mb-snap-rail {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    block-size: 1px;
+    display: flex;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .m3-mb-snap-stop {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .m3-mb-frame {
+    position: relative;
+    flex: 0 0 auto;
+    block-size: 100%;
+    min-inline-size: 0;
+    border-radius: var(--md-sys-shape-corner-xl);
+    overflow: hidden;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    background: var(--md-sys-color-surface-container);
+    transform-origin: center center;
+    will-change: flex-basis, opacity, transform;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .m3-mb-frame[data-size-role='large'] {
+    border-color: color-mix(in oklab, var(--camblu-gold-500) 45%, var(--md-sys-color-outline-variant));
+    box-shadow: var(--elevation-2);
+  }
+
+  .m3-mb-frame[data-primary='false'] {
+    cursor: pointer;
+  }
+
+  .m3-mb-slide-card {
+    inline-size: 100%;
+    block-size: 100%;
+    padding: clamp(1rem, 2.8vw, 2.25rem);
+    color: #ffffff;
+    display: grid;
+    align-content: space-between;
+    gap: 0.85rem;
+    overflow: hidden;
+  }
+
+  .m3-mb-slide-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #f1de97;
+    min-inline-size: 0;
+  }
+
+  .m3-mb-slide-badge {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 180ms ease;
+  }
+
+  .m3-mb-slide-body {
+    display: grid;
+    gap: 0.65rem;
+    align-content: end;
+    min-inline-size: 0;
+    transition: opacity 200ms var(--m3-spring-effects), transform 220ms var(--m3-spring-spatial-fast);
+  }
+
+  .m3-mb-frame[data-size-role='small'] .m3-mb-slide-badge,
+  .m3-mb-frame[data-size-role='small'] .m3-mb-slide-body,
+  .m3-mb-frame[data-size-role='hidden'] .m3-mb-slide-badge,
+  .m3-mb-frame[data-size-role='hidden'] .m3-mb-slide-body {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .m3-mb-frame[data-size-role='medium'] .m3-mb-slide-desc,
+  .m3-mb-frame[data-size-role='medium'] .m3-mb-slide-cta {
+    opacity: 0;
+    max-block-size: 0;
+    overflow: hidden;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  .m3-mb-frame[data-size-role='medium'] .m3-mb-slide-title {
+    font-size: clamp(1rem, 2.1vw, 1.35rem);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   /* Native <dialog> M3 Shell */
   dialog.m3-dialog {
     margin: auto;
@@ -1061,25 +1198,65 @@
     }
   }
 
-  .product-gallery {
-    display: flex;
-    gap: 0.75rem;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-    padding-block-end: 0.25rem;
+  .product-gallery-mobile-wrap {
+    display: grid;
+    gap: 0.55rem;
+    min-inline-size: 0;
   }
 
-  .product-gallery::-webkit-scrollbar {
+  .product-gallery-scroller {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
+    scrollbar-width: none;
+    inline-size: 100%;
+    border-radius: var(--md-sys-shape-corner-xl);
+  }
+
+  .product-gallery-scroller::-webkit-scrollbar {
     display: none;
+  }
+
+  .product-gallery-stage {
+    position: relative;
+    min-inline-size: 100%;
+  }
+
+  .product-gallery {
+    position: sticky;
+    inset-inline-start: 0;
+    inline-size: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    block-size: clamp(256px, 72vw, 340px);
+    overflow: hidden;
+    z-index: 2;
+  }
+
+  .product-gallery-snap-rail {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    block-size: 1px;
+    display: flex;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .product-gallery-snap-stop {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
 
   .product-gallery__frame {
     position: relative;
-    flex: 0 0 82%;
-    scroll-snap-align: start;
-    aspect-ratio: 4 / 3.8;
+    flex: 0 0 56%;
+    block-size: 100%;
     border-radius: var(--md-sys-shape-corner-xl);
     overflow: hidden;
     border: 1px solid var(--md-sys-color-outline-variant);
@@ -1087,7 +1264,9 @@
     padding: 0;
     cursor: zoom-in;
     text-align: start;
-    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    transform-origin: center center;
+    will-change: flex-basis, opacity, transform;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
   }
 
   .product-gallery__frame:hover {
@@ -1100,17 +1279,41 @@
     box-shadow: var(--elevation-2);
   }
 
+  .product-gallery-mobile-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
   @media (min-width: 58rem) {
+    .product-gallery-mobile-wrap,
+    .product-gallery-scroller,
+    .product-gallery-stage {
+      display: contents;
+    }
+
+    .product-gallery-snap-rail,
+    .product-gallery-mobile-dots {
+      display: none;
+    }
+
     .product-gallery {
+      position: static;
       display: grid;
       grid-template-columns: 1fr;
+      block-size: auto;
       overflow: visible;
       gap: 0.9rem;
+      z-index: auto;
     }
 
     .product-gallery__frame {
       flex: initial;
+      block-size: auto;
       aspect-ratio: 16 / 8.5;
+      will-change: auto;
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
     }
 
     .product-gallery__frame:first-child {
@@ -3438,7 +3641,9 @@
 
     .m3-split-btn__menu,
     .m3-split-btn__chevron,
-    .gallery-ai-options-panel {
+    .gallery-ai-options-panel,
+    .m3-mb-slide-badge,
+    .m3-mb-slide-body {
       transition-duration: 0.01ms;
       animation: none;
     }

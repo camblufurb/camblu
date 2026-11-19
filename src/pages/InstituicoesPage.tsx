@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
 import { InstitutionLogo, type InstitutionLogoId } from '../components/InstitutionLogo';
@@ -182,7 +183,12 @@ export function InstituicoesPage() {
           ))}
         </ul>
 
-        <div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <Link to="/sobre" className="m3-btn m3-btn--blue">
+            <Icon name="info" size={18} />
+            <span>Sobre o CAMBLU</span>
+            <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
+          </Link>
           <a href="https://www.instagram.com/camblufurb/" target="_blank" rel="noreferrer" className="m3-btn m3-btn--tonal">
             <Icon name="open_in_new" size={18} />
             <span>Instagram @camblufurb</span>

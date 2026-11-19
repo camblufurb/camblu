@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FURB_INSTITUTIONS, HOME_CAROUSEL_SLIDES } from '../data/institutional';
 import { InstitutionLogo, type InstitutionLogoId } from '../components/InstitutionLogo';
 import { M3Carousel } from '../components/M3Carousel';
+import { M3MultiBrowseCarousel } from '../components/M3MultiBrowseCarousel';
 import { Icon } from '../components/Icon';
 import { CambluCrest } from '../components/SponsorLogos';
 import { AnimatedClimateTitle } from '../components/AnimatedClimateTitle';
@@ -297,28 +298,31 @@ export function HomePage() {
   const heroCarouselItems = HOME_CAROUSEL_SLIDES.map((slide) => ({
     id: slide.id,
     title: slide.title,
-    content: (
+    render: ({ isPrimary }: { isPrimary: boolean }) => (
       <div
+        className="m3-mb-slide-card"
         style={{
-          minBlockSize: 'clamp(17rem, 29vw, 23rem)',
-          padding: 'clamp(1.5rem, 3.5vw, 2.75rem)',
           background: `radial-gradient(circle at 86% 18%, rgb(237 209 110 / 0.24), transparent 46%), linear-gradient(135deg, ${slide.accent}, #071b13)`,
-          color: '#ffffff',
-          display: 'grid',
-          alignContent: 'space-between',
-          gap: '1.25rem',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', color: '#f1de97' }}>
-          <Icon name={slide.icon} size={22} />
-          <span className="m3-label-large">{slide.badge}</span>
+        <div className="m3-mb-slide-meta">
+          <Icon name={slide.icon} size={24} />
+          <span className="m3-label-large m3-mb-slide-badge">{slide.badge}</span>
         </div>
 
-        <div className="m3-carousel-caption" style={{ display: 'grid', gap: '0.85rem', maxInlineSize: '42rem' }}>
-          <h3 style={{ color: '#ffffff' }}>{slide.title}</h3>
-          <p style={{ color: '#dfeee5' }}>{slide.subtitle}</p>
-          <div>
-            <Link to={slide.to} className="m3-btn m3-btn--gold">
+        <div className="m3-mb-slide-body">
+          <h3 className="m3-mb-slide-title" style={{ color: '#ffffff', margin: 0 }}>
+            {slide.title}
+          </h3>
+          <p className="m3-mb-slide-desc" style={{ color: '#dfeee5', margin: 0 }}>
+            {slide.subtitle}
+          </p>
+          <div className="m3-mb-slide-cta">
+            <Link
+              to={slide.to}
+              tabIndex={isPrimary ? 0 : -1}
+              className="m3-btn m3-btn--gold"
+            >
               <span>{slide.ctaLabel}</span>
               <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
             </Link>
@@ -507,7 +511,7 @@ export function HomePage() {
               Navegue pelos destaques para ir direto à página completa de cada frente estudantil.
             </p>
           </div>
-          <M3Carousel label="Destaques de áreas do CAMBLU" variant="hero" items={heroCarouselItems} />
+          <M3MultiBrowseCarousel label="Destaques de áreas do CAMBLU" items={heroCarouselItems} />
         </div>
       </section>
 
