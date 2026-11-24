@@ -10,17 +10,23 @@ jobs:
   verify-web-and-functions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
 
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Typecheck frontend
+      - name: Install Cloud Functions dependencies
+        run: npm --prefix functions ci
+
+      - name: Typecheck frontend and tests
         run: npm run typecheck
 
       - name: Run unit tests
@@ -29,5 +35,5 @@ jobs:
       - name: Build frontend bundle
         run: npm run build
 
-      - name: Install and build Cloud Functions
-        run: npm --prefix functions ci && npm --prefix functions run build
+      - name: Build Cloud Functions
+        run: npm --prefix functions run build

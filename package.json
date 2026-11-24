@@ -6,7 +6,7 @@
   "description": "Plataforma oficial do Centro Acadêmico de Medicina de Blumenau (CAMBLU - FURB)",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b tsconfig.build.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
