@@ -29,7 +29,7 @@ export const HARMONY_RULES: HarmonyRuleMeta[] = [
 
 export const DEFAULT_EVENT_PALETTE: EventPaletteConfig = {
   primary: '#0f3325',
-  secondary1: '#1d55b8',
+  secondary1: '#166547',
   secondary2: '#edd16e',
   background: '#f3f7f4',
 };
@@ -50,7 +50,7 @@ export function resolveEventPalette(
   return DEFAULT_EVENT_PALETTE;
 }
 
-export function normalizeHex(input: string, fallback = '#3b82f7'): string {
+export function normalizeHex(input: string, fallback = '#166547'): string {
   const clean = input.trim().replace(/^#/, '');
   if (/^[0-9a-fA-F]{3}$/.test(clean)) {
     const expanded = clean

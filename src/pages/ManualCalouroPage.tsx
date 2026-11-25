@@ -88,8 +88,8 @@ const QUICK_PATHWAYS: {
     detail: 'Informe sua turma e tamanho da camiseta de calouro.',
     icon: 'checkroom',
     shape: 'clover4',
-    bg: '#e3eeff',
-    accent: '#3b82f7',
+    bg: '#d4f3e4',
+    accent: '#166547',
   },
   {
     to: '/medfurb/instituicoes',

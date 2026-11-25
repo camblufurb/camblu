@@ -316,7 +316,7 @@ export function MemberCardPage() {
               </span>
               <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
                 Complete seu <strong>CPF e número da turma</strong> em{' '}
-                <Link to="/perfil" style={{ fontWeight: 700, color: '#3b82f7' }}>
+                <Link to="/perfil" style={{ fontWeight: 700, color: 'var(--camblu-action-blue)' }}>
                   Meu Perfil
                 </Link>{' '}
                 para que a validação da carteirinha exiba todos os seus dados completos.

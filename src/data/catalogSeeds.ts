@@ -108,7 +108,7 @@ export const EVENTS_SEED: CambluEvent[] = [
     hasCoffee: true,
     palette: {
       primary: '#0f3325',
-      secondary1: '#1d55b8',
+      secondary1: '#166547',
       secondary2: '#edd16e',
       background: '#f3f7f4',
     },
@@ -152,10 +152,10 @@ export const EVENTS_SEED: CambluEvent[] = [
     isSecimed: false,
     hasCoffee: false,
     palette: {
-      primary: '#1d3c78',
-      secondary1: '#3b82f7',
-      secondary2: '#f2b84b',
-      background: '#f2f6fc',
+      primary: '#0f3325',
+      secondary1: '#166547',
+      secondary2: '#edd16e',
+      background: '#f2f6f2',
     },
     startAt: '2026-12-05T19:00:00-03:00',
     endAt: '2026-12-05T21:30:00-03:00',

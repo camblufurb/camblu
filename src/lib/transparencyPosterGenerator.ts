@@ -9,12 +9,12 @@ export interface TransparencyPosterSlide {
 
 const PIE_PALETTE = [
   '#edd16e',
-  '#3b82f7',
+  '#166547',
   '#6ee7b7',
   '#f472b6',
   '#a78bfa',
   '#fb923c',
-  '#38bdf8',
+  '#216148',
 ];
 
 function drawRoundedRect(

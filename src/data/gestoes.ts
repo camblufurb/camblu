@@ -34,7 +34,7 @@ function makeInitialsAvatar(name: string, index: number): string {
   const palettes = [
     ['#0f3325', '#edd16e'],
     ['#174936', '#f1de97'],
-    ['#0d2b66', '#dbe9ff'],
+    ['#166547', '#d4f3e4'],
     ['#2b2100', '#edd16e'],
   ];
   const [bg, fg] = palettes[index % palettes.length];

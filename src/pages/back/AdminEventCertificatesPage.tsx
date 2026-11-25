@@ -316,7 +316,7 @@ export function AdminEventCertificatesPage() {
                   fontWeight: fk === 'name' || fk === 'hours' ? 800 : 600,
                   textAlign: pos.align,
                   padding: '0.2rem 0.45rem',
-                  border: isActive ? '2px solid #3b82f7' : '1px dashed rgb(15 51 37 / 0.42)',
+                  border: isActive ? '2px solid var(--camblu-action-blue)' : '1px dashed rgb(15 51 37 / 0.42)',
                   background: isActive ? 'rgb(255 255 255 / 0.55)' : 'rgb(255 255 255 / 0.28)',
                 }}
               >
@@ -357,7 +357,7 @@ export function AdminEventCertificatesPage() {
               aspectRatio: '1 / 1',
               background: '#ffffff',
               padding: '0.25rem',
-              border: activeField === 'qr' ? '2px solid #3b82f7' : '1px dashed rgb(15 51 37 / 0.45)',
+              border: activeField === 'qr' ? '2px solid var(--camblu-action-blue)' : '1px dashed rgb(15 51 37 / 0.45)',
             }}
           >
             {demoQrUrl && (

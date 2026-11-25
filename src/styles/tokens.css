@@ -7,7 +7,7 @@
     /* ============================================================
        Identidade CAMBLU + Material Design 3 Expressive Tokens (Modo Claro)
        Principal: #0f3325 | Secundária: #edd16e | Terciária: #f1de97
-       Acento Interativo: #3b82f7
+       Acento Interativo (Duotone): #166547
        ============================================================ */
 
     --camblu-forest-950: #071b13;
@@ -24,10 +24,10 @@
     --camblu-gold-800: #6d5809;
     --camblu-gold-900: #3d3002;
 
-    --camblu-blue-500: #3b82f7;
-    --camblu-blue-300: #7eb0ff;
-    --camblu-blue-100: #dbe9ff;
-    --camblu-blue-900: #0d2b66;
+    --camblu-blue-500: #166547;
+    --camblu-blue-300: #6bc49c;
+    --camblu-blue-100: #d4f3e4;
+    --camblu-blue-900: #0a291d;
 
     /* Color Roles (Light Mode) */
     --md-sys-color-primary: #0f3325;
@@ -45,10 +45,10 @@
     --md-sys-color-tertiary-container: #fbf3d5;
     --md-sys-color-on-tertiary-container: #2c2200;
 
-    --camblu-action-blue: #3b82f7;
+    --camblu-action-blue: #166547;
     --camblu-on-action-blue: #ffffff;
-    --camblu-action-blue-container: #e3eeff;
-    --camblu-on-action-blue-container: #0b3482;
+    --camblu-action-blue-container: #d4f3e4;
+    --camblu-on-action-blue-container: #07291b;
 
     --md-sys-color-background: #f6f8f5;
     --md-sys-color-on-background: #141d18;

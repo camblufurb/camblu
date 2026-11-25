@@ -112,7 +112,7 @@ export function LigasPage() {
                         idx % 3 === 0
                           ? 'linear-gradient(135deg, #0f3325, #1f6047)'
                           : idx % 3 === 1
-                            ? 'linear-gradient(135deg, #173b78, #3b82f7)'
+                            ? 'linear-gradient(135deg, #166547, #278560)'
                             : 'linear-gradient(135deg, #5d4a07, #c29b22)',
                       color: '#ffffff',
                       padding: '0.5rem',

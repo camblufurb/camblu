@@ -108,7 +108,7 @@ export function ClubPromotionPage() {
         style={{
           display: 'grid',
           gap: '1rem',
-          borderTop: '4px solid #3b82f7',
+          borderTop: '4px solid var(--camblu-action-blue)',
         }}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
@@ -149,7 +149,7 @@ export function ClubPromotionPage() {
             border: '1px solid var(--md-sys-color-outline-variant, rgba(15, 23, 42, 0.12))',
           }}
         >
-          <span style={{ color: '#3b82f7', display: 'inline-flex' }}>
+          <span style={{ color: 'var(--camblu-action-blue)', display: 'inline-flex' }}>
             <Icon name={promotion.isTshirtPrize ? 'checkroom' : 'redeem'} size={24} />
           </span>
           <div>
