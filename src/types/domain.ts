@@ -23,6 +23,7 @@ export interface UserProfile {
   membershipTier: MembershipTier;
   membershipCycle?: MembershipCycle;
   membershipValidUntil?: string | null;
+  membershipSubscribedAt?: string | null;
   membershipActive: boolean;
   role: 'student' | 'admin';
   profileCompleted: boolean;
@@ -351,4 +352,24 @@ export interface DemandSubmission {
   message: string;
   createdAt: string;
   dispatchedEmail: boolean;
+}
+
+export interface ClubPromotion {
+  id: string;
+  title: string;
+  startDate: string; // YYYY-MM-DD
+  goalCount: number;
+  turmas: string[];
+  prizeName: string;
+  isTshirtPrize: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClubPromotionTurmaProgress {
+  turma: string;
+  count: number;
+  goalCount: number;
+  percent: number;
+  goalReached: boolean;
 }

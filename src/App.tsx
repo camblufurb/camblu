@@ -26,6 +26,7 @@ import { AnaisSecimedPage } from './pages/AnaisSecimedPage';
 import { ShopPage } from './pages/ShopPage';
 import { ProductDetailPage } from './pages/ProductDetailPage';
 import { ClubPage } from './pages/ClubPage';
+import { ClubPromotionPage } from './pages/ClubPromotionPage';
 import { MemberCardPage } from './pages/MemberCardPage';
 import { MemberCardValidationPage } from './pages/MemberCardValidationPage';
 import { TransparencyPage } from './pages/TransparencyPage';
@@ -126,6 +127,7 @@ export function App() {
                     <Route path="/lojinha" element={<ShopPage />} />
                     <Route path="/lojinha/:slug" element={<ProductDetailPage />} />
                     <Route path="/clube" element={<ClubPage />} />
+                    <Route path="/clube/promocao/:promoId" element={<ClubPromotionPage />} />
                     <Route path="/clube/cartao" element={<MemberCardPage />} />
                     <Route path="/clube/cartao/validar" element={<MemberCardValidationPage />} />
                     <Route path="/clube/cartao/validar/:uid" element={<MemberCardValidationPage />} />

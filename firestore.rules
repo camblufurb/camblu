@@ -66,7 +66,7 @@ service cloud.firestore {
                'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
                'affiliation', 'turma', 'isCalouro', 'tshirtSize',
                'enrollmentSummaryUrl', 'enrollmentSummaryFileName', 'enrollmentSummaryUploadedAt',
-               'membershipTier', 'membershipCycle', 'membershipValidUntil',
+               'membershipTier', 'membershipCycle', 'membershipValidUntil', 'membershipSubscribedAt',
                'membershipActive', 'role', 'profileCompleted', 'createdAt', 'updatedAt'
              ]) &&
              d.uid == uid &&
@@ -94,14 +94,14 @@ service cloud.firestore {
       let d = request.resource.data;
       let immutableKeys = [
         'uid', 'email', 'role', 'membershipTier', 'membershipActive',
-        'membershipValidUntil', 'membershipCycle', 'stripeCustomerId',
-        'stripeSubscriptionId', 'createdAt'
+        'membershipValidUntil', 'membershipSubscribedAt', 'membershipCycle',
+        'stripeCustomerId', 'stripeSubscriptionId', 'createdAt'
       ];
       return hasOnlyAllowedFields([
                'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
                'affiliation', 'turma', 'isCalouro', 'tshirtSize',
                'enrollmentSummaryUrl', 'enrollmentSummaryFileName', 'enrollmentSummaryUploadedAt',
-               'membershipTier', 'membershipCycle', 'membershipValidUntil',
+               'membershipTier', 'membershipCycle', 'membershipValidUntil', 'membershipSubscribedAt',
                'membershipActive', 'stripeCustomerId', 'stripeSubscriptionId',
                'role', 'profileCompleted', 'createdAt', 'updatedAt'
              ]) &&
@@ -209,6 +209,11 @@ service cloud.firestore {
     match /demands/{demandId} {
       allow create: if isValidDemandCreate();
       allow read, update, delete: if isAdmin();
+    }
+
+    match /clubPromotions/{promoId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     // Default deny for everything else

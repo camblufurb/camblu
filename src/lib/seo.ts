@@ -166,6 +166,12 @@ export const PUBLIC_ROUTE_SEO_LIST: StaticRouteSeoEntry[] = [
 
 const NON_INDEXABLE_PREFIXES: Array<{ prefix: string; title: string; description: string }> = [
   {
+    prefix: '/clube/promocao',
+    title: 'Promoção por Turma | Clube CAMBLU',
+    description:
+      'Acompanhe em tempo real o placar e o progresso das turmas de Medicina FURB na competição do Clube CAMBLU.',
+  },
+  {
     prefix: '/clube/cartao/validar',
     title: 'Validação Pública de Carteirinha de Estudante | CAMBLU FURB',
     description:

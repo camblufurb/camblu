@@ -20,6 +20,7 @@ import type {
   AnaisEdition,
   CambluEvent,
   CertificateRecord,
+  ClubPromotion,
   DemandSubmission,
   EditalItem,
   GestaoTerm,
@@ -47,6 +48,7 @@ interface AppDataState {
   gestoes: GestaoTerm[];
   ligas: LigaAcademica[];
   demands: DemandSubmission[];
+  clubPromotions: ClubPromotion[];
 }
 
 const DEFAULT_TICKETS: Ticket[] = [
@@ -179,6 +181,7 @@ const INITIAL_STATE: AppDataState = {
   gestoes: GESTOES_SEED,
   ligas: LIGAS_SEED,
   demands: [],
+  clubPromotions: [],
 };
 
 interface AppDataContextValue extends AppDataState {
@@ -221,6 +224,8 @@ interface AppDataContextValue extends AppDataState {
   saveGestao: (gestao: GestaoTerm) => Promise<void>;
   saveLiga: (liga: LigaAcademica) => Promise<void>;
   addDemand: (demand: DemandSubmission) => Promise<void>;
+  saveClubPromotion: (promo: ClubPromotion) => Promise<void>;
+  deleteClubPromotion: (id: string) => Promise<void>;
   resetDemoData: () => void;
 }
 
@@ -652,6 +657,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     bindQuery(collection(db, 'anais'), 'anais');
     bindQuery(collection(db, 'ligas'), 'ligas');
     bindQuery(collection(db, 'transparencyEntries'), 'transparencyEntries');
+    bindQuery(collection(db, 'clubPromotions'), 'clubPromotions');
 
     const unsubGestoes = onSnapshot(
       collection(db, 'gestoes'),
@@ -917,6 +923,19 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     addDemand: async (demand) => {
       setState((p) => ({ ...p, demands: [demand, ...p.demands] }));
       await persistDoc('demands', demand.id, demand);
+    },
+    saveClubPromotion: async (promo) => {
+      setState((p) => ({ ...p, clubPromotions: upsertArray(p.clubPromotions, promo) }));
+      await persistDoc('clubPromotions', promo.id, promo);
+    },
+    deleteClubPromotion: async (id) => {
+      setState((p) => ({
+        ...p,
+        clubPromotions: p.clubPromotions.filter((item) => item.id !== id),
+      }));
+      if (isFirebaseConfigured && db) {
+        await deleteDoc(doc(db, 'clubPromotions', id));
+      }
     },
     resetDemoData: () => {
       localStorage.removeItem(STORE_KEY);

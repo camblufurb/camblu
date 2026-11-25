@@ -4070,4 +4070,98 @@
     justify-content: space-between;
     gap: 0.65rem;
   }
+
+  /* Sliding Segmented Pill Tabs (M3 Expressive) */
+  .m3-segmented-track {
+    position: relative;
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: center;
+    padding: 4px;
+    border-radius: 9999px;
+    background: var(--md-sys-color-surface-container-high, rgba(15, 23, 42, 0.06));
+    border: 1px solid var(--md-sys-color-outline-variant, rgba(15, 23, 42, 0.12));
+    gap: 4px;
+    max-inline-size: 100%;
+    overflow-x: auto;
+  }
+
+  .m3-segmented-pill {
+    position: absolute;
+    inset-block: 4px;
+    inset-inline-start: 4px;
+    inline-size: calc((100% - 8px - (var(--seg-count, 2) - 1) * 4px) / var(--seg-count, 2));
+    border-radius: 9999px;
+    background: #3b82f7;
+    box-shadow: 0 4px 12px rgba(59, 130, 247, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transform: translateX(calc(var(--seg-index, 0) * (100% + 4px)));
+    transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+  }
+
+  .m3-segmented-tab {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.15rem;
+    border: none;
+    border-radius: 9999px;
+    background: transparent;
+    color: var(--md-sys-color-on-surface-variant, #475569);
+    font-weight: 600;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 200ms ease;
+  }
+
+  .m3-segmented-tab[aria-selected='true'] {
+    color: #ffffff;
+  }
+
+  .m3-segmented-tab[aria-selected='true']::after {
+    content: '';
+    position: absolute;
+    inset: auto 18% 3px;
+    border-block-end: 2px solid transparent;
+  }
+
+  @media (forced-colors: active) {
+    .m3-segmented-tab[aria-selected='true']::after {
+      border-block-end-color: Highlight;
+    }
+  }
+
+  /* Promotion Progress Bars */
+  .promo-progress-track {
+    position: relative;
+    block-size: 12px;
+    inline-size: 100%;
+    border-radius: 9999px;
+    background: var(--md-sys-color-surface-container-highest, rgba(15, 23, 42, 0.08));
+    overflow: hidden;
+  }
+
+  .promo-progress-fill {
+    block-size: 100%;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #3b82f7, #60a5fa);
+    transform-origin: left center;
+    transition: inline-size 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .promo-progress-fill--goal {
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .m3-segmented-pill,
+    .promo-progress-fill {
+      transition: none;
+    }
+  }
 }

@@ -12,7 +12,10 @@ interface M3SplitButtonProps {
   primaryLabel: string;
   primaryIcon: string;
   onPrimaryClick: () => void;
-  menuItems: SplitButtonMenuItem[];
+  menuItems?: SplitButtonMenuItem[];
+  onTrailingClick?: () => void;
+  trailingIcon?: string;
+  trailingAriaLabel?: string;
   disabled?: boolean;
   loading?: boolean;
   menuAriaLabel?: string;
@@ -20,13 +23,16 @@ interface M3SplitButtonProps {
 
 /**
  * Material Design 3 Expressive Split Button combining a primary pill-left action
- * with a trailing chevron button opening an animated GPU-composited dropdown menu.
+ * with a trailing action button (either direct action or animated dropdown menu).
  */
 export function M3SplitButton({
   primaryLabel,
   primaryIcon,
   onPrimaryClick,
-  menuItems,
+  menuItems = [],
+  onTrailingClick,
+  trailingIcon = 'expand_more',
+  trailingAriaLabel,
   disabled = false,
   loading = false,
   menuAriaLabel = 'Mais opções',
@@ -77,38 +83,51 @@ export function M3SplitButton({
         type="button"
         className="m3-split-btn__trailing"
         disabled={disabled || loading}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={menuId}
-        aria-label={menuAriaLabel}
-        onClick={() => setOpen((prev) => !prev)}
+        aria-haspopup={onTrailingClick ? undefined : 'menu'}
+        aria-expanded={onTrailingClick ? undefined : open}
+        aria-controls={onTrailingClick ? undefined : menuId}
+        aria-label={trailingAriaLabel || menuAriaLabel}
+        onClick={() => {
+          if (onTrailingClick) {
+            setOpen(false);
+            onTrailingClick();
+            return;
+          }
+          setOpen((prev) => !prev);
+        }}
       >
-        <Icon name="expand_more" size={19} className="m3-split-btn__chevron" />
+        <Icon
+          name={trailingIcon}
+          size={19}
+          className={onTrailingClick ? undefined : 'm3-split-btn__chevron'}
+        />
       </button>
 
-      <div
-        id={menuId}
-        role="menu"
-        className="m3-split-btn__menu"
-        aria-hidden={!open}
-      >
-        {menuItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="menuitem"
-            tabIndex={open ? 0 : -1}
-            className="dropdown-item"
-            onClick={() => {
-              setOpen(false);
-              item.onClick();
-            }}
-          >
-            <Icon name={item.icon} size={18} />
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </div>
+      {!onTrailingClick && menuItems.length > 0 && (
+        <div
+          id={menuId}
+          role="menu"
+          className="m3-split-btn__menu"
+          aria-hidden={!open}
+        >
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="menuitem"
+              tabIndex={open ? 0 : -1}
+              className="dropdown-item"
+              onClick={() => {
+                setOpen(false);
+                item.onClick();
+              }}
+            >
+              <Icon name={item.icon} size={18} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -289,6 +289,7 @@ app.post('/api/stripe/webhook', async (req: Request & { rawBody?: Buffer }, res:
 
       if (kind === 'club_membership' && uid && meta.tier && meta.cycle) {
         const months = meta.cycle === 'mensal' ? 1 : 6;
+        const nowIso = new Date().toISOString();
         const validUntil = new Date();
         validUntil.setMonth(validUntil.getMonth() + months);
         await db.collection('users').doc(uid).set(
@@ -296,11 +297,12 @@ app.post('/api/stripe/webhook', async (req: Request & { rawBody?: Buffer }, res:
             membershipTier: meta.tier,
             membershipCycle: meta.cycle,
             membershipActive: true,
+            membershipSubscribedAt: nowIso,
             membershipValidUntil: validUntil.toISOString(),
             stripeCustomerId: typeof session.customer === 'string' ? session.customer : null,
             stripeSubscriptionId:
               typeof session.subscription === 'string' ? session.subscription : null,
-            updatedAt: new Date().toISOString(),
+            updatedAt: nowIso,
           },
           { merge: true },
         );
@@ -915,6 +917,118 @@ app.get('/api/clube/status', async (req, res) => {
       stack: (err as Error)?.stack,
     });
     res.status(500).json({ error: 'Não foi possível consultar o status da assinatura.' });
+  }
+});
+
+// Progresso público agregado da Promoção por Turma (sem expor PII)
+app.get('/api/clube/promocao/:id', async (req, res) => {
+  const promoId = typeof req.params.id === 'string' ? req.params.id.trim() : '';
+  if (!promoId || promoId.length > 120) {
+    res.status(400).json({ error: 'Identificador da promoção inválido.' });
+    return;
+  }
+
+  try {
+    const promoSnap = await db.collection('clubPromotions').doc(promoId).get();
+    if (!promoSnap.exists) {
+      res.status(404).json({ error: 'Promoção não encontrada.' });
+      return;
+    }
+
+    const promo = promoSnap.data() as {
+      title?: string;
+      startDate?: string;
+      goalCount?: number;
+      turmas?: string[];
+      prizeName?: string;
+      isTshirtPrize?: boolean;
+    };
+
+    const turmas = Array.isArray(promo.turmas)
+      ? promo.turmas.map((t) => String(t).trim()).filter(Boolean)
+      : [];
+    const goalCount = Math.max(1, Number(promo.goalCount || 1));
+    const startBoundaryStr = promo.startDate
+      ? /^\d{4}-\d{2}-\d{2}$/.test(promo.startDate.trim())
+        ? `${promo.startDate.trim()}T00:00:00`
+        : promo.startDate
+      : '';
+    const startBoundary = startBoundaryStr ? new Date(startBoundaryStr) : null;
+    const startMs = startBoundary && !Number.isNaN(startBoundary.getTime()) ? startBoundary.getTime() : 0;
+
+    const counts = new Map<string, number>();
+    for (const t of turmas) counts.set(t, 0);
+
+    if (turmas.length > 0) {
+      const usersSnap = await db
+        .collection('users')
+        .where('membershipActive', '==', true)
+        .get();
+
+      for (const docSnap of usersSnap.docs) {
+        const u = docSnap.data();
+        if (u.affiliation !== 'FURB' || !u.turma) continue;
+        const cleanTurma = String(u.turma).trim();
+        if (!counts.has(cleanTurma)) continue;
+
+        const validUntil = u.membershipValidUntil ? new Date(u.membershipValidUntil).getTime() : null;
+        if (validUntil && validUntil <= Date.now()) continue;
+        if (!u.membershipTier || u.membershipTier === 'none') continue;
+
+        let subMs = 0;
+        if (u.membershipSubscribedAt) {
+          const d = new Date(u.membershipSubscribedAt).getTime();
+          if (!Number.isNaN(d)) subMs = d;
+        } else if (u.membershipValidUntil) {
+          const d = new Date(u.membershipValidUntil);
+          if (!Number.isNaN(d.getTime())) {
+            d.setMonth(d.getMonth() - (u.membershipCycle === 'semestral' ? 6 : 1));
+            subMs = d.getTime();
+          }
+        } else if (u.updatedAt) {
+          const d = new Date(u.updatedAt).getTime();
+          if (!Number.isNaN(d)) subMs = d;
+        }
+
+        if (startMs > 0 && subMs < startMs) continue;
+        counts.set(cleanTurma, (counts.get(cleanTurma) || 0) + 1);
+      }
+    }
+
+    const leaderboard = Array.from(counts.entries())
+      .map(([turma, count]) => ({
+        turma,
+        count,
+        goalCount,
+        percent: Math.min(100, Math.round((count / goalCount) * 100)),
+        goalReached: count >= goalCount,
+      }))
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.turma.localeCompare(b.turma, 'pt-BR', { numeric: true });
+      });
+
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      promotion: {
+        id: promoSnap.id,
+        title: promo.title || 'Promoção por Turma',
+        startDate: promo.startDate || '',
+        goalCount,
+        turmas,
+        prizeName: promo.prizeName || '',
+        isTshirtPrize: Boolean(promo.isTshirtPrize),
+      },
+      leaderboard,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro ao consultar promoção por turma', {
+      origin: 'functions -> /api/clube/promocao/:id',
+      promoId,
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ error: 'Não foi possível carregar o progresso da promoção.' });
   }
 });
 

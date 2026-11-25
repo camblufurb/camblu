@@ -595,6 +595,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateMembershipLocal = async (tier: MembershipTier, cycle: MembershipCycle) => {
     if (!profile) return;
     const months = cycle === 'mensal' ? 1 : 6;
+    const nowIso = new Date().toISOString();
     const valid = new Date();
     valid.setMonth(valid.getMonth() + months);
     const updated: UserProfile = {
@@ -602,8 +603,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       membershipTier: tier,
       membershipCycle: cycle,
       membershipActive: tier !== 'none',
+      membershipSubscribedAt: tier === 'none' ? null : nowIso,
       membershipValidUntil: tier === 'none' ? null : valid.toISOString(),
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
     };
 
     if (isFirebaseConfigured && db) {
