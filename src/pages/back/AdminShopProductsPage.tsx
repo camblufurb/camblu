@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { M3Dialog } from '../../components/M3Dialog';
@@ -97,6 +97,7 @@ function resolveInitialBlocks(product: ShopProduct): BlockImagesMap {
 export function AdminShopProductsPage() {
   const { products, saveProduct } = useAppData();
   const { notify } = useToast();
+  const [activeTab, setActiveTab] = useState<'catalog' | 'form'>('catalog');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [prodName, setProdName] = useState('');
@@ -195,6 +196,7 @@ export function AdminShopProductsPage() {
   };
 
   const loadForEdit = (product: ShopProduct) => {
+    setActiveTab('form');
     const resolved = resolveInitialBlocks(product);
     setEditingId(product.id);
     setProdName(product.name);
@@ -485,10 +487,12 @@ export function AdminShopProductsPage() {
         category: effectiveCategory || 'Camisetas',
         sizes,
         active: existing ? existing.active : true,
+        createdAt: existing?.createdAt || new Date().toISOString(),
       };
 
       await saveProduct(product);
       resetForm();
+      setActiveTab('catalog');
       notify(existing ? 'Produto atualizado no catálogo!' : 'Produto publicado na Lojinha!');
     } catch (err) {
       notify(err instanceof Error ? err.message : 'Erro ao salvar imagens/produto.', 'error');
@@ -504,11 +508,54 @@ export function AdminShopProductsPage() {
 
   return (
     <div className="m3-motion-panel" style={{ display: 'grid', gap: '1.75rem' }}>
-      <header style={{ display: 'grid', gap: '0.35rem' }}>
-        <h1>Produtos da Lojinha</h1>
+      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem' }}>
+        <div style={{ display: 'grid', gap: '0.35rem' }}>
+          <h1>Produtos da Lojinha</h1>
+        </div>
+
+        <div
+          role="tablist"
+          aria-label="Seções de produtos da Lojinha"
+          className="m3-segmented-track"
+          style={
+            {
+              '--seg-count': 2,
+              '--seg-index': activeTab === 'catalog' ? 0 : 1,
+            } as CSSProperties
+          }
+        >
+          <span className="m3-segmented-pill" aria-hidden="true" />
+          <button
+            type="button"
+            role="tab"
+            id="tab-shop-catalog"
+            className="m3-segmented-tab"
+            aria-selected={activeTab === 'catalog'}
+            onClick={() => setActiveTab('catalog')}
+          >
+            <Icon name="inventory_2" size={18} />
+            <span>Catálogo ({products.length})</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-shop-form"
+            className="m3-segmented-tab"
+            aria-selected={activeTab === 'form'}
+            onClick={() => setActiveTab('form')}
+          >
+            <Icon name={editingId ? 'edit' : 'add_business'} size={18} />
+            <span>{editingId ? 'Editar Produto' : 'Novo Produto'}</span>
+          </button>
+        </div>
       </header>
 
-      <form onSubmit={handleSaveProduct} className="m3-card" style={{ display: 'grid', gap: '1.25rem' }}>
+      <div
+        role="tabpanel"
+        aria-labelledby="tab-shop-form"
+        hidden={activeTab !== 'form'}
+      >
+        <form onSubmit={handleSaveProduct} className="m3-card" style={{ display: 'grid', gap: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <h2>{editingId ? 'Editar Produto Selecionado' : 'Cadastrar Novo Produto'}</h2>
           {editingId && (
@@ -682,7 +729,7 @@ export function AdminShopProductsPage() {
 
               return (
                 <article key={block.key} className="gallery-block-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'grid', gap: '0.6rem', justifyItems: 'start' }}>
                     <div>
                       <strong style={{ display: 'block', fontSize: '0.95rem' }}>{block.title}</strong>
                       <span className="text-muted" style={{ fontSize: '0.78rem' }}>
@@ -709,26 +756,12 @@ export function AdminShopProductsPage() {
                       primaryIcon="auto_awesome"
                       loading={isBusy}
                       disabled={savingProduct}
-                      menuAriaLabel={`Opções para ${block.title}`}
                       onPrimaryClick={() => {
                         void runGenerateForBlock(block.key);
                       }}
-                      menuItems={[
-                        {
-                          id: `${block.key}-generate`,
-                          label: 'Gerar',
-                          icon: 'auto_awesome',
-                          onClick: () => {
-                            void runGenerateForBlock(block.key);
-                          },
-                        },
-                        {
-                          id: `${block.key}-upload`,
-                          label: 'Upload',
-                          icon: 'upload',
-                          onClick: () => fileInputRefs.current[block.key]?.click(),
-                        },
-                      ]}
+                      onTrailingClick={() => fileInputRefs.current[block.key]?.click()}
+                      trailingIcon="upload"
+                      trailingAriaLabel={`Fazer upload de imagens para ${block.title}`}
                     />
                   </div>
 
@@ -852,7 +885,7 @@ export function AdminShopProductsPage() {
               onClick={handleGenerateDescription}
             >
               <Icon name="auto_awesome" size={16} />
-              <span>{generatingDesc ? 'Gerando descrição...' : 'Gerar descrição com IA'}</span>
+              <span>{generatingDesc ? 'Gerando descrição...' : 'Gerar descrição'}</span>
             </button>
           </div>
           <textarea id="p-desc" className="m3-textarea" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} />
@@ -877,6 +910,7 @@ export function AdminShopProductsPage() {
           </span>
         </button>
       </form>
+      </div>
 
       <M3Dialog
         open={refDialogOpen}
@@ -1001,8 +1035,27 @@ export function AdminShopProductsPage() {
         )}
       </M3Dialog>
 
-      <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
-        <h2>Catálogo Cadastrado ({products.length})</h2>
+      <div
+        role="tabpanel"
+        aria-labelledby="tab-shop-catalog"
+        hidden={activeTab !== 'catalog'}
+      >
+        <article className="m3-card" style={{ display: 'grid', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+            <h2>Catálogo Cadastrado ({products.length})</h2>
+            <button
+              type="button"
+              className="m3-btn m3-btn--blue"
+              style={{ minBlockSize: '38px' }}
+              onClick={() => {
+                resetForm();
+                setActiveTab('form');
+              }}
+            >
+              <Icon name="add_business" size={18} />
+              <span>Cadastrar Novo Produto</span>
+            </button>
+          </div>
         <div style={{ display: 'grid', gap: '0.75rem' }}>
           {products.map((product) => {
             const stock = product.sizes.reduce((acc, s) => acc + s.stock, 0);
@@ -1068,6 +1121,7 @@ export function AdminShopProductsPage() {
           })}
         </div>
       </article>
+      </div>
     </div>
   );
 }

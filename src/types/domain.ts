@@ -197,6 +197,7 @@ export interface ShopProduct {
   careNotes?: string;
   category: string;
   active: boolean;
+  createdAt?: string;
 }
 
 export interface ShopOrderItem {

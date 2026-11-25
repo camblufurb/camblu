@@ -712,6 +712,74 @@ async function resolveInlineProductImages(
   return inlineProducts;
 }
 
+app.get('/api/shop/hero-ranking', async (_req, res) => {
+  try {
+    const productsSnap = await db.collection('products').where('active', '==', true).get();
+    const activeProducts = productsSnap.docs.map((d) => ({
+      id: d.id,
+      name: String(d.data().name || ''),
+      createdAt: typeof d.data().createdAt === 'string' ? d.data().createdAt : '',
+    }));
+
+    if (activeProducts.length <= 1) {
+      res.json({ productIds: activeProducts.map((p) => p.id) });
+      return;
+    }
+
+    const cutoffIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const ordersSnap = await db.collection('orders').where('createdAt', '>=', cutoffIso).get();
+    const sales = new Map<string, number>();
+    for (const p of activeProducts) sales.set(p.id, 0);
+
+    for (const docSnap of ordersSnap.docs) {
+      const o = docSnap.data();
+      if (o.paymentStatus === 'pending') continue;
+      const items = Array.isArray(o.items) ? o.items : [];
+      for (const item of items) {
+        const pid = String(item?.productId || '');
+        if (sales.has(pid)) {
+          sales.set(pid, (sales.get(pid) || 0) + Number(item?.quantity || 0));
+        }
+      }
+    }
+
+    const sortedByNewest = [...activeProducts].sort((a, b) => {
+      const aMs = a.createdAt ? Date.parse(a.createdAt) : 0;
+      const bMs = b.createdAt ? Date.parse(b.createdAt) : 0;
+      return bMs - aMs;
+    });
+    const newest = sortedByNewest[0];
+    const remaining = activeProducts.filter((p) => p.id !== newest.id);
+    const bySalesDesc = [...remaining].sort((a, b) => {
+      const diff = (sales.get(b.id) || 0) - (sales.get(a.id) || 0);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name, 'pt-BR');
+    });
+
+    const picked: string[] = [newest.id];
+    if (bySalesDesc[0]) picked.push(bySalesDesc[0].id);
+    if (bySalesDesc[1]) picked.push(bySalesDesc[1].id);
+
+    const pickedSet = new Set(picked);
+    const remainingForLeast = remaining.filter((p) => !pickedSet.has(p.id));
+    if (remainingForLeast.length > 0) {
+      const bySalesAsc = [...remainingForLeast].sort((a, b) => {
+        const diff = (sales.get(a.id) || 0) - (sales.get(b.id) || 0);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name, 'pt-BR');
+      });
+      picked.push(bySalesAsc[0].id);
+    }
+
+    res.set('Cache-Control', 'public, max-age=120');
+    res.json({ productIds: picked.slice(0, 4) });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/shop/hero-ranking', {
+      origin: 'functions -> /api/shop/hero-ranking',
+      message: (err as Error)?.message,
+    });
+    res.status(500).json({ error: 'Não foi possível calcular o ranking da Lojinha.' });
+  }
+});
+
 app.post('/api/shop/generate-images', async (req, res) => {
   const decoded = await verifyBearerToken(req);
   if (!decoded || decoded.email?.toLowerCase() !== ADMIN_EMAIL || !decoded.email_verified) {

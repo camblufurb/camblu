@@ -1,5 +1,5 @@
 import logoClean from '../../assets/logos/logo_clean.png';
-import type { ShopProduct } from '../types/domain';
+import type { ShopOrder, ShopProduct } from '../types/domain';
 
 export function slugifyProductName(value: string): string {
   return value
@@ -84,3 +84,66 @@ export function buildProductGallery(product: ShopProduct): GallerySlide[] {
 }
 
 export { logoClean as CAMBLU_CLEAN_CREST_URL };
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Seleciona os 4 produtos do mosaico do header da Lojinha:
+ * 1º: mais novo; 2º e 3º: mais vendidos nos últimos 30 dias; 4º: menos vendido nos últimos 30 dias.
+ */
+export function selectHeroMosaicProducts(
+  activeProducts: ShopProduct[],
+  orders: ShopOrder[],
+  nowMs = Date.now(),
+): ShopProduct[] {
+  if (activeProducts.length <= 1) return activeProducts;
+
+  const cutoffMs = nowMs - THIRTY_DAYS_MS;
+  const salesLastMonth = new Map<string, number>();
+  for (const prod of activeProducts) {
+    salesLastMonth.set(prod.id, 0);
+  }
+
+  for (const order of orders) {
+    if (order.paymentStatus === 'pending') continue;
+    const orderMs = Date.parse(order.createdAt);
+    if (Number.isNaN(orderMs) || orderMs < cutoffMs) continue;
+    for (const item of order.items || []) {
+      if (salesLastMonth.has(item.productId)) {
+        salesLastMonth.set(
+          item.productId,
+          (salesLastMonth.get(item.productId) || 0) + (item.quantity || 0),
+        );
+      }
+    }
+  }
+
+  const sortedByNewest = [...activeProducts].sort((a, b) => {
+    const aMs = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const bMs = b.createdAt ? Date.parse(b.createdAt) : 0;
+    return bMs - aMs;
+  });
+  const newest = sortedByNewest[0];
+
+  const remaining = activeProducts.filter((p) => p.id !== newest.id);
+  const bySalesDesc = [...remaining].sort((a, b) => {
+    const diff = (salesLastMonth.get(b.id) || 0) - (salesLastMonth.get(a.id) || 0);
+    return diff !== 0 ? diff : a.name.localeCompare(b.name, 'pt-BR');
+  });
+
+  const result: ShopProduct[] = [newest];
+  if (bySalesDesc[0]) result.push(bySalesDesc[0]);
+  if (bySalesDesc[1]) result.push(bySalesDesc[1]);
+
+  const pickedIds = new Set(result.map((p) => p.id));
+  const remainingForLeast = remaining.filter((p) => !pickedIds.has(p.id));
+  if (remainingForLeast.length > 0) {
+    const bySalesAsc = [...remainingForLeast].sort((a, b) => {
+      const diff = (salesLastMonth.get(a.id) || 0) - (salesLastMonth.get(b.id) || 0);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name, 'pt-BR');
+    });
+    result.push(bySalesAsc[0]);
+  }
+
+  return result.slice(0, 4);
+}

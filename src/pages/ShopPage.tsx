@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FloatingCartPill } from '../components/FloatingCartPill';
 import { Icon } from '../components/Icon';
@@ -7,7 +7,8 @@ import { useAppData } from '../context/AppDataContext';
 import { useAuth } from '../context/AuthContext';
 import { useShopCart } from '../context/ShopCartContext';
 import { calculateShopPrice } from '../lib/clubPricing';
-import { CAMBLU_CLEAN_CREST_URL, getProductSlug } from '../lib/shopHelpers';
+import { API_BASE_URL, isFirebaseConfigured } from '../lib/firebase';
+import { CAMBLU_CLEAN_CREST_URL, getProductSlug, selectHeroMosaicProducts } from '../lib/shopHelpers';
 import { formatBrlFromCents } from '../lib/validators';
 
 /**
@@ -16,11 +17,30 @@ import { formatBrlFromCents } from '../lib/validators';
  * and full clickable catalog cards.
  */
 export function ShopPage() {
-  const { products } = useAppData();
+  const { products, orders } = useAppData();
   const { profile } = useAuth();
   const { totalItemsCount, setCartOpen } = useShopCart();
 
   const [category, setCategory] = useState('Todos');
+  const [rankedHeroIds, setRankedHeroIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    let active = true;
+    fetch(`${API_BASE_URL}/shop/hero-ranking`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { productIds?: string[] } | null) => {
+        if (active && Array.isArray(data?.productIds) && data.productIds.length > 0) {
+          setRankedHeroIds(data.productIds);
+        }
+      })
+      .catch(() => {
+        // Silencioso: fallback usa ordenação local
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const activeProducts = useMemo(() => products.filter((p) => p.active), [products]);
 
@@ -34,7 +54,16 @@ export function ShopPage() {
     [activeProducts, category],
   );
 
-  const heroMosaicProducts = activeProducts.slice(0, 4);
+  const heroMosaicProducts = useMemo(() => {
+    if (rankedHeroIds && rankedHeroIds.length > 0) {
+      const byId = new Map(activeProducts.map((p) => [p.id, p]));
+      const resolved = rankedHeroIds
+        .map((id) => byId.get(id))
+        .filter((p): p is (typeof activeProducts)[number] => Boolean(p));
+      if (resolved.length > 0) return resolved.slice(0, 4);
+    }
+    return selectHeroMosaicProducts(activeProducts, orders);
+  }, [activeProducts, orders, rankedHeroIds]);
 
   return (
     <section
