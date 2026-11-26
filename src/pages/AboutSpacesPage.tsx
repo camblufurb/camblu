@@ -178,9 +178,9 @@ export function AboutSpacesPage() {
             manter três espaços físicos exclusivos no Edifício Cristina.
           </p>
           <div className="page-hero-actions">
-            <Link to="/gestoes" className="m3-btn m3-btn--gold">
+            <Link to="/gestoes" className="m3-btn m3-btn--gold btn-primary-25d">
               <Icon name="groups" size={18} />
-              <span>Ver Gestões Completas</span>
+              <span>Histórico de Gestões</span>
             </Link>
             <Link to="/demandas" className="m3-btn m3-btn--blue">
               <Icon name="support_agent" size={18} />

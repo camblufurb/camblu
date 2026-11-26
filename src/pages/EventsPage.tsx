@@ -63,7 +63,7 @@ export function EventsPage() {
             emita seus certificados de horas complementares (AACCs).
           </p>
           <div className="page-hero-actions">
-            <Link to="/meus-ingressos" className="m3-btn m3-btn--gold">
+            <Link to="/meus-ingressos" className="m3-btn m3-btn--gold btn-primary-25d">
               <Icon name="qr_code_2" size={18} />
               <span>Meus Ingressos</span>
             </Link>

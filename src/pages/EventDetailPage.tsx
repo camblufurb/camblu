@@ -443,7 +443,7 @@ export function EventDetailPage() {
 
               <button
                 type="button"
-                className="m3-btn m3-btn--filled"
+                className="m3-btn m3-btn--filled btn-primary-25d"
                 disabled={submitting || activeLot.soldQuantity >= activeLot.totalQuantity}
                 onClick={handleCheckout}
               >

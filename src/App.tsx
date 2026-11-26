@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { I18nProvider } from './i18n/i18n';
 import { ToastProvider } from './components/ToastProvider';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -81,6 +81,23 @@ function ProfileIncompleteBanner() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      const target = document.getElementById(hash.slice(1));
+      if (target) {
+        target.scrollIntoView({ behavior: 'auto' });
+        return;
+      }
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname, hash]);
+
+  return null;
+}
+
 export function App() {
   return (
     <I18nProvider>
@@ -89,6 +106,7 @@ export function App() {
           <AppDataProvider>
             <ShopCartProvider>
               <BrowserRouter>
+                <ScrollToTop />
                 <RouteSeoManager />
                 <Layout userSlot={<AccountMenuButton />}>
                 <ProfileIncompleteBanner />

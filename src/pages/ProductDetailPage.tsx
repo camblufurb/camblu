@@ -518,7 +518,7 @@ export function ProductDetailPage() {
           <div className="product-cta-row">
             <button
               type="button"
-              className="m3-btn m3-btn--blue product-cta-main"
+              className="m3-btn m3-btn--blue btn-primary-25d product-cta-main"
               disabled={totalStock === 0 || activeSizeStock <= 0}
               onClick={() => addToCart(product, selectedSize, selectedColorName || undefined)}
             >

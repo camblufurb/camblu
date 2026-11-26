@@ -435,7 +435,7 @@ export function ProfilePage() {
             )}
           </div>
 
-          <button type="submit" className="m3-btn m3-btn--filled" disabled={saving}>
+          <button type="submit" className="m3-btn m3-btn--filled btn-primary-25d" disabled={saving}>
             <Icon name="save" size={19} />
             <span>{saving ? 'Salvando...' : 'Salvar Cadastro'}</span>
           </button>
@@ -457,7 +457,7 @@ export function ProfilePage() {
                 : 'Assine a partir de R$ 3,50/mês para apoiar o CAMBLU e desbloquear descontos e eventos gratuitos.'}
             </p>
             <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <Link to={profile.membershipActive ? '/clube/cartao' : '/clube'} className="m3-btn m3-btn--gold">
+              <Link to={profile.membershipActive ? '/clube/cartao' : '/clube'} className="m3-btn m3-btn--gold btn-primary-25d">
                 <Icon name="badge" size={18} />
                 <span>{profile.membershipActive ? 'Abrir Cartão Digital' : 'Ver Planos do Clube'}</span>
               </Link>

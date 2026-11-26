@@ -58,7 +58,7 @@ export function CalendarPage() {
           </p>
 
           <div className="page-hero-actions">
-            <a href={googleCalAddUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--gold">
+            <a href={googleCalAddUrl} target="_blank" rel="noreferrer" className="m3-btn m3-btn--gold btn-primary-25d">
               <Icon name="add_to_queue" size={18} />
               <span>Adicionar ao Google Agenda</span>
             </a>

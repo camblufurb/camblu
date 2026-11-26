@@ -103,7 +103,7 @@ export function DemandsPage() {
             <strong>{ADMIN_EMAIL}</strong> com o assunto exato escolhido por você.
           </p>
           <div className="page-hero-actions">
-            <Link to="/camblu-mulher" className="m3-btn m3-btn--gold">
+            <Link to="/camblu-mulher" className="m3-btn m3-btn--gold btn-primary-25d">
               <Icon name="shield_with_heart" size={19} />
               <span>Conhecer CAMBLU Mulher</span>
             </Link>
@@ -195,7 +195,7 @@ export function DemandsPage() {
         </div>
 
         <div className="demand-submit-row">
-          <button type="submit" className="m3-btn m3-btn--filled" disabled={sending}>
+          <button type="submit" className="m3-btn m3-btn--filled btn-primary-25d" disabled={sending}>
             <Icon name="send" size={18} />
             <span>{sending ? 'Enviando...' : 'Enviar Demanda'}</span>
           </button>

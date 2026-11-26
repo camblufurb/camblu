@@ -80,7 +80,7 @@ export function ShopPage() {
             Moletons, camisetas, garrafas térmicas e tirantes oficiais da MEDFURB com pagamento via PIX/Cartão e retirada no campus.
           </p>
           <div className="page-hero-actions">
-            <button type="button" className="m3-btn m3-btn--gold" onClick={() => setCartOpen(true)}>
+            <button type="button" className="m3-btn m3-btn--gold btn-primary-25d" onClick={() => setCartOpen(true)}>
               <Icon name="shopping_cart" size={19} />
               <span>Sacola ({totalItemsCount})</span>
             </button>

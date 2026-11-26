@@ -73,9 +73,9 @@ export function ClubPage() {
           </p>
 
           <div className="page-hero-actions">
-            <Link to="/clube/cartao" className="m3-btn m3-btn--gold">
+            <Link to="/clube/cartao" className="m3-btn m3-btn--gold btn-primary-25d">
               <Icon name="badge" size={19} />
-              <span>Abrir Meu Cartão Digital</span>
+              <span>Cartãozinho</span>
             </Link>
           </div>
         </div>
@@ -90,27 +90,38 @@ export function ClubPage() {
           </p>
         </div>
 
-        <div className="club-cycle-wrap">
-          <div className="club-cycle-toggle" role="group" aria-label="Ciclo de pagamento da assinatura">
-            <button
-              type="button"
-              className="club-cycle-btn"
-              aria-pressed={cycle === 'mensal'}
-              onClick={() => setCycle('mensal')}
-            >
-              <Icon name="autorenew" size={18} />
-              <span>Mensal · Renovação automática</span>
-            </button>
-            <button
-              type="button"
-              className="club-cycle-btn"
-              aria-pressed={cycle === 'semestral'}
-              onClick={() => setCycle('semestral')}
-            >
-              <Icon name="calendar_today" size={18} />
-              <span>Semestral · Passe de 6 meses</span>
-            </button>
-          </div>
+        <div
+          role="tablist"
+          aria-label="Ciclo de pagamento da assinatura"
+          className="m3-segmented-track"
+          style={
+            {
+              '--seg-count': 2,
+              '--seg-index': cycle === 'mensal' ? 0 : 1,
+            } as CSSProperties
+          }
+        >
+          <span className="m3-segmented-pill" aria-hidden="true" />
+          <button
+            type="button"
+            role="tab"
+            className="m3-segmented-tab"
+            aria-selected={cycle === 'mensal'}
+            onClick={() => setCycle('mensal')}
+          >
+            <Icon name="autorenew" size={18} />
+            <span>Mensal · Renovação automática</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className="m3-segmented-tab"
+            aria-selected={cycle === 'semestral'}
+            onClick={() => setCycle('semestral')}
+          >
+            <Icon name="calendar_today" size={18} />
+            <span>Semestral · Passe de 6 meses</span>
+          </button>
         </div>
       </div>
 
@@ -200,10 +211,10 @@ export function ClubPage() {
               <footer className="club-tier-footer">
                 <button
                   type="button"
-                  className="m3-btn"
+                  className="m3-btn btn-primary-25d"
                   style={{
                     inlineSize: '100%',
-                    background: plan.themeColor,
+                    backgroundColor: plan.themeColor,
                     color: plan.tier === 'lendario' ? '#1f1600' : '#ffffff',
                   }}
                   disabled={submittingTier === plan.tier}

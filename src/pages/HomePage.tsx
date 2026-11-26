@@ -321,7 +321,7 @@ export function HomePage() {
             <Link
               to={slide.to}
               tabIndex={isPrimary ? 0 : -1}
-              className="m3-btn m3-btn--gold"
+              className="m3-btn m3-btn--gold btn-primary-25d"
             >
               <span>{slide.ctaLabel}</span>
               <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
@@ -570,7 +570,7 @@ export function HomePage() {
                   <p className="text-muted">{item.summary}</p>
                 </div>
 
-                <Link to={item.to} className="m3-btn m3-btn--blue" style={{ justifySelf: 'start' }}>
+                <Link to={item.to} className="m3-btn m3-btn--blue btn-primary-25d" style={{ justifySelf: 'start' }}>
                   <span>{item.cta}</span>
                   <Icon name="arrow_forward" size={18} className="m3-icon-shift" />
                 </Link>

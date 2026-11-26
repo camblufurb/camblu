@@ -99,10 +99,10 @@ export function TransparencyPage() {
               href={transparencyMeta.driveMinutesUrl}
               target="_blank"
               rel="noreferrer"
-              className="m3-btn m3-btn--gold"
+              className="m3-btn m3-btn--gold btn-primary-25d"
             >
               <Icon name="folder_shared" size={19} />
-              <span>Atas de Reunião (Drive)</span>
+              <span>Atas de Reunião</span>
             </a>
           </div>
         </div>
