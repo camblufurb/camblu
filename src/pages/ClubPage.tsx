@@ -110,7 +110,7 @@ export function ClubPage() {
             onClick={() => setCycle('mensal')}
           >
             <Icon name="autorenew" size={18} />
-            <span>Mensal · Renovação automática</span>
+            <span>Mensal</span>
           </button>
           <button
             type="button"
@@ -120,7 +120,7 @@ export function ClubPage() {
             onClick={() => setCycle('semestral')}
           >
             <Icon name="calendar_today" size={18} />
-            <span>Semestral · Passe de 6 meses</span>
+            <span>Semestral</span>
           </button>
         </div>
       </div>
