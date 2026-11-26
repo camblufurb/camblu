@@ -75,7 +75,7 @@ export function ClubPage() {
           <div className="page-hero-actions">
             <Link to="/clube/cartao" className="m3-btn m3-btn--gold btn-primary-25d">
               <Icon name="badge" size={19} />
-              <span>Cartãozinho</span>
+              <span>Carteirinha</span>
             </Link>
           </div>
         </div>

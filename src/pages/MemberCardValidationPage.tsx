@@ -199,6 +199,20 @@ export function MemberCardValidationPage() {
           acadêmico(a) regularmente inscrito(a) no Clube CAMBLU a partir do Plano Comum.
         </p>
 
+        <p className="text-muted" style={{ margin: 0, fontSize: '0.88rem' }}>
+          Documento estudantil emitido nos termos da{' '}
+          <a
+            href="https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12933.htm"
+            target="_blank"
+            rel="noreferrer"
+            style={{ fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+          >
+            <span>Lei Federal nº 12.933/2013 (Meia-Entrada)</span>
+            <Icon name="open_in_new" size={15} />
+          </a>
+          .
+        </p>
+
         <form onSubmit={handleLookupSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
           <input
             type="text"
