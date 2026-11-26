@@ -28,7 +28,7 @@ const dictionary = {
     'nav.freshman': 'Manual do Calouro',
     'nav.myTickets': 'Meus Ingressos',
     'nav.certificates': 'Certificados',
-    'nav.memberCard': 'Cartão do Clube',
+    'nav.memberCard': 'Carteirinha',
     'nav.profile': 'Meu Perfil',
     'nav.admin': 'Painel Admin (/back)',
     'auth.signInGoogle': 'Entrar com Google',
