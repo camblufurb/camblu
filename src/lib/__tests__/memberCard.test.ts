@@ -3,7 +3,10 @@ import {
   buildMemberCardValidationUrl,
   buildMemberCardVerificationFromProfile,
   getMemberCardAppearance,
+  isEnrollmentRenewalNeeded,
+  isEnrollmentVerifiedActive,
   resolveMemberPhotoUrl,
+  resolveSemesterWindow,
   tiltFromDeviceOrientation,
   tiltFromPointer,
 } from '../memberCard';
@@ -76,36 +79,68 @@ describe('memberCard helpers', () => {
     };
 
     const nowMs = Date.parse('2026-11-18T12:00:00.000Z');
-    const validRes = buildMemberCardVerificationFromProfile(baseUser, nowMs);
-    expect(validRes).toMatchObject({
+    const unverifiedRes = buildMemberCardVerificationFromProfile(baseUser, nowMs);
+    expect(unverifiedRes).toMatchObject({
       found: true,
-      valid: true,
+      valid: false,
       active: true,
       tier: 'comum',
       tierCode: 1,
       tierName: 'Comum',
+      enrollmentVerified: false,
+    });
+    expect(unverifiedRes.enrollmentSummaryUrl).toBeUndefined();
+
+    const semester = resolveSemesterWindow(nowMs);
+    expect(semester.semesterLabel).toBe('2026/2');
+    expect(semester.validUntilIso).toBe(new Date('2026-12-31T23:59:59.999-03:00').toISOString());
+
+    const verifiedFurbRes = buildMemberCardVerificationFromProfile(
+      {
+        ...baseUser,
+        enrollmentSummaryUrl: 'https://firebasestorage.googleapis.com/resumo.pdf',
+        enrollmentVerified: true,
+        enrollmentVerifiedUntil: semester.validUntilIso,
+        enrollmentVerificationSemester: semester.semesterLabel,
+      },
+      nowMs,
+    );
+    expect(verifiedFurbRes).toMatchObject({
+      found: true,
+      valid: true,
+      active: true,
+      enrollmentVerified: true,
       name: 'Marina Souza',
       cpf: '52998224725',
-      photoURL: 'https://lh3.googleusercontent.com/marina.jpg',
       institution: 'FURB',
       course: 'Medicina',
       turma: '63',
     });
-    expect(validRes.enrollmentSummaryUrl).toBeUndefined();
-
-    const verifiedFurbRes = buildMemberCardVerificationFromProfile(
-      { ...baseUser, enrollmentSummaryUrl: 'https://firebasestorage.googleapis.com/resumo.pdf' },
-      nowMs,
-    );
     expect(verifiedFurbRes.enrollmentSummaryUrl).toBe(
       'https://firebasestorage.googleapis.com/resumo.pdf',
     );
 
+    const expiredUser: UserProfile = {
+      ...baseUser,
+      enrollmentSummaryUrl: 'https://firebasestorage.googleapis.com/resumo.pdf',
+      enrollmentVerified: true,
+      enrollmentVerifiedUntil: semester.validUntilIso,
+    };
+    const afterSemesterMs = Date.parse('2027-01-01T03:00:00.000Z');
+    expect(isEnrollmentVerifiedActive(expiredUser, afterSemesterMs)).toBe(false);
+    expect(isEnrollmentRenewalNeeded(expiredUser, afterSemesterMs)).toBe(true);
+    expect(buildMemberCardVerificationFromProfile(expiredUser, afterSemesterMs)).toMatchObject({
+      found: true,
+      valid: false,
+      enrollmentVerified: false,
+    });
+
     const unsafeUrlRes = buildMemberCardVerificationFromProfile(
-      { ...baseUser, enrollmentSummaryUrl: 'javascript:alert(1)' },
+      { ...baseUser, enrollmentSummaryUrl: 'javascript:alert(1)', enrollmentVerified: true, enrollmentVerifiedUntil: semester.validUntilIso },
       nowMs,
     );
     expect(unsafeUrlRes.enrollmentSummaryUrl).toBeUndefined();
+    expect(unsafeUrlRes.valid).toBe(false);
 
     const inactiveRes = buildMemberCardVerificationFromProfile(
       {

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
 import { Icon } from '../components/Icon';
 import { M3Dialog } from '../components/M3Dialog';
+import { isEnrollmentRenewalNeeded, isEnrollmentVerifiedActive } from '../lib/memberCard';
 import { formatCpf, formatPhoneBr, isDigitsOnlyString, isValidCpf } from '../lib/validators';
 import { logError, logInfo } from '../lib/logger';
 import type { TShirtSize, UserAffiliation } from '../types/domain';
@@ -26,6 +27,7 @@ export function ProfilePage() {
     profile,
     saveProfile,
     uploadEnrollmentSummaryPdf,
+    verifyEnrollmentSummary,
     removeEnrollmentSummaryPdf,
     cancelClubMembership,
     signInWithGoogle,
@@ -45,6 +47,7 @@ export function ProfilePage() {
   const [enrollmentFileName, setEnrollmentFileName] = useState<string | undefined>(undefined);
   const [enrollmentUploadedAt, setEnrollmentUploadedAt] = useState<string | undefined>(undefined);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [verifyingPdf, setVerifyingPdf] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelingClub, setCancelingClub] = useState(false);
   const [cpfError, setCpfError] = useState('');
@@ -301,10 +304,10 @@ export function ProfilePage() {
                   }}
                 >
                   <label htmlFor="profile-enrollment-pdf" style={{ fontSize: '0.9rem', fontWeight: 700 }}>
-                    Resumo de matrícula da FURB (opcional, PDF)
+                    Resumo de matrícula da FURB (PDF)
                   </label>
                   <span className="m3-field-hint" style={{ margin: 0 }}>
-                    Envie o PDF do seu resumo de matrícula para exibir o selo de verificação na carteirinha.
+                    Envie o PDF do seu resumo de matrícula em Medicina na FURB para validar o semestre atual e liberar o QR Code da carteirinha.
                   </span>
 
                   <input
@@ -323,15 +326,26 @@ export function ProfilePage() {
                         setEnrollmentUrl(uploaded.url);
                         setEnrollmentFileName(uploaded.fileName);
                         setEnrollmentUploadedAt(uploaded.uploadedAt);
-                        notify('Resumo de matrícula anexado com sucesso!');
+                        setUploadingPdf(false);
+                        setVerifyingPdf(true);
+                        const verification = await verifyEnrollmentSummary();
+                        if (verification.verified) {
+                          const untilText = verification.validUntil
+                            ? new Date(verification.validUntil).toLocaleDateString('pt-BR')
+                            : 'o fim do semestre';
+                          notify(`Matrícula em Medicina FURB validada até ${untilText}!`);
+                        } else {
+                          notify(verification.reason || 'Resumo de matrícula não aprovado na verificação.', 'error');
+                        }
                       } catch (err) {
-                        logError('Perfil', 'ProfilePage -> uploadEnrollmentSummaryPdf', err);
+                        logError('Perfil', 'ProfilePage -> upload/verify enrollmentSummaryPdf', err);
                         notify(
-                          err instanceof Error ? err.message : 'Erro ao enviar resumo de matrícula.',
+                          err instanceof Error ? err.message : 'Erro ao enviar ou verificar resumo de matrícula.',
                           'error',
                         );
                       } finally {
                         setUploadingPdf(false);
+                        setVerifyingPdf(false);
                       }
                     }}
                   />
@@ -341,18 +355,54 @@ export function ProfilePage() {
                       type="button"
                       className="m3-btn m3-btn--outlined"
                       style={{ minBlockSize: '38px' }}
-                      disabled={uploadingPdf}
+                      disabled={uploadingPdf || verifyingPdf}
                       onClick={() => pdfInputRef.current?.click()}
                     >
                       <Icon name="upload_file" size={18} />
                       <span>
                         {uploadingPdf
                           ? 'Enviando PDF...'
-                          : enrollmentUrl
-                            ? 'Substituir PDF'
-                            : 'Anexar Resumo em PDF'}
+                          : verifyingPdf
+                            ? 'Verificando matrícula...'
+                            : enrollmentUrl
+                              ? 'Substituir PDF'
+                              : 'Anexar Resumo em PDF'}
                       </span>
                     </button>
+
+                    {enrollmentUrl && !isEnrollmentVerifiedActive(profile) && !verifyingPdf && (
+                      <button
+                        type="button"
+                        className="m3-btn m3-btn--blue"
+                        style={{ minBlockSize: '38px' }}
+                        disabled={uploadingPdf || verifyingPdf}
+                        onClick={async () => {
+                          setVerifyingPdf(true);
+                          try {
+                            const verification = await verifyEnrollmentSummary();
+                            if (verification.verified) {
+                              const untilText = verification.validUntil
+                                ? new Date(verification.validUntil).toLocaleDateString('pt-BR')
+                                : 'o fim do semestre';
+                              notify(`Matrícula em Medicina FURB validada até ${untilText}!`);
+                            } else {
+                              notify(verification.reason || 'Resumo de matrícula não aprovado na verificação.', 'error');
+                            }
+                          } catch (err) {
+                            logError('Perfil', 'ProfilePage -> verifyEnrollmentSummary', err);
+                            notify(
+                              err instanceof Error ? err.message : 'Não foi possível verificar a matrícula.',
+                              'error',
+                            );
+                          } finally {
+                            setVerifyingPdf(false);
+                          }
+                        }}
+                      >
+                        <Icon name="verified_user" size={18} />
+                        <span>Validar matrícula agora</span>
+                      </button>
+                    )}
 
                     {enrollmentUrl && (
                       <>
@@ -370,7 +420,7 @@ export function ProfilePage() {
                           type="button"
                           className="m3-btn m3-btn--text"
                           style={{ minBlockSize: '36px', color: 'var(--md-sys-color-error)' }}
-                          disabled={uploadingPdf}
+                          disabled={uploadingPdf || verifyingPdf}
                           onClick={async () => {
                             setUploadingPdf(true);
                             try {
@@ -393,6 +443,38 @@ export function ProfilePage() {
                       </>
                     )}
                   </div>
+
+                  {verifyingPdf && (
+                    <span className="m3-badge m3-badge--blue" style={{ justifySelf: 'start' }}>
+                      <Icon name="sync" size={16} />
+                      Validando instituição, curso de Medicina e semestre atual...
+                    </span>
+                  )}
+
+                  {!verifyingPdf && isEnrollmentVerifiedActive(profile) && (
+                    <span className="m3-badge m3-badge--success" style={{ justifySelf: 'start' }}>
+                      <Icon name="verified" filled size={16} />
+                      {`Matrícula validada (${profile.enrollmentVerificationSemester || 'semestre atual'}) até ${new Date(profile.enrollmentVerifiedUntil!).toLocaleDateString('pt-BR')}`}
+                    </span>
+                  )}
+
+                  {!verifyingPdf && isEnrollmentRenewalNeeded(profile) && (
+                    <span className="m3-badge m3-badge--error" style={{ justifySelf: 'start' }}>
+                      <Icon name="schedule" size={16} />
+                      Prazo da verificação semestral expirado — envie um novo resumo de matrícula.
+                    </span>
+                  )}
+
+                  {!verifyingPdf &&
+                    !isEnrollmentVerifiedActive(profile) &&
+                    !isEnrollmentRenewalNeeded(profile) &&
+                    profile.enrollmentVerified === false &&
+                    profile.enrollmentVerificationReason && (
+                      <span className="m3-badge m3-badge--error" style={{ justifySelf: 'start' }}>
+                        <Icon name="gpp_bad" size={16} />
+                        {profile.enrollmentVerificationReason}
+                      </span>
+                    )}
                 </div>
               </>
             )}

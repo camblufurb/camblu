@@ -5,6 +5,7 @@ import { deleteObject, getDownloadURL, ref as storageRef, uploadBytes } from 'fi
 import { ADMIN_EMAIL, API_BASE_URL, auth, db, getAuthHeaders, googleProvider, isFirebaseConfigured, storage } from '../lib/firebase';
 import { logError, logInfo, logWarn } from '../lib/logger';
 import { stripUndefinedDeep } from '../lib/objectUtils';
+import { resolveSemesterWindow } from '../lib/memberCard';
 import { digitsOnly } from '../lib/validators';
 import type { MembershipCycle, MembershipTier, TShirtSize, UserAffiliation, UserProfile } from '../types/domain';
 
@@ -33,6 +34,14 @@ export interface EnrollmentUploadResult {
   uploadedAt: string;
 }
 
+export interface EnrollmentVerifyResult {
+  verified: boolean;
+  semester: string;
+  validUntil: string | null;
+  verifiedAt: string;
+  reason: string;
+}
+
 interface AuthContextValue {
   profile: UserProfile | null;
   loading: boolean;
@@ -42,6 +51,7 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   saveProfile: (input: ProfileInput) => Promise<void>;
   uploadEnrollmentSummaryPdf: (file: File) => Promise<EnrollmentUploadResult>;
+  verifyEnrollmentSummary: () => Promise<EnrollmentVerifyResult>;
   removeEnrollmentSummaryPdf: () => Promise<void>;
   updateMembershipLocal: (tier: MembershipTier, cycle: MembershipCycle) => Promise<void>;
   cancelClubMembership: () => Promise<void>;
@@ -537,6 +547,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { url, fileName: cleanFileName, uploadedAt };
   };
 
+  const verifyEnrollmentSummary = async (): Promise<EnrollmentVerifyResult> => {
+    if (!profile) {
+      throw new Error('Faça login para verificar o resumo de matrícula.');
+    }
+
+    if (isFirebaseConfigured && auth && db) {
+      logInfo('Perfil', 'Solicitando verificação automática do resumo de matrícula', { uid: profile.uid });
+      const headers = await getAuthHeaders();
+      const resp = await fetch(`${API_BASE_URL}/profile/verify-enrollment`, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      const data = (await resp.json().catch(() => null)) as
+        | (EnrollmentVerifyResult & { ok?: boolean; error?: string })
+        | null;
+      if (!resp.ok || !data || typeof data.verified !== 'boolean') {
+        throw new Error(data?.error || 'Não foi possível verificar o resumo de matrícula.');
+      }
+
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              enrollmentVerified: data.verified,
+              enrollmentVerifiedAt: data.verifiedAt,
+              enrollmentVerifiedUntil: data.validUntil,
+              enrollmentVerificationSemester: data.semester,
+              enrollmentVerificationReason: data.reason,
+            }
+          : prev,
+      );
+      return {
+        verified: data.verified,
+        semester: data.semester,
+        validUntil: data.validUntil,
+        verifiedAt: data.verifiedAt,
+        reason: data.reason,
+      };
+    }
+
+    const nowIso = new Date().toISOString();
+    const sem = resolveSemesterWindow();
+    const demoResult: EnrollmentVerifyResult = {
+      verified: true,
+      semester: sem.semesterLabel,
+      validUntil: sem.validUntilIso,
+      verifiedAt: nowIso,
+      reason: `Matrícula em Medicina na FURB confirmada para o semestre ${sem.semesterLabel} (modo demonstração).`,
+    };
+    persistDemoProfile({
+      ...profile,
+      enrollmentVerified: true,
+      enrollmentVerifiedAt: nowIso,
+      enrollmentVerifiedUntil: sem.validUntilIso,
+      enrollmentVerificationSemester: sem.semesterLabel,
+      enrollmentVerificationReason: demoResult.reason,
+      updatedAt: nowIso,
+    });
+    return demoResult;
+  };
+
   const removeEnrollmentSummaryPdf = async () => {
     if (!profile) return;
     const now = new Date().toISOString();
@@ -570,6 +645,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 enrollmentSummaryUrl: undefined,
                 enrollmentSummaryFileName: undefined,
                 enrollmentSummaryUploadedAt: undefined,
+                enrollmentVerified: false,
+                enrollmentVerifiedUntil: null,
+                enrollmentVerificationReason: undefined,
               }
             : prev,
         );
@@ -588,6 +666,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       enrollmentSummaryUrl: undefined,
       enrollmentSummaryFileName: undefined,
       enrollmentSummaryUploadedAt: undefined,
+      enrollmentVerified: false,
+      enrollmentVerifiedUntil: null,
+      enrollmentVerificationReason: undefined,
       updatedAt: now,
     });
   };
@@ -694,6 +775,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         saveProfile,
         uploadEnrollmentSummaryPdf,
+        verifyEnrollmentSummary,
         removeEnrollmentSummaryPdf,
         updateMembershipLocal,
         cancelClubMembership,

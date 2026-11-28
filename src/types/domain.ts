@@ -20,6 +20,11 @@ export interface UserProfile {
   enrollmentSummaryUrl?: string;
   enrollmentSummaryFileName?: string;
   enrollmentSummaryUploadedAt?: string;
+  enrollmentVerified?: boolean;
+  enrollmentVerifiedAt?: string;
+  enrollmentVerifiedUntil?: string | null;
+  enrollmentVerificationSemester?: string;
+  enrollmentVerificationReason?: string;
   membershipTier: MembershipTier;
   membershipCycle?: MembershipCycle;
   membershipValidUntil?: string | null;

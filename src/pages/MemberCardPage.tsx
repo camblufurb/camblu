@@ -6,6 +6,8 @@ import { CLUB_PLANS, getMembershipTierCode } from '../lib/clubPricing';
 import {
   buildMemberCardValidationUrl,
   getMemberCardAppearance,
+  isEnrollmentRenewalNeeded,
+  isEnrollmentVerifiedActive,
   resolveMemberPhotoUrl,
   tiltFromDeviceOrientation,
   tiltFromPointer,
@@ -63,9 +65,11 @@ export function MemberCardPage() {
   const isCardActive = Boolean(
     profile && isWithinValidity && getMembershipTierCode(profile.membershipTier, profile.membershipActive) >= 1,
   );
+  const hasValidatedEnrollment = isEnrollmentVerifiedActive(profile);
+  const enrollmentExpired = isEnrollmentRenewalNeeded(profile);
 
   useEffect(() => {
-    if (!profile || !isCardActive) {
+    if (!profile || !isCardActive || !hasValidatedEnrollment) {
       setQrUrl('');
       return;
     }
@@ -77,7 +81,7 @@ export function MemberCardPage() {
     QRCode.toDataURL(verifyUrl, { width: 220, margin: 1, color: { dark: '#0f3325', light: '#ffffff' } })
       .then(setQrUrl)
       .catch((err) => logError('Cartao', 'MemberCardPage -> QRCode.toDataURL', err));
-  }, [isCardActive, profile]);
+  }, [hasValidatedEnrollment, isCardActive, profile]);
 
   const scheduleTilt = useCallback(
     (next: CardTilt) => {
@@ -231,7 +235,7 @@ export function MemberCardPage() {
                   {`Membro ${plan.name}`}
                 </strong>
               </div>
-              {profile.affiliation === 'FURB' && profile.enrollmentSummaryUrl?.trim() ? (
+              {hasValidatedEnrollment ? (
                 <Icon
                   name="verified"
                   variant="outlined"
@@ -287,7 +291,7 @@ export function MemberCardPage() {
                 </div>
               </div>
 
-              {qrUrl && (
+              {qrUrl && hasValidatedEnrollment && (
                 <Link
                   to={validationPath}
                   aria-label="Abrir página de validação pública da carteirinha de estudante"
@@ -305,6 +309,34 @@ export function MemberCardPage() {
               )}
             </div>
           </article>
+
+          {!hasValidatedEnrollment && (
+            <div
+              className="m3-card m3-card--tonal"
+              style={{ maxInlineSize: '34rem', inlineSize: '100%', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}
+            >
+              <span className="m3-badge m3-badge--blue" aria-hidden="true">
+                <Icon name="qr_code_2" size={18} />
+              </span>
+              <div style={{ display: 'grid', gap: '0.45rem' }}>
+                <p className="text-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+                  {profile.affiliation === 'externo'
+                    ? 'O QR Code de validação estudantil é exclusivo para acadêmicos de Medicina da FURB com matrícula validada.'
+                    : enrollmentExpired
+                      ? 'O prazo da sua verificação de matrícula expirou neste semestre. Envie um novo resumo de matrícula em PDF para liberar novamente o QR Code da carteirinha.'
+                      : 'Apenas carteirinhas com resumo de matrícula em Medicina (FURB) validado neste semestre exibem o QR Code de validação.'}
+                </p>
+                {profile.affiliation === 'FURB' && (
+                  <div>
+                    <Link to="/perfil" className="m3-btn m3-btn--blue" style={{ minBlockSize: '36px', paddingBlock: '0.35rem' }}>
+                      <Icon name="upload_file" size={17} />
+                      <span>{enrollmentExpired ? 'Enviar novo resumo de matrícula' : 'Validar resumo de matrícula'}</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {missingAcademicFields && (
             <div
@@ -329,10 +361,12 @@ export function MemberCardPage() {
               <Icon name="upgrade" size={18} />
               <span>Gerenciar / Fazer Upgrade do Plano</span>
             </Link>
-            <Link to={validationPath} className="m3-btn m3-btn--outlined">
-              <Icon name="qr_code_scanner" size={18} />
-              <span>Validar Carteirinha (Link do QR)</span>
-            </Link>
+            {hasValidatedEnrollment && (
+              <Link to={validationPath} className="m3-btn m3-btn--outlined">
+                <Icon name="qr_code_scanner" size={18} />
+                <span>Validar Carteirinha (Link do QR)</span>
+              </Link>
+            )}
           </div>
         </>
       ) : (

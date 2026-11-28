@@ -8,6 +8,7 @@ import { ShopCartProvider } from './context/ShopCartContext';
 import { Layout } from './components/Layout';
 import { AccountMenuButton } from './components/AccountMenuButton';
 import { RouteSeoManager } from './components/RouteSeoManager';
+import { isEnrollmentRenewalNeeded } from './lib/memberCard';
 import { HomePage } from './pages/HomePage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AboutSpacesPage } from './pages/AboutSpacesPage';
@@ -46,11 +47,20 @@ const AdminBackPage = lazy(() =>
 
 function ProfileIncompleteBanner() {
   const { profile } = useAuth();
-  if (!profile || profile.profileCompleted) return null;
+  if (!profile) return null;
+
+  const needsProfileCompletion = !profile.profileCompleted;
+  const needsEnrollmentRenewal = !needsProfileCompletion && isEnrollmentRenewalNeeded(profile);
+  if (!needsProfileCompletion && !needsEnrollmentRenewal) return null;
+
   return (
     <div
       role="region"
-      aria-label="Aviso de cadastro incompleto"
+      aria-label={
+        needsProfileCompletion
+          ? 'Aviso de cadastro incompleto'
+          : 'Aviso de renovação do resumo de matrícula'
+      }
       style={{
         background: 'var(--md-sys-color-secondary-container)',
         color: 'var(--md-sys-color-on-secondary-container)',
@@ -70,11 +80,13 @@ function ProfileIncompleteBanner() {
         }}
       >
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontWeight: 600 }}>
-          <Icon name="badge" size={19} />
-          Complete seu cadastro (CPF, celular, vínculo FURB/turma e camiseta de calouro) para comprar e emitir certificados.
+          <Icon name={needsProfileCompletion ? 'badge' : 'upload_file'} size={19} />
+          {needsProfileCompletion
+            ? 'Complete seu cadastro (CPF, celular, vínculo FURB/turma e camiseta de calouro) para comprar e emitir certificados.'
+            : 'O prazo da verificação da sua matrícula expirou neste semestre. Envie um novo resumo de matrícula (Medicina FURB) para manter o QR Code da sua carteirinha ativo.'}
         </span>
         <Link to="/perfil" className="m3-btn m3-btn--filled" style={{ minBlockSize: '36px', paddingBlock: '0.35rem' }}>
-          Completar agora
+          {needsProfileCompletion ? 'Completar agora' : 'Enviar novo resumo'}
         </Link>
       </div>
     </div>

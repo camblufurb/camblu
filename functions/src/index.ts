@@ -39,6 +39,10 @@ import {
   type ProductAiShotRequest,
 } from './productImageGenerator.js';
 import { generateProductDescriptionWithFlashLite } from './productDescriptionGenerator.js';
+import {
+  isEnrollmentVerifiedActive,
+  verifyEnrollmentSummaryWithFlashLite,
+} from './enrollmentVerifier.js';
 import type { GeminiAuthInput } from './geminiClient.js';
 
 initializeApp();
@@ -873,6 +877,88 @@ app.post('/api/shop/generate-description', async (req, res) => {
   }
 });
 
+app.post('/api/profile/verify-enrollment', async (req, res) => {
+  const decoded = await verifyBearerToken(req);
+  if (!decoded) {
+    res.status(401).json({ error: 'Faça login para verificar seu resumo de matrícula.' });
+    return;
+  }
+
+  const uid = decoded.uid;
+  try {
+    const userRef = db.collection('users').doc(uid);
+    const snap = await userRef.get();
+    if (!snap.exists) {
+      res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
+      return;
+    }
+
+    const u = snap.data() || {};
+    if (u.affiliation === 'externo') {
+      res.status(400).json({ error: 'A verificação de matrícula se aplica apenas a acadêmicos da FURB.' });
+      return;
+    }
+
+    const safePdfUrl = isSafeEnrollmentPdfUrl(u.enrollmentSummaryUrl, uid);
+    if (!safePdfUrl) {
+      res.status(400).json({ error: 'Envie o PDF do resumo de matrícula antes de iniciar a verificação.' });
+      return;
+    }
+
+    const pdfResp = await fetch(safePdfUrl);
+    if (!pdfResp.ok) {
+      res.status(502).json({ error: 'Não foi possível baixar o PDF do resumo de matrícula para verificação.' });
+      return;
+    }
+
+    const buf = Buffer.from(await pdfResp.arrayBuffer());
+    if (buf.length === 0 || buf.length > 10 * 1024 * 1024) {
+      res.status(400).json({ error: 'O PDF enviado está vazio ou excede o limite de 10 MB.' });
+      return;
+    }
+
+    const geminiAuth = getServerGeminiAuth();
+    const result = await verifyEnrollmentSummaryWithFlashLite({
+      pdfBase64: buf.toString('base64'),
+      studentName: typeof u.name === 'string' ? u.name : undefined,
+      studentCpf: typeof u.cpf === 'string' ? u.cpf : undefined,
+      apiKey: geminiAuth,
+    });
+
+    const nowIso = new Date().toISOString();
+    await userRef.update({
+      enrollmentVerified: result.verified,
+      enrollmentVerifiedAt: nowIso,
+      enrollmentVerifiedUntil: result.verified && result.validUntil ? result.validUntil : FieldValue.delete(),
+      enrollmentVerificationSemester: result.semester,
+      enrollmentVerificationReason: result.reason,
+      updatedAt: nowIso,
+    });
+
+    res.json({
+      ok: true,
+      verified: result.verified,
+      isFurb: result.isFurb,
+      isMedicine: result.isMedicine,
+      isCurrentSemester: result.isCurrentSemester,
+      semester: result.semester,
+      validUntil: result.validUntil,
+      verifiedAt: nowIso,
+      reason: result.reason,
+    });
+  } catch (err) {
+    console.error('[CAMBLU-API] Erro em /api/profile/verify-enrollment', {
+      origin: 'functions -> /api/profile/verify-enrollment',
+      uid,
+      message: (err as Error)?.message,
+      stack: (err as Error)?.stack,
+    });
+    res.status(502).json({
+      error: (err as Error)?.message || 'Não foi possível verificar o resumo de matrícula no momento.',
+    });
+  }
+});
+
 app.get('/sitemap.xml', async (req, res) => {
   const siteOrigin = resolveSiteOrigin(req);
   const today = new Date().toISOString().slice(0, 10);
@@ -1137,6 +1223,16 @@ app.get('/api/clube/cartao/verify', async (req, res) => {
     const activeTier: MembershipTier = active ? rawTier : 'none';
     const affiliation = u.affiliation === 'externo' ? 'externo' : 'FURB';
     const isFurbStudent = affiliation === 'FURB';
+    const safePdfUrl = isFurbStudent ? isSafeEnrollmentPdfUrl(u.enrollmentSummaryUrl, uid) : undefined;
+    const enrollmentVerified = isFurbStudent
+      ? isEnrollmentVerifiedActive({
+          affiliation,
+          enrollmentSummaryUrl: safePdfUrl,
+          enrollmentVerified: u.enrollmentVerified === true,
+          enrollmentVerifiedUntil:
+            typeof u.enrollmentVerifiedUntil === 'string' ? u.enrollmentVerifiedUntil : null,
+        })
+      : false;
     const tierName = MEMBERSHIP_TIER_NAME_MAP[activeTier] || MEMBERSHIP_TIER_NAME_MAP.none;
 
     if (!active) {
@@ -1155,6 +1251,7 @@ app.get('/api/clube/cartao/verify', async (req, res) => {
         institution: isFurbStudent ? 'FURB' : 'Externo (sem vínculo FURB)',
         course: isFurbStudent ? 'Medicina' : 'Visitante / Externo',
         turma: '',
+        enrollmentVerified: false,
         profileCompleted: Boolean(u.profileCompleted),
         reason:
           'Assinatura do Clube CAMBLU inativa ou expirada. A Carteirinha de Estudante é liberada a partir do Plano Comum.',
@@ -1163,9 +1260,16 @@ app.get('/api/clube/cartao/verify', async (req, res) => {
       return;
     }
 
+    const unverifiedFurbReason =
+      isFurbStudent && !enrollmentVerified
+        ? u.enrollmentVerifiedUntil && new Date(String(u.enrollmentVerifiedUntil)).getTime() <= Date.now()
+          ? 'Verificação do resumo de matrícula expirada para este semestre. Envie um novo resumo em Meu Perfil.'
+          : 'Resumo de matrícula em Medicina (FURB) ainda não validado para o semestre atual.'
+        : undefined;
+
     res.json({
       found: true,
-      valid: isFurbStudent,
+      valid: isFurbStudent && enrollmentVerified,
       active: true,
       tier: activeTier,
       tierCode,
@@ -1179,10 +1283,17 @@ app.get('/api/clube/cartao/verify', async (req, res) => {
       institution: isFurbStudent ? 'FURB' : 'Externo (sem vínculo FURB)',
       course: isFurbStudent ? 'Medicina' : 'Visitante / Externo',
       turma: isFurbStudent && u.turma ? String(u.turma).trim() : '',
-      enrollmentSummaryUrl: isFurbStudent ? isSafeEnrollmentPdfUrl(u.enrollmentSummaryUrl, uid) : undefined,
+      enrollmentSummaryUrl: enrollmentVerified ? safePdfUrl : undefined,
+      enrollmentVerified,
+      enrollmentVerifiedUntil:
+        typeof u.enrollmentVerifiedUntil === 'string' ? u.enrollmentVerifiedUntil : null,
+      enrollmentVerificationSemester:
+        typeof u.enrollmentVerificationSemester === 'string'
+          ? u.enrollmentVerificationSemester
+          : undefined,
       profileCompleted: Boolean(u.profileCompleted),
       reason: isFurbStudent
-        ? undefined
+        ? unverifiedFurbReason
         : 'Cartão de membro externo ativo no Clube CAMBLU (não vinculado ao curso de Medicina FURB).',
       verifiedAt: new Date().toISOString(),
     });

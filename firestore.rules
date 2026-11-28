@@ -66,6 +66,8 @@ service cloud.firestore {
                'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
                'affiliation', 'turma', 'isCalouro', 'tshirtSize',
                'enrollmentSummaryUrl', 'enrollmentSummaryFileName', 'enrollmentSummaryUploadedAt',
+               'enrollmentVerified', 'enrollmentVerifiedAt', 'enrollmentVerifiedUntil',
+               'enrollmentVerificationSemester', 'enrollmentVerificationReason',
                'membershipTier', 'membershipCycle', 'membershipValidUntil', 'membershipSubscribedAt',
                'membershipActive', 'role', 'profileCompleted', 'createdAt', 'updatedAt'
              ]) &&
@@ -95,12 +97,16 @@ service cloud.firestore {
       let immutableKeys = [
         'uid', 'email', 'role', 'membershipTier', 'membershipActive',
         'membershipValidUntil', 'membershipSubscribedAt', 'membershipCycle',
+        'enrollmentVerified', 'enrollmentVerifiedAt', 'enrollmentVerifiedUntil',
+        'enrollmentVerificationSemester', 'enrollmentVerificationReason',
         'stripeCustomerId', 'stripeSubscriptionId', 'createdAt'
       ];
       return hasOnlyAllowedFields([
                'uid', 'name', 'email', 'photoURL', 'cpf', 'phone',
                'affiliation', 'turma', 'isCalouro', 'tshirtSize',
                'enrollmentSummaryUrl', 'enrollmentSummaryFileName', 'enrollmentSummaryUploadedAt',
+               'enrollmentVerified', 'enrollmentVerifiedAt', 'enrollmentVerifiedUntil',
+               'enrollmentVerificationSemester', 'enrollmentVerificationReason',
                'membershipTier', 'membershipCycle', 'membershipValidUntil', 'membershipSubscribedAt',
                'membershipActive', 'stripeCustomerId', 'stripeSubscriptionId',
                'role', 'profileCompleted', 'createdAt', 'updatedAt'

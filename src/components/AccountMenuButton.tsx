@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/i18n';
 import { logError, logInfo, logWarn } from '../lib/logger';
+import { isEnrollmentRenewalNeeded } from '../lib/memberCard';
 import { Icon } from './Icon';
 import { M3Dialog } from './M3Dialog';
 import { useToast } from './ToastProvider';
@@ -147,8 +148,11 @@ export function AccountMenuButton() {
             avatarInitial
           )}
         </span>
-        {!profile.profileCompleted && (
-          <span className="header-icon-dot" aria-label="Cadastro incompleto" />
+        {(!profile.profileCompleted || isEnrollmentRenewalNeeded(profile)) && (
+          <span
+            className="header-icon-dot"
+            aria-label={!profile.profileCompleted ? 'Cadastro incompleto' : 'Renovar resumo de matrícula'}
+          />
         )}
       </button>
 

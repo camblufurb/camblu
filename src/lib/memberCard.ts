@@ -129,9 +129,83 @@ export interface MemberCardVerificationResult {
   course: string;
   turma?: string;
   enrollmentSummaryUrl?: string;
+  enrollmentVerified?: boolean;
+  enrollmentVerifiedUntil?: string | null;
+  enrollmentVerificationSemester?: string;
   profileCompleted: boolean;
   reason?: string;
   verifiedAt: string;
+}
+
+export interface SemesterWindow {
+  year: number;
+  semester: 1 | 2;
+  semesterLabel: string;
+  validUntilIso: string;
+}
+
+/**
+ * Computes the current Brazilian academic semester (1 or 2) in UTC-3
+ * and the end-of-day ISO timestamp for the last day of the last month of that semester.
+ */
+export function resolveSemesterWindow(nowMs = Date.now()): SemesterWindow {
+  const brtOffsetMs = -3 * 60 * 60 * 1000;
+  const brtDate = new Date(nowMs + brtOffsetMs);
+  const year = brtDate.getUTCFullYear();
+  const month = brtDate.getUTCMonth() + 1;
+  const semester: 1 | 2 = month <= 6 ? 1 : 2;
+  const lastMonth = semester === 1 ? '06' : '12';
+  const lastDay = semester === 1 ? '30' : '31';
+  const validUntilIso = new Date(`${year}-${lastMonth}-${lastDay}T23:59:59.999-03:00`).toISOString();
+
+  return {
+    year,
+    semester,
+    semesterLabel: `${year}/${semester}`,
+    validUntilIso,
+  };
+}
+
+/**
+ * Returns true only when a FURB Medicina student has an uploaded enrollment summary
+ * verified for the current semester (until the last day of the last month of the semester).
+ */
+export function isEnrollmentVerifiedActive(
+  user:
+    | Pick<
+        UserProfile,
+        'affiliation' | 'enrollmentSummaryUrl' | 'enrollmentVerified' | 'enrollmentVerifiedUntil'
+      >
+    | null
+    | undefined,
+  nowMs = Date.now(),
+): boolean {
+  if (!user || user.affiliation !== 'FURB') return false;
+  if (!user.enrollmentSummaryUrl?.trim()) return false;
+  if (user.enrollmentVerified !== true) return false;
+  if (!user.enrollmentVerifiedUntil) return false;
+  const untilMs = new Date(user.enrollmentVerifiedUntil).getTime();
+  return Number.isFinite(untilMs) && untilMs > nowMs;
+}
+
+/**
+ * Returns true when a FURB student's previously released semester verification has expired
+ * and they must be prompted to submit a new enrollment summary.
+ */
+export function isEnrollmentRenewalNeeded(
+  user:
+    | Pick<
+        UserProfile,
+        'affiliation' | 'profileCompleted' | 'enrollmentVerifiedUntil'
+      >
+    | null
+    | undefined,
+  nowMs = Date.now(),
+): boolean {
+  if (!user || user.affiliation !== 'FURB' || !user.profileCompleted) return false;
+  if (!user.enrollmentVerifiedUntil) return false;
+  const untilMs = new Date(user.enrollmentVerifiedUntil).getTime();
+  return Number.isFinite(untilMs) && untilMs <= nowMs;
 }
 
 /**
@@ -251,9 +325,24 @@ export function buildMemberCardVerificationFromProfile(
     };
   }
 
+  const safePdfUrl = academic.isFurbStudent
+    ? resolveSafeEnrollmentSummaryUrl(user.enrollmentSummaryUrl)
+    : undefined;
+  const enrollmentVerified =
+    academic.isFurbStudent &&
+    Boolean(safePdfUrl) &&
+    isEnrollmentVerifiedActive(user, nowMs);
+
+  const unverifiedFurbReason =
+    academic.isFurbStudent && !enrollmentVerified
+      ? user.enrollmentVerifiedUntil && new Date(user.enrollmentVerifiedUntil).getTime() <= nowMs
+        ? 'Verificação do resumo de matrícula expirada para este semestre. Envie um novo resumo em Meu Perfil.'
+        : 'Resumo de matrícula em Medicina (FURB) ainda não validado para o semestre atual.'
+      : undefined;
+
   return {
     found: true,
-    valid: academic.isFurbStudent,
+    valid: academic.isFurbStudent && enrollmentVerified,
     active: true,
     tier: activeTier,
     tierCode,
@@ -267,12 +356,13 @@ export function buildMemberCardVerificationFromProfile(
     institution: academic.institution,
     course: academic.course,
     turma: academic.isFurbStudent && user.turma ? user.turma.trim() : '',
-    enrollmentSummaryUrl: academic.isFurbStudent
-      ? resolveSafeEnrollmentSummaryUrl(user.enrollmentSummaryUrl)
-      : undefined,
+    enrollmentSummaryUrl: enrollmentVerified ? safePdfUrl : undefined,
+    enrollmentVerified,
+    enrollmentVerifiedUntil: user.enrollmentVerifiedUntil ?? null,
+    enrollmentVerificationSemester: user.enrollmentVerificationSemester,
     profileCompleted: Boolean(user.profileCompleted),
     reason: academic.isFurbStudent
-      ? undefined
+      ? unverifiedFurbReason
       : 'Cartão de membro externo ativo no Clube CAMBLU (não vinculado ao curso de Medicina FURB).',
     verifiedAt,
   };
