@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ToastProvider';
+import { ClubTierWaveChip } from '../components/ClubTierWaveChip';
 import { Icon } from '../components/Icon';
 import { M3Dialog } from '../components/M3Dialog';
 import { isEnrollmentRenewalNeeded, isEnrollmentVerifiedActive } from '../lib/memberCard';
@@ -525,9 +526,23 @@ export function ProfilePage() {
 
         <aside style={{ display: 'grid', gap: '1rem', alignContent: 'start' }}>
           <div className="m3-card m3-card--forest">
-            <span className="m3-label-small" style={{ display: 'block', marginBlockEnd: '0.35rem', color: '#f1de97' }}>
-              Clube CAMBLU
-            </span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+                marginBlockEnd: '0.35rem',
+              }}
+            >
+              <span className="m3-label-small" style={{ color: '#f1de97' }}>
+                Clube CAMBLU
+              </span>
+              {profile.membershipActive && profile.membershipTier !== 'none' && (
+                <ClubTierWaveChip tier={profile.membershipTier} />
+              )}
+            </div>
             <h2 style={{ marginBlockEnd: '0.4rem' }}>
               {profile.membershipActive
                 ? `Plano ${profile.membershipTier.toUpperCase()} Ativo`
@@ -541,7 +556,7 @@ export function ProfilePage() {
             <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <Link to={profile.membershipActive ? '/clube/cartao' : '/clube'} className="m3-btn m3-btn--gold btn-primary-25d">
                 <Icon name="badge" size={18} />
-                <span>{profile.membershipActive ? 'Abrir Cartão Digital' : 'Ver Planos do Clube'}</span>
+                <span>{profile.membershipActive ? 'Carteirinha' : 'Ver Planos do Clube'}</span>
               </Link>
               {profile.membershipActive && (
                 <button

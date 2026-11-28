@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n/i18n';
 import { logError, logInfo, logWarn } from '../lib/logger';
 import { isEnrollmentRenewalNeeded } from '../lib/memberCard';
+import { ClubTierWaveChip } from './ClubTierWaveChip';
 import { Icon } from './Icon';
 import { M3Dialog } from './M3Dialog';
 import { useToast } from './ToastProvider';
@@ -117,6 +118,10 @@ export function AccountMenuButton() {
 
   const avatarInitial = profile.name.trim().charAt(0).toUpperCase() || 'C';
   const showPhoto = Boolean(profile.photoURL && !avatarFailed);
+  const activeClubTier =
+    profile.membershipActive && profile.membershipTier && profile.membershipTier !== 'none'
+      ? profile.membershipTier
+      : undefined;
 
   return (
     <div ref={wrapRef} className="nav-dropdown">
@@ -128,25 +133,27 @@ export function AccountMenuButton() {
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen((o) => !o)}
       >
-        <span className="header-avatar-badge">
-          {showPhoto ? (
-            <img
-              src={profile.photoURL}
-              alt={profile.name}
-              referrerPolicy="no-referrer"
-              onError={() => {
-                logWarn('Auth', 'Não foi possível carregar photoURL do usuário no cabeçalho; exibindo fallback.', {
-                  uid: profile.uid,
-                  photoURL: profile.photoURL,
-                });
-                setAvatarFailed(true);
-              }}
-            />
-          ) : isAdmin ? (
-            <Icon name="verified_user" filled size={18} />
-          ) : (
-            avatarInitial
-          )}
+        <span className="header-avatar-ring" data-tier={activeClubTier}>
+          <span className="header-avatar-badge">
+            {showPhoto ? (
+              <img
+                src={profile.photoURL}
+                alt={profile.name}
+                referrerPolicy="no-referrer"
+                onError={() => {
+                  logWarn('Auth', 'Não foi possível carregar photoURL do usuário no cabeçalho; exibindo fallback.', {
+                    uid: profile.uid,
+                    photoURL: profile.photoURL,
+                  });
+                  setAvatarFailed(true);
+                }}
+              />
+            ) : isAdmin ? (
+              <Icon name="verified_user" filled size={18} />
+            ) : (
+              avatarInitial
+            )}
+          </span>
         </span>
         {(!profile.profileCompleted || isEnrollmentRenewalNeeded(profile)) && (
           <span
@@ -167,22 +174,18 @@ export function AccountMenuButton() {
             marginBlockEnd: '0.25rem',
           }}
         >
-          {showPhoto && (
-            <img
-              src={profile.photoURL}
-              alt=""
-              aria-hidden="true"
-              referrerPolicy="no-referrer"
-              style={{
-                inlineSize: '34px',
-                blockSize: '34px',
-                borderRadius: '9999px',
-                objectFit: 'cover',
-                flexShrink: 0,
-              }}
-            />
-          )}
-          <div style={{ minInlineSize: 0 }}>
+          <span className="header-avatar-ring header-avatar-ring--popup" data-tier={activeClubTier}>
+            <span className="header-avatar-badge">
+              {showPhoto ? (
+                <img src={profile.photoURL} alt="" aria-hidden="true" referrerPolicy="no-referrer" />
+              ) : isAdmin ? (
+                <Icon name="verified_user" filled size={18} />
+              ) : (
+                avatarInitial
+              )}
+            </span>
+          </span>
+          <div style={{ minInlineSize: 0, display: 'grid', gap: '0.22rem' }}>
             <strong style={{ display: 'block', fontSize: '0.92rem' }}>{profile.name}</strong>
             <span
               style={{
@@ -195,6 +198,7 @@ export function AccountMenuButton() {
             >
               {profile.email}
             </span>
+            {activeClubTier && <ClubTierWaveChip tier={activeClubTier} />}
           </div>
         </div>
 
